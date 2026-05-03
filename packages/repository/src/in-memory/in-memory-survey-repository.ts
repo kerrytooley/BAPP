@@ -3,7 +3,11 @@ import type {
   CreateSurveyInput,
   UpdateSurveyInput,
   SurveyRepository,
+  SurveyContext,
   Unsubscribe,
+  LocationRepository,
+  SurveyorRepository,
+  ObservationRepository,
 } from '@bapp/domain';
 
 let nextId = 1;
@@ -11,6 +15,12 @@ let nextId = 1;
 export class InMemorySurveyRepository implements SurveyRepository {
   private store = new Map<string, Survey>();
   private listeners = new Map<string, Set<(survey: Survey | null) => void>>();
+
+  constructor(
+    private readonly locationRepository?: LocationRepository,
+    private readonly surveyorRepository?: SurveyorRepository,
+    private readonly observationRepository?: ObservationRepository,
+  ) {}
 
   async create(input: CreateSurveyInput): Promise<Survey> {
     const now = new Date();
@@ -74,6 +84,20 @@ export class InMemorySurveyRepository implements SurveyRepository {
     this.listeners.get(id)!.add(callback);
     callback(this.store.has(id) ? clone(this.store.get(id)!) : null);
     return () => { this.listeners.get(id)?.delete(callback); };
+  }
+
+  async getSurveyContext(surveyId: string): Promise<SurveyContext> {
+    const survey = this.store.get(surveyId);
+    if (!survey) throw new Error(`Survey ${surveyId} not found`);
+    if (!this.locationRepository || !this.surveyorRepository || !this.observationRepository) {
+      throw new Error('getSurveyContext requires location, surveyor, and observation repositories');
+    }
+    const [locations, surveyors, observations] = await Promise.all([
+      this.locationRepository.findBySurveyId(surveyId),
+      this.surveyorRepository.findBySurveyId(surveyId),
+      this.observationRepository.findBySurveyId(surveyId),
+    ]);
+    return { survey: clone(survey), locations, surveyors, observations };
   }
 
   private notify(id: string): void {

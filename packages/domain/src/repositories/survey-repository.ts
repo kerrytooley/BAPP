@@ -1,4 +1,5 @@
 import type { Survey, CreateSurveyInput, UpdateSurveyInput } from '../models/survey';
+import type { SurveyContext } from '../survey-context';
 
 export type Unsubscribe = () => void;
 
@@ -10,4 +11,5 @@ export interface SurveyRepository {
   update(id: string, input: UpdateSurveyInput): Promise<Survey>;
   delete(id: string): Promise<void>;
   subscribeById(id: string, callback: (survey: Survey | null) => void): Unsubscribe;
+  getSurveyContext(surveyId: string): Promise<SurveyContext>;
 }

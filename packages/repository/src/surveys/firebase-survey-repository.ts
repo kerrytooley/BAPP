@@ -3,6 +3,7 @@ import type {
   CreateSurveyInput,
   UpdateSurveyInput,
   SurveyRepository,
+  SurveyContext,
   Unsubscribe,
 } from '@bapp/domain';
 
@@ -32,6 +33,10 @@ export class FirebaseSurveyRepository implements SurveyRepository {
   }
 
   subscribeById(_id: string, _callback: (survey: Survey | null) => void): Unsubscribe {
+    throw new Error('Not implemented');
+  }
+
+  async getSurveyContext(_surveyId: string): Promise<SurveyContext> {
     throw new Error('Not implemented');
   }
 }

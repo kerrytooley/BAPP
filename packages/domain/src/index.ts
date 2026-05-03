@@ -4,6 +4,13 @@ export * from './models/location';
 export * from './models/surveyor';
 export * from './models/observation';
 
+// Survey context
+export * from './survey-context';
+
+// Validation
+export * from './validation';
+export * from './validation-error';
+
 // Repository interfaces
 export * from './repositories/survey-repository';
 export * from './repositories/location-repository';
