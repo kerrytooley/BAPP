@@ -1,38 +1,37 @@
-// TODO: Implement using Firebase Firestore
-// Firestore collection: 'surveys'
-
 import type {
   Survey,
   CreateSurveyInput,
   UpdateSurveyInput,
   SurveyRepository,
+  Unsubscribe,
 } from '@bapp/domain';
 
 export class FirebaseSurveyRepository implements SurveyRepository {
-  // TODO: Inject a Firestore instance via the constructor
-
   async create(_input: CreateSurveyInput): Promise<Survey> {
-    // TODO: implement — add doc to 'surveys' collection, return with generated id
     throw new Error('Not implemented');
   }
 
   async findById(_id: string): Promise<Survey | null> {
-    // TODO: implement — getDoc from 'surveys' collection
     throw new Error('Not implemented');
   }
 
-  async findByAdminId(_adminId: string): Promise<Survey[]> {
-    // TODO: implement — query 'surveys' where adminId == _adminId
+  async findByAdminCode(_adminCode: string): Promise<Survey | null> {
+    throw new Error('Not implemented');
+  }
+
+  async findBySurveyorCode(_surveyorCode: string): Promise<Survey | null> {
     throw new Error('Not implemented');
   }
 
   async update(_id: string, _input: UpdateSurveyInput): Promise<Survey> {
-    // TODO: implement — updateDoc in 'surveys' collection
     throw new Error('Not implemented');
   }
 
   async delete(_id: string): Promise<void> {
-    // TODO: implement — deleteDoc from 'surveys' collection
+    throw new Error('Not implemented');
+  }
+
+  subscribeById(_id: string, _callback: (survey: Survey | null) => void): Unsubscribe {
     throw new Error('Not implemented');
   }
 }
