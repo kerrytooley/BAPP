@@ -16,4 +16,5 @@ jobs:
       - run: pnpm install
       - run: pnpm build
       - run: pnpm typecheck
+      - run: pnpm --filter @bapp/domain test
       - run: pnpm --filter @bapp/repository test
