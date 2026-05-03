@@ -1,3 +1,29 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+out/
+
+# TypeScript incremental compilation cache
+*.tsbuildinfo
+
+# Expo / React Native
+.expo/
+expo-env.d.ts
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+android/
+ios/
+
 # Firebase build and deployment files
 /firebase-debug.log
 /firebase-debug.*.log
@@ -5,7 +31,6 @@
 
 # Firebase Hosting
 /firebase.json
-*.cache
 hosting/.cache
 
 # Firebase Functions
@@ -25,4 +50,19 @@ yarn-debug.log*
 yarn-error.log*
 
 # Environment files (local configs)
+/.env
 /.env.*
+!/.env.example
+
+# Editor directories and files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
