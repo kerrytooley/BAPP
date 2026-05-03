@@ -14,7 +14,6 @@ describe('InMemoryLocationRepository', () => {
       const loc = await repo.create({ surveyId });
       expect(loc.id).toBeDefined();
       expect(loc.surveyId).toBe(surveyId);
-      expect(loc.surveyorId).toBeNull();
       expect(loc.name).toBeNull();
       expect(loc.boundaryPosition).toBeNull();
       expect(loc.frontViewImageRef).toBeNull();
@@ -26,11 +25,9 @@ describe('InMemoryLocationRepository', () => {
         surveyId,
         name: 'North Gate',
         boundaryPosition: { x: 10, y: 20 },
-        surveyorId: 's-1',
       });
       expect(loc.name).toBe('North Gate');
       expect(loc.boundaryPosition).toEqual({ x: 10, y: 20 });
-      expect(loc.surveyorId).toBe('s-1');
     });
   });
 
@@ -63,15 +60,14 @@ describe('InMemoryLocationRepository', () => {
   describe('update', () => {
     it('updates specified fields', async () => {
       const created = await repo.create({ surveyId, name: 'Old' });
-      const updated = await repo.update(created.id, { name: 'New', surveyorId: 's-2' });
+      const updated = await repo.update(created.id, { name: 'New' });
       expect(updated.name).toBe('New');
-      expect(updated.surveyorId).toBe('s-2');
     });
 
     it('nulls fields', async () => {
-      const created = await repo.create({ surveyId, surveyorId: 's-1' });
-      const updated = await repo.update(created.id, { surveyorId: null });
-      expect(updated.surveyorId).toBeNull();
+      const created = await repo.create({ surveyId, name: 'Has Name' });
+      const updated = await repo.update(created.id, { name: null });
+      expect(updated.name).toBeNull();
     });
 
     it('throws for unknown ID', async () => {
