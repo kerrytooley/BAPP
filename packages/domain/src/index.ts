@@ -1,14 +1,15 @@
 // Domain models
 export * from './models/survey';
-export * from './models/sub-survey';
+export * from './models/location';
+export * from './models/surveyor';
 export * from './models/observation';
-export * from './models/user';
 
-// Repository interfaces (framework-agnostic)
+// Repository interfaces
 export * from './repositories/survey-repository';
-export * from './repositories/sub-survey-repository';
-export * from './repositories/user-repository';
+export * from './repositories/location-repository';
+export * from './repositories/surveyor-repository';
+export * from './repositories/observation-repository';
+export * from './repositories/media-repository';
 
 // Domain services
 export * from './services/survey-service';
-export * from './services/surveyor-service';
