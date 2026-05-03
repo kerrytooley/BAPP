@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { InMemorySurveyRepository } from '../in-memory-survey-repository';
+import { InMemoryLocationRepository } from '../in-memory-location-repository';
+import { InMemorySurveyorRepository } from '../in-memory-surveyor-repository';
+import { InMemoryObservationRepository } from '../in-memory-observation-repository';
 
 describe('InMemorySurveyRepository', () => {
   let repo: InMemorySurveyRepository;
@@ -165,6 +168,76 @@ describe('InMemorySurveyRepository', () => {
       unsub();
       await repo.update(created.id, { name: 'Changed' });
       expect(callback).toHaveBeenCalledTimes(1); // only the initial call
+    });
+  });
+
+  describe('getSurveyContext', () => {
+    it('returns the full survey context', async () => {
+      const locationRepo = new InMemoryLocationRepository();
+      const surveyorRepo = new InMemorySurveyorRepository();
+      const observationRepo = new InMemoryObservationRepository();
+      const repoWithContext = new InMemorySurveyRepository(locationRepo, surveyorRepo, observationRepo);
+
+      const survey = await repoWithContext.create({ name: 'Context Test' });
+      const loc = await locationRepo.create({ surveyId: survey.id, name: 'Point A' });
+      const surveyor = await surveyorRepo.create({ surveyId: survey.id, name: 'Alice' });
+      await observationRepo.create({ surveyId: survey.id, locationId: loc.id, surveyorId: surveyor.id, species: 'Pipistrelle' });
+      await observationRepo.create({ surveyId: survey.id, locationId: loc.id, surveyorId: surveyor.id, species: 'Noctule' });
+
+      const context = await repoWithContext.getSurveyContext(survey.id);
+      expect(context.survey.id).toBe(survey.id);
+      expect(context.locations).toHaveLength(1);
+      expect(context.surveyors).toHaveLength(1);
+      expect(context.observations).toHaveLength(2);
+    });
+
+    it('returns empty arrays when no child entities exist', async () => {
+      const locationRepo = new InMemoryLocationRepository();
+      const surveyorRepo = new InMemorySurveyorRepository();
+      const observationRepo = new InMemoryObservationRepository();
+      const repoWithContext = new InMemorySurveyRepository(locationRepo, surveyorRepo, observationRepo);
+
+      const survey = await repoWithContext.create({});
+      const context = await repoWithContext.getSurveyContext(survey.id);
+      expect(context.survey.id).toBe(survey.id);
+      expect(context.locations).toEqual([]);
+      expect(context.surveyors).toEqual([]);
+      expect(context.observations).toEqual([]);
+    });
+
+    it('throws for unknown survey ID', async () => {
+      const locationRepo = new InMemoryLocationRepository();
+      const surveyorRepo = new InMemorySurveyorRepository();
+      const observationRepo = new InMemoryObservationRepository();
+      const repoWithContext = new InMemorySurveyRepository(locationRepo, surveyorRepo, observationRepo);
+
+      await expect(repoWithContext.getSurveyContext('nonexistent')).rejects.toThrow();
+    });
+
+    it('throws when child repositories not provided', async () => {
+      const repoWithoutContext = new InMemorySurveyRepository();
+      const survey = await repoWithoutContext.create({});
+      await expect(repoWithoutContext.getSurveyContext(survey.id)).rejects.toThrow();
+    });
+
+    it('only includes entities for the requested survey', async () => {
+      const locationRepo = new InMemoryLocationRepository();
+      const surveyorRepo = new InMemorySurveyorRepository();
+      const observationRepo = new InMemoryObservationRepository();
+      const repoWithContext = new InMemorySurveyRepository(locationRepo, surveyorRepo, observationRepo);
+
+      const survey1 = await repoWithContext.create({ name: 'Survey 1' });
+      const survey2 = await repoWithContext.create({ name: 'Survey 2' });
+      await locationRepo.create({ surveyId: survey1.id, name: 'A' });
+      await locationRepo.create({ surveyId: survey2.id, name: 'B' });
+      await surveyorRepo.create({ surveyId: survey1.id, name: 'Alice' });
+      await surveyorRepo.create({ surveyId: survey2.id, name: 'Bob' });
+
+      const context = await repoWithContext.getSurveyContext(survey1.id);
+      expect(context.locations).toHaveLength(1);
+      expect(context.locations[0].name).toBe('A');
+      expect(context.surveyors).toHaveLength(1);
+      expect(context.surveyors[0].name).toBe('Alice');
     });
   });
 });

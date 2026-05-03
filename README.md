@@ -78,6 +78,26 @@ BAPP uses a **ports-and-adapters** (hexagonal) architecture with three layers:
 - **Real-time subscriptions** — repository interfaces support both one-shot queries and callback-based subscriptions for live UI updates (maps to Firestore's `onSnapshot`).
 - **Offline-first** — the repository layer (Firebase SDK) handles local caching, retry on connectivity loss, and conflict resolution. The domain layer is unaware of network state.
 
+### API Conventions
+
+**All writes go through `SurveyService`.** The frontend must not call repository write methods (`create`, `update`, `delete`) directly. The service is the single point for validation and business logic. This is enforced by convention, not by the type system — please respect it.
+
+**Reads go directly to repositories.** The frontend can call repository read methods (`findById`, `findBySurveyId`, `subscribe*`) directly. For a complete snapshot of a survey and all its child entities, use `surveyRepository.getSurveyContext(surveyId)`.
+
+**Partial updates with null semantics.** Update inputs use `Partial<>` with explicit `null` support:
+- Omitting a field = don't touch it
+- Setting a field to a value = update it
+- Setting a field to `null` = clear it
+
+**Best-effort validation.** The service validates against the current local state before every write. Because the device may be offline, this is best-effort — the local state may be stale. Once a write is accepted locally, the repository layer syncs it to the cloud without re-validation. This means:
+- Obvious mistakes (negative counts, invalid timestamps) are caught immediately
+- Cross-device conflicts (two surveyors claiming the same location while offline) are accepted and surfaced as warnings for the admin to resolve
+- Data is never silently rejected after the user thinks it was saved
+
+**Pluggable validation.** Business rules are defined by implementing the `SurveyValidator` interface, which receives a `SurveyContext` (the full survey state) and a `SurveyChange` (which entity was modified) and throws `ValidationError` if invalid. The service calls the validator before every write. A `NoOpValidator` ships as the default. To add rules, implement `SurveyValidator` and pass it to the `SurveyService` constructor — no changes to data flow code required.
+
+**Validation rules must only fail newly introduced bad state.** Because multiple devices may sync concurrently, the survey context may already contain inconsistencies (e.g. an observation referencing a deleted location due to an offline sync conflict). Validation rules must scope their checks to the entity identified by `SurveyChange` and its direct relationships — never fail the entire context. If a rule rejects pre-existing bad state, it blocks all further writes and puts the data into an unrecoverable state. Use the `change` parameter to identify what was modified and only validate that.
+
 ## Monorepo Structure
 
 ```
