@@ -2,16 +2,21 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "moduleResolution": "bundler",
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
-      "@bapp/domain": ["../../packages/domain/src/index.ts"],
-      "@bapp/repository": ["../../packages/repository/src/index.ts"]
+      "@bapp/domain": [
+        "../../packages/domain/src/index.ts"
+      ],
+      "@bapp/repository": [
+        "../../packages/repository/src/index.ts"
+      ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".expo/types/**/*.d.ts",
-    "expo-env.d.ts"
+    ".expo/types/**/*.d.ts"
   ]
 }
