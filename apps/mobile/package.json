@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@babel/core": "^7.29.0",
+    "@babel/runtime": "^7.29.2",
     "@bapp/domain": "workspace:*",
     "@bapp/repository": "workspace:*",
     "@gorhom/bottom-sheet": "^5.2.13",
@@ -37,6 +38,7 @@
     "storybook": "^10.3.6"
   },
   "devDependencies": {
+    "@storybook/react": "^10.3.6",
     "@types/react": "~18.3.12",
     "typescript": "~5.3.3"
   }
