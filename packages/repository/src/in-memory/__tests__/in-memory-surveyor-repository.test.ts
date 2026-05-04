@@ -14,6 +14,7 @@ describe('InMemorySurveyorRepository', () => {
       const s = await repo.create({ surveyId });
       expect(s.id).toBeDefined();
       expect(s.surveyId).toBe(surveyId);
+      expect(s.locationId).toBeNull();
       expect(s.name).toBeNull();
       expect(s.isLead).toBe(false);
       expect(s.status).toBe('pending');
@@ -21,10 +22,11 @@ describe('InMemorySurveyorRepository', () => {
     });
 
     it('creates a surveyor with provided fields', async () => {
-      const s = await repo.create({ surveyId, name: 'Alice', isLead: true, status: 'ready' });
+      const s = await repo.create({ surveyId, name: 'Alice', isLead: true, status: 'ready', locationId: 'loc-1' });
       expect(s.name).toBe('Alice');
       expect(s.isLead).toBe(true);
       expect(s.status).toBe('ready');
+      expect(s.locationId).toBe('loc-1');
     });
   });
 
@@ -53,9 +55,10 @@ describe('InMemorySurveyorRepository', () => {
   describe('update', () => {
     it('updates specified fields', async () => {
       const created = await repo.create({ surveyId, name: 'Old' });
-      const updated = await repo.update(created.id, { name: 'New', status: 'done' });
+      const updated = await repo.update(created.id, { name: 'New', status: 'done', locationId: 'loc-2' });
       expect(updated.name).toBe('New');
       expect(updated.status).toBe('done');
+      expect(updated.locationId).toBe('loc-2');
     });
 
     it('throws for unknown ID', async () => {

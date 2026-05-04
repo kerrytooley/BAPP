@@ -3,6 +3,7 @@ export type SurveyorStatus = 'pending' | 'ready' | 'done';
 export interface Surveyor {
   id: string;
   surveyId: string;
+  locationId: string | null;
   name: string | null;
   isLead: boolean;
   status: SurveyorStatus;
@@ -13,6 +14,7 @@ export interface Surveyor {
 
 export type CreateSurveyorInput = {
   surveyId: string;
+  locationId?: string | null;
   name?: string | null;
   isLead?: boolean;
   status?: SurveyorStatus;
@@ -20,6 +22,7 @@ export type CreateSurveyorInput = {
 };
 
 export type UpdateSurveyorInput = Partial<{
+  locationId: string | null;
   name: string | null;
   isLead: boolean;
   status: SurveyorStatus;

@@ -17,7 +17,6 @@ export class InMemoryLocationRepository implements LocationRepository {
     const location: Location = {
       id: String(nextId++),
       surveyId: input.surveyId,
-      surveyorId: input.surveyorId ?? null,
       name: input.name ?? null,
       boundaryPosition: input.boundaryPosition ?? null,
       frontViewImageRef: input.frontViewImageRef ?? null,
