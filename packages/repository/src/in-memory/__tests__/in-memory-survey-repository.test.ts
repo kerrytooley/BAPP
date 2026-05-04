@@ -1,0 +1,170 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { InMemorySurveyRepository } from '../in-memory-survey-repository';
+
+describe('InMemorySurveyRepository', () => {
+  let repo: InMemorySurveyRepository;
+
+  beforeEach(() => {
+    repo = new InMemorySurveyRepository();
+  });
+
+  describe('create', () => {
+    it('creates a survey with defaults', async () => {
+      const survey = await repo.create({});
+      expect(survey.id).toBeDefined();
+      expect(survey.adminCode).toBeDefined();
+      expect(survey.surveyorCode).toBeDefined();
+      expect(survey.status).toBe('draft');
+      expect(survey.name).toBeNull();
+      expect(survey.weather).toEqual({});
+      expect(survey.data).toEqual({});
+      expect(survey.createdAt).toBeInstanceOf(Date);
+    });
+
+    it('creates a survey with provided fields', async () => {
+      const date = new Date('2026-06-15');
+      const survey = await repo.create({
+        name: 'Bat Survey 1',
+        postcode: 'SW1A 1AA',
+        date,
+        status: 'active',
+        weather: { temperature: 15 },
+      });
+      expect(survey.name).toBe('Bat Survey 1');
+      expect(survey.postcode).toBe('SW1A 1AA');
+      expect(survey.status).toBe('active');
+      expect(survey.weather).toEqual({ temperature: 15 });
+    });
+
+    it('generates unique IDs', async () => {
+      const s1 = await repo.create({});
+      const s2 = await repo.create({});
+      expect(s1.id).not.toBe(s2.id);
+    });
+  });
+
+  describe('findById', () => {
+    it('returns the survey by ID', async () => {
+      const created = await repo.create({ name: 'Test' });
+      const found = await repo.findById(created.id);
+      expect(found).not.toBeNull();
+      expect(found!.name).toBe('Test');
+    });
+
+    it('returns null for unknown ID', async () => {
+      expect(await repo.findById('nonexistent')).toBeNull();
+    });
+
+    it('returns a clone (not a reference)', async () => {
+      const created = await repo.create({ name: 'Original' });
+      const found = await repo.findById(created.id);
+      found!.name = 'Mutated';
+      const foundAgain = await repo.findById(created.id);
+      expect(foundAgain!.name).toBe('Original');
+    });
+  });
+
+  describe('findByAdminCode', () => {
+    it('finds survey by admin code', async () => {
+      const created = await repo.create({ name: 'Admin Test' });
+      const found = await repo.findByAdminCode(created.adminCode);
+      expect(found).not.toBeNull();
+      expect(found!.id).toBe(created.id);
+    });
+
+    it('returns null for unknown code', async () => {
+      expect(await repo.findByAdminCode('badcode')).toBeNull();
+    });
+  });
+
+  describe('findBySurveyorCode', () => {
+    it('finds survey by surveyor code', async () => {
+      const created = await repo.create({ name: 'Surveyor Test' });
+      const found = await repo.findBySurveyorCode(created.surveyorCode);
+      expect(found).not.toBeNull();
+      expect(found!.id).toBe(created.id);
+    });
+
+    it('returns null for unknown code', async () => {
+      expect(await repo.findBySurveyorCode('badcode')).toBeNull();
+    });
+  });
+
+  describe('update', () => {
+    it('updates specified fields', async () => {
+      const created = await repo.create({ name: 'Old' });
+      const updated = await repo.update(created.id, { name: 'New', status: 'active' });
+      expect(updated.name).toBe('New');
+      expect(updated.status).toBe('active');
+    });
+
+    it('sets fields to null', async () => {
+      const created = await repo.create({ name: 'Has Name' });
+      const updated = await repo.update(created.id, { name: null });
+      expect(updated.name).toBeNull();
+    });
+
+    it('updates updatedAt timestamp', async () => {
+      const created = await repo.create({});
+      const updated = await repo.update(created.id, { name: 'Changed' });
+      expect(new Date(updated.updatedAt).getTime()).toBeGreaterThanOrEqual(
+        new Date(created.updatedAt).getTime()
+      );
+    });
+
+    it('throws for unknown ID', async () => {
+      await expect(repo.update('nonexistent', { name: 'X' })).rejects.toThrow();
+    });
+  });
+
+  describe('delete', () => {
+    it('removes the survey', async () => {
+      const created = await repo.create({});
+      await repo.delete(created.id);
+      expect(await repo.findById(created.id)).toBeNull();
+    });
+  });
+
+  describe('subscribeById', () => {
+    it('fires immediately with current value', async () => {
+      const created = await repo.create({ name: 'Sub Test' });
+      const callback = vi.fn();
+      repo.subscribeById(created.id, callback);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback.mock.calls[0][0]?.name).toBe('Sub Test');
+    });
+
+    it('fires null for nonexistent ID', () => {
+      const callback = vi.fn();
+      repo.subscribeById('nonexistent', callback);
+      expect(callback).toHaveBeenCalledWith(null);
+    });
+
+    it('fires on update', async () => {
+      const created = await repo.create({ name: 'Before' });
+      const callback = vi.fn();
+      repo.subscribeById(created.id, callback);
+      await repo.update(created.id, { name: 'After' });
+      expect(callback).toHaveBeenCalledTimes(2);
+      expect(callback.mock.calls[1][0]?.name).toBe('After');
+    });
+
+    it('fires null on delete', async () => {
+      const created = await repo.create({});
+      const callback = vi.fn();
+      repo.subscribeById(created.id, callback);
+      await repo.delete(created.id);
+      expect(callback).toHaveBeenCalledTimes(2);
+      expect(callback.mock.calls[1][0]).toBeNull();
+    });
+
+    it('stops firing after unsubscribe', async () => {
+      const created = await repo.create({});
+      const callback = vi.fn();
+      const unsub = repo.subscribeById(created.id, callback);
+      unsub();
+      await repo.update(created.id, { name: 'Changed' });
+      expect(callback).toHaveBeenCalledTimes(1); // only the initial call
+    });
+  });
+});
