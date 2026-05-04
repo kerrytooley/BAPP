@@ -6,7 +6,6 @@ export interface BoundaryPosition {
 export interface Location {
   id: string;
   surveyId: string;
-  surveyorId: string | null;
   name: string | null;
   boundaryPosition: BoundaryPosition | null;
   frontViewImageRef: string | null;
@@ -18,7 +17,6 @@ export interface Location {
 
 export type CreateLocationInput = {
   surveyId: string;
-  surveyorId?: string | null;
   name?: string | null;
   boundaryPosition?: BoundaryPosition | null;
   frontViewImageRef?: string | null;
@@ -27,7 +25,6 @@ export type CreateLocationInput = {
 };
 
 export type UpdateLocationInput = Partial<{
-  surveyorId: string | null;
   name: string | null;
   boundaryPosition: BoundaryPosition | null;
   frontViewImageRef: string | null;

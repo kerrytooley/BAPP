@@ -17,6 +17,7 @@ export class InMemorySurveyorRepository implements SurveyorRepository {
     const surveyor: Surveyor = {
       id: String(nextId++),
       surveyId: input.surveyId,
+      locationId: input.locationId ?? null,
       name: input.name ?? null,
       isLead: input.isLead ?? false,
       status: input.status ?? 'pending',
