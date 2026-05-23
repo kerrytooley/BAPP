@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-native';
 import { View } from 'react-native';
 import { fn } from 'storybook/test';
 
-import {Button} from '@components/Button'
+import { Button } from '@components/Button';
 
 const meta = {
   title: 'Components/Button',
