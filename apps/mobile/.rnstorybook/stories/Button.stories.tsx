@@ -3,10 +3,10 @@ import type { Meta, StoryObj } from '@storybook/react-native';
 import { View } from 'react-native';
 import { fn } from 'storybook/test';
 
-import { Button } from './Button';
+import {Button} from '@components/Button'
 
 const meta = {
-  title: 'Example/Button',
+  title: 'Components/Button',
   component: Button,
   decorators: [
     (Story) => (
@@ -27,27 +27,21 @@ type Story = StoryObj<typeof meta>;
 
 export const Primary: Story = {
   args: {
-    primary: true,
+    variant: 'primary',
     label: 'Button',
   },
 };
 
-export const Secondary: Story = {
+export const Light: Story = {
   args: {
+    variant: 'light',
     label: 'Button',
   },
 };
 
-export const Large: Story = {
+export const Grey: Story = {
   args: {
-    size: 'large',
-    label: 'Button',
-  },
-};
-
-export const Small: Story = {
-  args: {
-    size: 'small',
+    variant: 'grey',
     label: 'Button',
   },
 };

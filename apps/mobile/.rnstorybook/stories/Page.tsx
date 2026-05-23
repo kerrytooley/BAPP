@@ -2,19 +2,13 @@ import { useState } from 'react';
 
 import { Linking, StyleSheet, Text, View } from 'react-native';
 
-import { Header } from './Header';
 
 export const Page = () => {
   const [user, setUser] = useState<{ name: string } | undefined>();
 
   return (
     <View>
-      <Header
-        user={user}
-        onLogin={() => setUser({ name: 'Jane Doe' })}
-        onLogout={() => setUser(undefined)}
-        onCreateAccount={() => setUser({ name: 'Jane Doe' })}
-      />
+
 
       <View style={styles.section}>
         <Text role="heading" style={styles.h2}>
