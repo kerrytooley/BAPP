@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import {Button} from '@components/Button'
+import { Button } from '@components/Button';
 // TODO: Add navigation container (React Navigation)
 // TODO: Initialize Firebase via packages/repository's initFirebase()
 // TODO: Initialize Sentry for error monitoring (@sentry/react-native)
