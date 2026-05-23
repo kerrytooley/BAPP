@@ -2,12 +2,10 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export interface ButtonProps {
-  /** Is this the principal call to action on the page? */
-  primary?: boolean;
-  /** What background color to use */
-  backgroundColor?: string;
-  /** How large should the button be? */
-  size?: 'small' | 'medium' | 'large';
+  /** Visual style variant */
+  variant?: 'primary' | 'light' | 'grey';
+  /** Size variant */
+  size?: 'medium' | 'large';
   /** Button contents */
   label: string;
   /** Optional click handler */
@@ -17,15 +15,14 @@ export interface ButtonProps {
 
 /** Primary UI component for user interaction */
 export const Button = ({
-  primary = false,
-  size = 'medium',
-  backgroundColor,
+  variant = 'primary',
+  size = 'large',
   label,
   style,
   onPress,
 }: ButtonProps) => {
-  const modeStyle = primary ? styles.primary : styles.secondary;
-  const textModeStyle = primary ? styles.primaryText : styles.secondaryText;
+  const modeStyle = styles[variant];
+  const textModeStyle = styles[`${variant}Text` as keyof typeof styles];
 
   const sizeStyle = styles[size];
   const textSizeStyle = textSizeStyles[size];
@@ -38,8 +35,6 @@ export const Button = ({
           modeStyle,
           sizeStyle,
           style,
-          !!backgroundColor && { backgroundColor },
-          { borderColor: 'black' },
         ]}
       >
         <Text style={[textModeStyle, textSizeStyle]}>{label}</Text>
@@ -50,33 +45,43 @@ export const Button = ({
 
 const styles = StyleSheet.create({
   button: {
-    borderWidth: 0,
     borderRadius: 48,
+    width: "100%",
+    minWidth: 343,
+    height: 48,
+    borderStyle: "solid",
+    borderWidth: 1,
+    overflow: "hidden",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonText: {
     fontWeight: '700',
-    lineHeight: 1,
+    lineHeight: 18,
+    fontSize: 16,
+    fontFamily: "Inter-Regular",
   },
   primary: {
-    backgroundColor: '#1ea7fd',
+    backgroundColor: "#000",
+    borderColor: "#fff",
   },
   primaryText: {
     color: 'white',
   },
-  secondary: {
-    backgroundColor: 'transparent',
-    borderColor: 'rgba(0, 0, 0, 0.15)',
-    borderWidth: 1,
+  light: {
+    backgroundColor: '#fff',
+    borderColor: '#fff',
   },
-  secondaryText: {
-    color: '#333',
+  lightText: {
+    color: '#000',
   },
-  small: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+  grey: {
+    backgroundColor: '#2c2c2e',
+    borderColor: '#404040',
   },
-  smallText: {
-    fontSize: 12,
+  greyText: {
+    color: '#000',
   },
   medium: {
     paddingVertical: 11,
@@ -95,7 +100,6 @@ const styles = StyleSheet.create({
 });
 
 const textSizeStyles = {
-  small: styles.smallText,
   medium: styles.mediumText,
   large: styles.largeText,
 };
