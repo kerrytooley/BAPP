@@ -1,4 +1,4 @@
-import { StyleProp, StyleSheet, ViewStyle, View, Text, TouchableOpacity, TextInput } from "react-native";
+import { StyleProp, StyleSheet, ViewStyle, View, Text, TextInput } from "react-native";
 
 export interface InputFieldProps {
     variant?: 'primary' | 'unit';
@@ -6,8 +6,8 @@ export interface InputFieldProps {
     fieldLabel: string;
     placeholderText: string;
     value?: string;
+    unit?: string;
     onChangeText?: (text: string) => void;
-    onPress?: () => void;
     style?: StyleProp<ViewStyle>;
 }
 
@@ -17,47 +17,47 @@ export const InputField = ({
     fieldLabel,
     placeholderText,
     value,
+    unit,
     onChangeText,
-    onPress,
     style
 }: InputFieldProps) => {
 
     return (
-        <TouchableOpacity accessibilityRole="button" activeOpacity={0.6} onPress={onPress}>
-            <View style={styles.inputField}>
-                <View style={[styles.rowLabel, styles.textFlexBox]}>
-                    <Text style={styles.rowLabelText}>{fieldLabel}</Text>
-                </View>
+        <View style={[styles.inputField, style]}>
+            <View style={styles.inputTitle}>
+                <Text style={styles.inputTitleText}>{fieldLabel}</Text>
+            </View>
+            <View style={[styles.inputBox]}>
                 <TextInput
-                    style={styles.textInput}
+                    style={styles.inputText}
                     value={value}
                     onChangeText={onChangeText}
                     placeholder={placeholderText}
                     placeholderTextColor="#808080"
                 />
+                {variant === 'unit' && (
+                    < Text style={styles.unit}>{unit}</Text>
+                )}
             </View>
-        </TouchableOpacity>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    textFlexBox: {
+    inputField: {
+        flex: 1,
+        width: "100%",
+        minWidth: 360,
+        paddingTop: 8,
+        alignItems: "flex-start"
+    },
+    inputTitle: {
+        paddingVertical: 8,
         flexDirection: "row",
         alignSelf: "flex-start",
         alignItems: "flex-start"
     },
-    inputField: {
-        flex: 1,
-        width: "100%",
-        minWidth: 343,
-        paddingTop: 8,
-        alignItems: "flex-start"
-    },
-    rowLabel: {
-        paddingHorizontal: 0,
-        paddingVertical: 8
-    },
-    rowLabelText: {
+    inputTitleText: {
         fontSize: 14,
         letterSpacing: 0.6,
         lineHeight: 24,
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
         color: "#bfbfbf",
         textAlign: "left"
     },
-    textInput: {
+    inputBox: {
         alignSelf: "stretch",
         borderRadius: 16,
         backgroundColor: "#2c2c2e",
@@ -76,15 +76,20 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         paddingHorizontal: 16,
         paddingVertical: 15,
-        alignItems: "flex-start",
-        color: "#FFF"
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 20,
+        flexDirection: "row"
     },
-    inputField2: {
+    inputText: {
+        color: "#FFF",
+        flex: 1,
+        fontSize: 16
+    },
+    unit: {
         fontSize: 16,
-        lineHeight: 26,
-        fontFamily: "OpenSans-Regular",
-        color: "#fff",
-        opacity: 1,
-        textAlign: "left"
+        fontFamily: "OpenSans-SemiBold",
+        fontWeight: "600",
+        color: "#fff"
     }
 })

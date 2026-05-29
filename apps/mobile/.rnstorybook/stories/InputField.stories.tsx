@@ -10,14 +10,13 @@ const meta = {
     component: InputField,
     decorators: [
         (Story) => (
-            <View style={{ flex: 1, alignItems: 'flex-start' }}>
+            <View style={{ width: '100%', flex: 1, alignItems: 'flex-start' }}>
                 <Story />
             </View>
         ),
     ],
 
     tags: ['autodocs'],
-    args: { onPress: fn() },
 } satisfies Meta<typeof InputField>;
 
 export default meta;
@@ -28,5 +27,14 @@ export const Primary: Story = {
     args: {
         placeholderText: 'Input Field',
         fieldLabel: 'Input Field Label'
+    },
+};
+
+export const PrimaryWithUnit: Story = {
+    args: {
+        variant: 'unit',
+        placeholderText: 'Input Field',
+        fieldLabel: 'Input Field Label',
+        unit: 'Hz'
     },
 };
