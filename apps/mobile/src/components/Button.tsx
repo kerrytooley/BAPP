@@ -13,7 +13,6 @@ export interface ButtonProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/** Primary UI component for user interaction */
 export const Button = ({
   variant = 'primary',
   size = 'large',
@@ -47,7 +46,7 @@ const styles = StyleSheet.create({
   button: {
     borderRadius: 48,
     width: "100%",
-    minWidth: 343,
+    minWidth: 360,
     height: 48,
     borderStyle: "solid",
     borderWidth: 1,
