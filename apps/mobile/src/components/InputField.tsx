@@ -22,22 +22,25 @@ export const InputField = ({
     style
 }: InputFieldProps) => {
 
+    const isLarge = size === 'large';
+    const isUnit = variant === 'unit';
+
     return (
         <View style={[styles.inputField, style]}>
             <View style={styles.inputTitle}>
                 <Text style={styles.inputTitleText}>{fieldLabel}</Text>
             </View>
-            <View style={[styles.inputBox]}>
+            <View style={[styles.inputBox, isLarge && styles.large, isLarge && styles.topAlign]}>
                 <TextInput
-                    style={styles.inputText}
+                    style={[styles.inputText, isLarge && styles.inputTextLarge]}
                     value={value}
                     onChangeText={onChangeText}
                     placeholder={placeholderText}
                     placeholderTextColor="#808080"
+                    multiline={isLarge}
+                    numberOfLines={isLarge ? 4 : 1}
                 />
-                {variant === 'unit' && (
-                    < Text style={styles.unit}>{unit}</Text>
-                )}
+                {isUnit && <Text style={styles.unit}>{unit}</Text>}
             </View>
         </View>
     );
@@ -91,5 +94,14 @@ const styles = StyleSheet.create({
         fontFamily: "OpenSans-SemiBold",
         fontWeight: "600",
         color: "#fff"
-    }
+    },
+    large: {
+        minHeight: 80
+    },
+    topAlign: {
+        alignItems: 'flex-start',
+    },
+    inputTextLarge: {
+        textAlignVertical: 'top',
+    },
 })

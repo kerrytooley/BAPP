@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-native';
 
 import { View } from 'react-native';
-import { fn } from 'storybook/test';
 
 import { InputField } from '@components/InputField';
 
@@ -38,3 +37,21 @@ export const PrimaryWithUnit: Story = {
         unit: 'Hz'
     },
 };
+
+export const Large: Story = {
+    args: {
+        placeholderText: 'Input Field with multiple lines',
+        fieldLabel: 'Input Field Label',
+        size: 'large'
+    }
+}
+
+export const LargeWithUnit: Story = {
+    args: {
+        placeholderText: 'Input Field with multiple lines',
+        fieldLabel: 'Input Field Label',
+        size: 'large',
+        variant: 'unit',
+        unit: 'Hz'
+    }
+}
