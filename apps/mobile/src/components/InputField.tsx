@@ -1,4 +1,6 @@
 import { StyleProp, StyleSheet, ViewStyle, View, Text, TextInput } from "react-native";
+import { textStyles } from '@theme/fonts';
+import { colours } from '@theme/colours';
 
 export interface InputFieldProps {
     variant?: 'primary' | 'unit';
@@ -36,7 +38,7 @@ export const InputField = ({
                     value={value}
                     onChangeText={onChangeText}
                     placeholder={placeholderText}
-                    placeholderTextColor="#808080"
+                    placeholderTextColor={colours.placeholderText}
                     multiline={isLarge}
                     numberOfLines={isLarge ? 4 : 1}
                 />
@@ -61,21 +63,17 @@ const styles = StyleSheet.create({
         alignItems: "flex-start"
     },
     inputTitleText: {
-        fontSize: 14,
-        letterSpacing: 0.6,
-        lineHeight: 24,
+        ...textStyles.inputTitleText,
         textTransform: "uppercase",
-        fontWeight: "600",
-        fontFamily: "OpenSans-SemiBold",
-        color: "#bfbfbf",
+        color: colours.inputTitle,
         textAlign: "left"
     },
     inputBox: {
         alignSelf: "stretch",
         borderRadius: 16,
-        backgroundColor: "#2c2c2e",
+        backgroundColor: colours.inputBackground,
         borderStyle: "solid",
-        borderColor: "#808080",
+        borderColor: colours.inputBorder,
         borderWidth: 1,
         paddingHorizontal: 16,
         paddingVertical: 15,
@@ -85,15 +83,13 @@ const styles = StyleSheet.create({
         flexDirection: "row"
     },
     inputText: {
-        color: "#FFF",
+        ...textStyles.inputText,
+        color: colours.light,
         flex: 1,
-        fontSize: 16
     },
     unit: {
-        fontSize: 16,
-        fontFamily: "OpenSans-SemiBold",
-        fontWeight: "600",
-        color: "#fff"
+        ...textStyles.unit,
+        color: colours.light,
     },
     large: {
         minHeight: 80

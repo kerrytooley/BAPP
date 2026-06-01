@@ -1,19 +1,25 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Button } from '@components/Button';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFonts, OleoScript_700Bold } from '@expo-google-fonts/oleo-script';
+import { WelcomeScreen } from './src/screens/WelcomeScreen';
 // TODO: Add navigation container (React Navigation)
 // TODO: Initialize Firebase via packages/repository's initFirebase()
 // TODO: Initialize Sentry for error monitoring (@sentry/react-native)
 
-export default function App(): React.JSX.Element {
+export default function App(): React.JSX.Element | null {
+  const [fontsLoaded] = useFonts({ OleoScript_700Bold });
+
+  if (!fontsLoaded) return null;
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>BAPP — Bat Survey App</Text>
-      <Text style={styles.subtitle}>Loading…</Text>
-      <Button variant='primary' label='Button'/>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+      <StatusBar style="light" />
+      <View style={styles.container}>
+        <WelcomeScreen />
+      </View>
+    </SafeAreaProvider>
   );
 }
 
@@ -23,6 +29,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff',
+    width: '100%',
+    height: '100%'
   },
   title: {
     fontSize: 24,

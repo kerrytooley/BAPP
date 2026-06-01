@@ -34,4 +34,9 @@ config.resolver.disableHierarchicalLookup = true;
 // Enable package.json exports field resolution (needed for @storybook/react subpaths)
 config.resolver.unstable_enablePackageExports = true;
 
+// Enable SVG rendering
+config.transformer.babelTransformerPath = require.resolve('react-native-svg-transformer');
+config.resolver.assetExts = config.resolver.assetExts.filter(ext => ext !== 'svg');
+config.resolver.sourceExts = [...config.resolver.sourceExts, 'svg'];
+
 module.exports = config;
