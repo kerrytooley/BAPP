@@ -53,6 +53,7 @@ export const Dark: Story = {
             'Secondary Button',
             'Tertiary Button'
         ],
-        onPress: [() => { }, () => { }]
+        onPress: [() => { }, () => { }, () => { }]
     }
+}
 }
