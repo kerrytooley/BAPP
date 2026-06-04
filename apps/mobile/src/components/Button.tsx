@@ -65,11 +65,14 @@ export const ButtonGroup = ({
   return (
     <View style={styles.buttonGroup}>
       {labels.map((label, index) => (
-        <Button key={label}
+        <Button
+          key={`${label}-${index}`}
           label={label}
           variant={buttonVariant(index)}
           onPress={onPress[index]}
         />
+      ))}
+    </View>
       ))}
     </View>
   )
