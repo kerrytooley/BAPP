@@ -29,8 +29,9 @@ export const Mixed: Story = {
             'Secondary Button',
             'Tertiary Button'
         ],
-        onPress: [() => { }, () => { }]
+        onPress: [() => { }, () => { }, () => { }]
     }
+}
 }
 
 export const Light: Story = {
