@@ -50,7 +50,6 @@ export const InputField = ({
 
 const styles = StyleSheet.create({
     inputField: {
-        flex: 1,
         width: "100%",
         minWidth: 360,
         paddingTop: 8,
