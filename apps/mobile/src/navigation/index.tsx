@@ -1,8 +1,21 @@
-// TODO: Configure React Navigation
-//
-// Planned routes:
-//   Auth stack:     Login, Register
-//   Admin stack:    SurveyList, CreateSurvey, SurveyDetail, InviteSurveyor
-//   Surveyor stack: SubSurveyList, SubSurveyDetail, RecordObservation
+import React from 'react';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-export {};
+import { WelcomeScreen } from '@screens/WelcomeScreen';
+import { AdminNavigator } from './AdminNavigator';
+
+export type RootStackParamList = {
+    Welcome: undefined;
+    Admin: undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+export function RootNavigator() {
+    return (
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
+            <Stack.Screen name="Admin" component={AdminNavigator} />
+        </Stack.Navigator>
+    );
+};

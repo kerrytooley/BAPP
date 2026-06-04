@@ -1,8 +1,10 @@
+import { colours } from "./colours";
+
 export const fonts = {
     family: {
         bappLogo: 'OleoScript_700Bold',
-        body: 'OpenSans-Regular',
-        semiBold: 'OpenSans-SemiBold',
+        body: 'OpenSans_400Regular',
+        semiBold: 'OpenSans_600SemiBold',
         inter: 'Inter-Regular',
     },
     size: {
@@ -43,4 +45,18 @@ export const textStyles = {
         fontWeight: '700',
         lineHeight: 18,
     },
+    title: {
+        fontSize: fonts.size.xl,
+        lineHeight: 24,
+        fontFamily: fonts.family.semiBold,
+        color: colours.light,
+        textAlign: "center"
+    },
+    subtitle: {
+        fontSize: fonts.size.md,
+        lineHeight: 24,
+        fontFamily: fonts.family.body,
+        color: colours.light,
+        textAlign: "center"
+    }
 } as const;

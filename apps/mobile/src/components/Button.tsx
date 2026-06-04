@@ -18,6 +18,7 @@ export interface ButtonProps {
 export interface ButtonGroupProps {
   variant?: 'mixed' | 'dark' | 'light';
   labels: Array<string>;
+  onPress: Array<() => void>
 }
 
 export const Button = ({
@@ -51,7 +52,8 @@ export const Button = ({
 
 export const ButtonGroup = ({
   variant = 'dark',
-  labels
+  labels,
+  onPress
 }: ButtonGroupProps) => {
 
   const buttonVariant = (index: number): ButtonProps['variant'] => {
@@ -66,6 +68,7 @@ export const ButtonGroup = ({
         <Button key={label}
           label={label}
           variant={buttonVariant(index)}
+          onPress={onPress[index]}
         />
       ))}
     </View>

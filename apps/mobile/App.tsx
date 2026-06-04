@@ -2,23 +2,24 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native';
 import { useFonts, OleoScript_700Bold } from '@expo-google-fonts/oleo-script';
-import { WelcomeScreen } from './src/screens/WelcomeScreen';
-// TODO: Add navigation container (React Navigation)
+import { OpenSans_400Regular, OpenSans_600SemiBold } from '@expo-google-fonts/open-sans';
+import { RootNavigator } from '@navigators/index';
 // TODO: Initialize Firebase via packages/repository's initFirebase()
 // TODO: Initialize Sentry for error monitoring (@sentry/react-native)
 
 export default function App(): React.JSX.Element | null {
-  const [fontsLoaded] = useFonts({ OleoScript_700Bold });
+  const [fontsLoaded] = useFonts({ OleoScript_700Bold, OpenSans_400Regular, OpenSans_600SemiBold });
 
   if (!fontsLoaded) return null;
 
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
-      <View style={styles.container}>
-        <WelcomeScreen />
-      </View>
+      <NavigationContainer>
+        <RootNavigator />
+      </NavigationContainer>
     </SafeAreaProvider>
   );
 }

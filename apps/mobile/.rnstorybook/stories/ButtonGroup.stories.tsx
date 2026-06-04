@@ -28,7 +28,8 @@ export const Mixed: Story = {
         labels: ['Primary Button',
             'Secondary Button',
             'Tertiary Button'
-        ]
+        ],
+        onPress: [() => { }, () => { }]
     }
 }
 
@@ -38,7 +39,8 @@ export const Light: Story = {
         labels: ['Primary Button',
             'Secondary Button',
             'Tertiary Button'
-        ]
+        ],
+        onPress: [() => { }, () => { }]
     }
 }
 
@@ -48,6 +50,7 @@ export const Dark: Story = {
         labels: ['Primary Button',
             'Secondary Button',
             'Tertiary Button'
-        ]
+        ],
+        onPress: [() => { }, () => { }]
     }
 }
