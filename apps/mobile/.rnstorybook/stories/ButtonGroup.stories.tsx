@@ -32,7 +32,6 @@ export const Mixed: Story = {
         onPress: [() => { }, () => { }, () => { }]
     }
 }
-}
 
 export const Light: Story = {
     args: {
@@ -44,7 +43,6 @@ export const Light: Story = {
         onPress: [() => { }, () => { }, () => { }]
     }
 }
-}
 
 export const Dark: Story = {
     args: {
@@ -55,5 +53,4 @@ export const Dark: Story = {
         ],
         onPress: [() => { }, () => { }, () => { }]
     }
-}
 }

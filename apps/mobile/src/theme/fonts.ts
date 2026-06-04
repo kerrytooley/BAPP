@@ -44,7 +44,7 @@ export const textStyles = {
         fontSize: fonts.size.md,
         fontWeight: '600',
         lineHeight: 18,
-    }
+    },
     title: {
         fontSize: fonts.size.xl,
         lineHeight: 24,

@@ -73,8 +73,6 @@ export const ButtonGroup = ({
         />
       ))}
     </View>
-      ))}
-    </View>
   )
 }
 
