@@ -40,11 +40,11 @@ export const textStyles = {
         fontWeight: '600',
     },
     buttonLabel: {
-        fontFamily: fonts.family.inter,
+        fontFamily: fonts.family.semiBold,
         fontSize: fonts.size.md,
-        fontWeight: '700',
+        fontWeight: '600',
         lineHeight: 18,
-    },
+    }
     title: {
         fontSize: fonts.size.xl,
         lineHeight: 24,
