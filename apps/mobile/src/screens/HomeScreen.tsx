@@ -11,7 +11,7 @@ export function HomeScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <Text>Home Screen — TODO</Text>
-      <Button variant='primary' label='Button'/>
+      <Button variant='dark' label='Button' />
     </View>
   );
 }

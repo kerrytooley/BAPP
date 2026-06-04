@@ -1,9 +1,11 @@
 import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { textStyles } from '@theme/fonts';
+import { colours } from '@theme/colours';
 
 export interface ButtonProps {
   /** Visual style variant */
-  variant?: 'primary' | 'light' | 'grey';
+  variant?: 'dark' | 'light' | 'grey';
   /** Size variant */
   size?: 'medium' | 'large';
   /** Button contents */
@@ -13,8 +15,14 @@ export interface ButtonProps {
   style?: StyleProp<ViewStyle>;
 }
 
+export interface ButtonGroupProps {
+  variant?: 'mixed' | 'dark' | 'light';
+  labels: Array<string>;
+  onPress: Array<() => void>
+}
+
 export const Button = ({
-  variant = 'primary',
+  variant = 'dark',
   size = 'large',
   label,
   style,
@@ -36,11 +44,37 @@ export const Button = ({
           style,
         ]}
       >
-        <Text style={[textModeStyle, textSizeStyle]}>{label}</Text>
+        <Text style={[textStyles.buttonLabel, textModeStyle, textSizeStyle]}>{label}</Text>
       </View>
     </TouchableOpacity>
   );
 };
+
+export const ButtonGroup = ({
+  variant = 'dark',
+  labels,
+  onPress
+}: ButtonGroupProps) => {
+
+  const buttonVariant = (index: number): ButtonProps['variant'] => {
+    if (variant === 'mixed') return index === 0 ? 'light' : 'dark';
+    if (variant === 'light') return 'light';
+    return 'dark';
+  };
+
+  return (
+    <View style={styles.buttonGroup}>
+      {labels.map((label, index) => (
+        <Button
+          key={`${label}-${index}`}
+          label={label}
+          variant={buttonVariant(index)}
+          onPress={onPress[index]}
+        />
+      ))}
+    </View>
+  )
+}
 
 const styles = StyleSheet.create({
   button: {
@@ -55,32 +89,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  buttonText: {
-    fontWeight: '700',
-    lineHeight: 18,
-    fontSize: 16,
-    fontFamily: "Inter-Regular",
+  dark: {
+    backgroundColor: colours.dark,
+    borderColor: colours.light,
   },
-  primary: {
-    backgroundColor: "#000",
-    borderColor: "#fff",
-  },
-  primaryText: {
-    color: 'white',
+  darkText: {
+    color: colours.light,
   },
   light: {
-    backgroundColor: '#fff',
-    borderColor: '#fff',
+    backgroundColor: colours.light,
+    borderColor: colours.light,
   },
   lightText: {
-    color: '#000',
+    color: colours.dark,
   },
   grey: {
-    backgroundColor: '#2c2c2e',
-    borderColor: '#404040',
+    backgroundColor: colours.inputBackground,
+    borderColor: colours.buttonBorder,
   },
   greyText: {
-    color: '#000',
+    color: colours.dark,
   },
   medium: {
     paddingVertical: 11,
@@ -96,6 +124,9 @@ const styles = StyleSheet.create({
   largeText: {
     fontSize: 16,
   },
+  buttonGroup: {
+    gap: 16
+  }
 });
 
 const textSizeStyles = {

@@ -25,9 +25,9 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Primary: Story = {
+export const Dark: Story = {
   args: {
-    variant: 'primary',
+    variant: 'dark',
     label: 'Button',
   },
 };
@@ -45,3 +45,4 @@ export const Grey: Story = {
     label: 'Button',
   },
 };
+

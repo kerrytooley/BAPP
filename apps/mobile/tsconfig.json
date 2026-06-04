@@ -13,6 +13,18 @@
       "@components/*": [
         "../../apps/mobile/src/components/*"
       ],
+      "@assets/*": [
+        "../../apps/mobile/assets/*"
+      ],
+      "@theme/*": [
+        "../../apps/mobile/src/theme/*"
+      ],
+      "@screens/*": [
+        "../../apps/mobile/src/screens/*"
+      ],
+      "@navigators/*": [
+        "../../apps/mobile/src/navigation/*"
+      ]
     }
   },
   "include": [
