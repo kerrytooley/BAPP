@@ -1,6 +1,6 @@
 import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { textStyles } from '@theme/fonts';
+import { fonts, textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';
 
 export interface ButtonProps {
@@ -76,6 +76,20 @@ export const ButtonGroup = ({
   )
 }
 
+export interface BackButtonProps {
+  navigation: { goBack: () => void };
+};
+
+export const BackButton = ({
+  navigation
+}: BackButtonProps) => {
+  return (
+    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+      <Text style={styles.backButtonText}>{'←'}</Text>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   button: {
     borderRadius: 48,
@@ -126,6 +140,15 @@ const styles = StyleSheet.create({
   },
   buttonGroup: {
     gap: 16
+  },
+  backButton: {
+    position: 'absolute',
+    top: 60,
+    left: 24,
+  },
+  backButtonText: {
+    color: '#FFF',
+    fontSize: fonts.size.xl,
   }
 });
 

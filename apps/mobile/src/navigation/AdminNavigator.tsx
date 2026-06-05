@@ -5,8 +5,8 @@ import { EmailScreen } from "@screens/EmailScreen";
 
 export type AdminStackParamList = {
     BeginOrContinueSurveyScreen: undefined;
-    EmailScreen: undefined;
-    CreateSurvey: undefined;
+    EmailScreen: { surveyId: string };
+    CreateSurvey: { surveyId: string };
 };
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();

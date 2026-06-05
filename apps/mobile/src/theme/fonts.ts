@@ -33,6 +33,16 @@ export const textStyles = {
     inputText: {
         fontFamily: fonts.family.body,
         fontSize: fonts.size.md,
+        fontWeight: '400',
+        letterSpacing: 0,
+        textAlign: 'left',
+    },
+    DateTimeInputText: {
+        fontFamily: fonts.family.semiBold,
+        fontSize: fonts.size.md,
+        fontWeight: '600',
+        letterSpacing: 4,
+        textAlign: "center"
     },
     unit: {
         fontFamily: fonts.family.semiBold,
