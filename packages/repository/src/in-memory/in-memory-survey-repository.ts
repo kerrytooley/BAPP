@@ -20,7 +20,7 @@ export class InMemorySurveyRepository implements SurveyRepository {
     private readonly locationRepository?: LocationRepository,
     private readonly surveyorRepository?: SurveyorRepository,
     private readonly observationRepository?: ObservationRepository,
-  ) {}
+  ) { }
 
   async create(input: CreateSurveyInput): Promise<Survey> {
     const now = new Date();

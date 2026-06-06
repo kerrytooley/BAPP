@@ -4,13 +4,10 @@ import { fonts, textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';
 
 export interface ButtonProps {
-  /** Visual style variant */
   variant?: 'dark' | 'light' | 'grey';
-  /** Size variant */
   size?: 'medium' | 'large';
-  /** Button contents */
+  action?: 'add'
   label: string;
-  /** Optional click handler */
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 }
@@ -24,6 +21,7 @@ export interface ButtonGroupProps {
 export const Button = ({
   variant = 'dark',
   size = 'large',
+  action,
   label,
   style,
   onPress,
@@ -33,6 +31,8 @@ export const Button = ({
 
   const sizeStyle = styles[size];
   const textSizeStyle = textSizeStyles[size];
+
+  const isAdd = action === "add";
 
   return (
     <TouchableOpacity accessibilityRole="button" activeOpacity={0.6} onPress={onPress}>
@@ -45,10 +45,14 @@ export const Button = ({
         ]}
       >
         <Text style={[textStyles.buttonLabel, textModeStyle, textSizeStyle]}>{label}</Text>
+        {
+          isAdd && <Text style={styles.buttonActionText}>{'+'}</Text>
+        }
       </View>
     </TouchableOpacity>
   );
 };
+
 
 export const ButtonGroup = ({
   variant = 'dark',
@@ -94,7 +98,7 @@ const styles = StyleSheet.create({
   button: {
     borderRadius: 48,
     width: "100%",
-    minWidth: 360,
+    minWidth: '100%',
     height: 48,
     borderStyle: "solid",
     borderWidth: 1,
@@ -102,6 +106,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+  },
+  buttonActionText: {
+    fontSize: fonts.size.xl,
+    color: colours.light,
   },
   dark: {
     backgroundColor: colours.dark,
@@ -148,7 +156,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     color: '#FFF',
-    fontSize: fonts.size.xl,
+    fontSize: fonts.size.xl
   }
 });
 

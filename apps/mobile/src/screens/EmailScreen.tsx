@@ -24,25 +24,28 @@ export function EmailScreen(): React.JSX.Element {
                 <Title title="Enter Email Address" subtitle="Enter the email address to send the completed survey report to." />
                 <InputField fieldLabel="Email Address" placeholderText="Input email address" value={email} onChangeText={setEmail} />
             </View>
-            <Button variant="light" label="Continue" onPress={() => {
-                service.updateSurvey(surveyId,
-                    { data: { adminEmail: email } }
-                ).then(survey => {
-                    console.log('Survey updated:', survey);
-                    navigation.navigate('CreateSurvey', { surveyId })
-                })
-            }} />
+            <Button
+                variant="light"
+                label="Continue"
+                onPress={async () => {
+                    try {
+                        const { survey } = await service.getSurveyContext(surveyId);
+                        await service.updateSurvey(surveyId, { data: { ...survey.data, adminEmail: email } })
+                            .then((survey) => console.log('Admin email address udpated:', survey));
+                        navigation.navigate('CreateSurvey', { surveyId });
+                    } catch (e) {
+                        console.error('updateSurvey failed:', e);
+                    }
+                }}
+            />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     screen: {
-        ...screen.baseScreen,
-        paddingTop: 160,
-        paddingHorizontal: 24,
-        paddingBottom: 48,
-        justifyContent: 'space-between',
+        ...screen.justifyScreen,
+        paddingTop: 160
     },
     content: {
         gap: 80,

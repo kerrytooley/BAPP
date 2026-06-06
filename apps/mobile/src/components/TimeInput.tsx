@@ -25,8 +25,8 @@ export const TimeInput = ({
                 <View style={styles.inputBox}>
                     <TextInput
                         style={styles.inputText}
-                        value={value}
-                        onChangeText={onChangeText}
+                        value={value !== undefined ? (value.split(':')[0] ?? '') : undefined}
+                        onChangeText={onChangeText ? (hh) => onChangeText(`${hh}:${(value ?? '').split(':')[1] ?? ''}`) : undefined}
                         placeholder={'HH'}
                         placeholderTextColor={colours.placeholderText}
                     />
@@ -35,8 +35,8 @@ export const TimeInput = ({
                 <View style={styles.inputBox}>
                     <TextInput
                         style={styles.inputText}
-                        value={value}
-                        onChangeText={onChangeText}
+                        value={value !== undefined ? (value.split(':')[1] ?? '') : undefined}
+                        onChangeText={onChangeText ? (mm) => onChangeText(`${(value ?? '').split(':')[0] ?? ''}:${mm}`) : undefined}
                         placeholder={'MM'}
                         placeholderTextColor={colours.placeholderText}
                     />
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
         flex: 1
     },
     inputText: {
-        ...textStyles.DateTimeInputText,
+        ...textStyles.dateTimeInputText,
         color: colours.light,
         flex: 1,
 

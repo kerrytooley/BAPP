@@ -29,6 +29,9 @@ export const textStyles = {
         fontWeight: '600',
         letterSpacing: 0.6,
         lineHeight: 24,
+        textTransform: "uppercase",
+        color: colours.inputTitle,
+        textAlign: "left"
     },
     inputText: {
         fontFamily: fonts.family.body,
@@ -37,7 +40,7 @@ export const textStyles = {
         letterSpacing: 0,
         textAlign: 'left',
     },
-    DateTimeInputText: {
+    dateTimeInputText: {
         fontFamily: fonts.family.semiBold,
         fontSize: fonts.size.md,
         fontWeight: '600',

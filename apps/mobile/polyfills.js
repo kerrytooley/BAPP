@@ -4,8 +4,9 @@
 if (typeof global.structuredClone === 'undefined') {
     global.structuredClone = function (obj) {
         return JSON.parse(JSON.stringify(obj), (_key, value) => {
-            if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
-                return new Date(value);
+            if (typeof value === 'string') {
+                const d = new Date(value);
+                if (!Number.isNaN(d.getTime()) && d.toISOString() === value) return d;
             }
             return value;
         });
