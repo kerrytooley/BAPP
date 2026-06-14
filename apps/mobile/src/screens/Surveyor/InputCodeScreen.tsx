@@ -30,11 +30,10 @@ export function InputCodeScreen(): React.JSX.Element {
                     try {
                         const surveyContext = await service.joinSurvey(code);
 
-                        console.log("Found survey using surveyor code: {} Survey Context: {}", code, surveyContext);
-                        navigation.navigate('CodeConfirmationScreen', { surveyId: surveyContext.survey.id })
-                    }
-                    catch (e) {
-                        console.error("Error fetching survey by id {}", e)
+                        console.log(`Found survey using surveyor code: ${code}. Survey Context:`, surveyContext);
+                        navigation.navigate('CodeConfirmationScreen', { surveyId: surveyContext.survey.id });
+                    } catch (e) {
+                        console.error(`Error joining survey for surveyor code ${code}:`, e);
                     }
                 }
                 }
