@@ -13,7 +13,7 @@ type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
 export function AddSurveyorScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
-    let surveyorCount = 1;
+    const surveyorCount = 1;
 
     //TODO : add functionality to add more surveyors
     //TODO : implement bottom sheet to add surveyor location
