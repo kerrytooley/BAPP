@@ -27,7 +27,7 @@ export function AddSurveyorScreen(): React.JSX.Element {
                     <InputField placeholderText="Input Surveyor Name" />
                     <Button label="Add Surveyor Location" action='location' onPress={() => { }} />
                 </Card>
-                <InlineButton label="Add More Surveyors" onPress={() => { surveyorCount++ }} />
+                <InlineButton label="Add More Surveyors" onPress={() => { }} />
             </View>
             <ButtonGroup
                 variant="mixed"

@@ -52,17 +52,6 @@ export function CodeConfirmationScreen(
     );
 }
 
-function isSurvey(survey: Survey) {
-    if (survey &&
-        survey.id &&
-        survey.name &&
-        survey.postcode &&
-        survey.date) {
-        return true
-    }
-    return false
-}
-
 const styles = StyleSheet.create({
     screen: {
         ...screen.justifyScreen,
