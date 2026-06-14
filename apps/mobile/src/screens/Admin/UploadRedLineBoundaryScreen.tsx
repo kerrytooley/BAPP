@@ -5,7 +5,7 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { screen } from "@theme/screen"
 import React from "react"
 import { View } from "react-native"
-import { useSurveyService } from "../services/survey-service-context";
+import { useSurveyService } from "../../services/surveyServiceContext";
 import { Title } from "@components/Titles";
 import { Text } from "react-native";
 
@@ -25,7 +25,7 @@ export function UploadRedLineBoundaryScreen(): React.JSX.Element {
                 <Text style={{ color: "white" }}>TODO: Implement this</Text>
 
             </View>
-            <Button label="Continue" onPress={() => {
+            <Button label="Continue" variant='light' onPress={() => {
                 navigation.navigate('AddSurveyorScreen', { surveyId })
             }} />
         </View>

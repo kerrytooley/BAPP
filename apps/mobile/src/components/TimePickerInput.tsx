@@ -3,6 +3,7 @@ import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/dat
 import { useState } from "react";
 import { textStyles } from "@theme/fonts";
 import { colours } from "@theme/colours";
+import { formatTime } from "@utils/dateTimeUtils";
 
 export interface TimePickerInputProps {
     fieldLabel: string;
@@ -20,12 +21,13 @@ export const TimePickerInput = ({
     const [show, setShow] = useState(false);
 
     const handleChange = (_event: DateTimePickerEvent, selected?: Date) => {
-        setShow(false);
-        if (selected) onChange?.(selected);
+        if (selected) setTimeout(() => {
+            onChange?.(selected);
+        }, 150)
     };
 
     const displayValue = value
-        ? value.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+        ? formatTime(value)
         : 'HH:MM';
 
     return (
@@ -33,11 +35,11 @@ export const TimePickerInput = ({
             <View style={styles.inputTitle}>
                 <Text style={styles.inputTitleText}>{fieldLabel}</Text>
             </View>
-            <TouchableOpacity style={styles.inputBox} onPress={() => setShow(true)} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.inputBox} onPress={() => show == false ? setShow(true) : setShow(false)} activeOpacity={0.7}>
                 <Text style={[styles.inputText, !value && styles.placeholder]}>
                     {displayValue}
                 </Text>
-            </TouchableOpacity>
+            </TouchableOpacity >
             {show && (
                 <DateTimePicker
                     value={value ?? new Date()}
@@ -57,7 +59,7 @@ const styles = StyleSheet.create({
         width: '100%',
         minWidth: 360,
         paddingTop: 8,
-        alignItems: 'flex-start',
+        alignItems: 'center',
     },
     inputTitle: {
         paddingVertical: 8,

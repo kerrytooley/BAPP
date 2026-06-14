@@ -46,3 +46,27 @@ export const Grey: Story = {
   },
 };
 
+export const ActionAdd: Story = {
+  args: {
+    variant: 'dark',
+    label: 'Add Button',
+    action: 'add'
+  }
+}
+
+export const ActionLocation: Story = {
+  args: {
+    variant: 'dark',
+    label: 'Location Button',
+    action: 'location'
+  }
+}
+
+export const ActionArrow: Story = {
+  args: {
+    variant: 'dark',
+    label: 'Arrow Button',
+    action: 'right arrow'
+  }
+}
+

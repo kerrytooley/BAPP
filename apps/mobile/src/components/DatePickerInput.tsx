@@ -3,6 +3,7 @@ import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/dat
 import { useState } from "react";
 import { textStyles } from "@theme/fonts";
 import { colours } from "@theme/colours";
+import { formatDate } from "@utils/dateTimeUtils";
 
 export interface DatePickerInputProps {
     fieldLabel: string;
@@ -25,7 +26,7 @@ export const DatePickerInput = ({
     };
 
     const displayValue = value
-        ? value.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        ? formatDate(value)
         : 'DD/MM/YYYY';
 
     return (
@@ -33,7 +34,7 @@ export const DatePickerInput = ({
             <View style={styles.inputTitle}>
                 <Text style={styles.inputTitleText}>{fieldLabel}</Text>
             </View>
-            <TouchableOpacity style={styles.inputBox} onPress={() => setShow(true)} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.inputBox} onPress={() => show == false ? setShow(true) : setShow(false)} activeOpacity={0.7}>
                 <Text style={[styles.inputText, !value && styles.placeholder]}>
                     {displayValue}
                 </Text>

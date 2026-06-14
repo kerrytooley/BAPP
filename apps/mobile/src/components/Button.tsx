@@ -2,11 +2,14 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { fonts, textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';
+import MapPin from '@assets/images/mapPin.svg';
+import Plus from '@assets/images/plus.svg';
+import RightArrow from '@assets/images/rightArrow.svg';
 
 export interface ButtonProps {
   variant?: 'dark' | 'light' | 'grey';
   size?: 'medium' | 'large';
-  action?: 'add'
+  action?: 'add' | 'right arrow' | 'location'
   label: string;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
@@ -28,31 +31,20 @@ export const Button = ({
 }: ButtonProps) => {
   const modeStyle = styles[variant];
   const textModeStyle = styles[`${variant}Text` as keyof typeof styles];
-
   const sizeStyle = styles[size];
   const textSizeStyle = textSizeStyles[size];
 
-  const isAdd = action === "add";
-
   return (
     <TouchableOpacity accessibilityRole="button" activeOpacity={0.6} onPress={onPress}>
-      <View
-        style={[
-          styles.button,
-          modeStyle,
-          sizeStyle,
-          style,
-        ]}
-      >
+      <View style={[styles.button, modeStyle, sizeStyle, style]} >
         <Text style={[textStyles.buttonLabel, textModeStyle, textSizeStyle]}>{label}</Text>
-        {
-          isAdd && <Text style={styles.buttonActionText}>{'+'}</Text>
-        }
+        {action === "add" && <Plus style={styles.actionItem} />}
+        {action === "right arrow" && <RightArrow style={styles.actionItem} />}
+        {action === "location" && <MapPin style={styles.actionItem} />}
       </View>
     </TouchableOpacity>
   );
 };
-
 
 export const ButtonGroup = ({
   variant = 'dark',
@@ -92,6 +84,17 @@ export const BackButton = ({
       <Text style={styles.backButtonText}>{'←'}</Text>
     </TouchableOpacity>
   );
+}
+
+export const InlineButton = ({
+  label,
+  onPress
+}: ButtonProps) => {
+  return (
+    <TouchableOpacity accessibilityRole="button" onPress={onPress} >
+      <Text style={styles.inlineButtonText}>{label}</Text>
+    </TouchableOpacity>
+  )
 }
 
 const styles = StyleSheet.create({
@@ -146,6 +149,10 @@ const styles = StyleSheet.create({
   largeText: {
     fontSize: 16,
   },
+  actionItem: {
+    position: 'absolute',
+    right: 16
+  },
   buttonGroup: {
     gap: 16
   },
@@ -155,8 +162,12 @@ const styles = StyleSheet.create({
     left: 24,
   },
   backButtonText: {
-    color: '#FFF',
+    color: colours.light,
     fontSize: fonts.size.xl
+  },
+  inlineButtonText: {
+    ...textStyles.subtitle,
+    color: colours.light,
   }
 });
 

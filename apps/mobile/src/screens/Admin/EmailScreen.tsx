@@ -7,7 +7,7 @@ import { InputField } from "@components/InputField";
 import { BackButton, Button } from "@components/Button";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
-import { useSurveyService } from "../services/survey-service-context";
+import { useSurveyService } from "../../services/surveyServiceContext";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
@@ -45,11 +45,10 @@ export function EmailScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
     screen: {
         ...screen.justifyScreen,
-        paddingTop: 160
+        paddingTop: 120
     },
     content: {
+        ...screen.content,
         gap: 80,
-        width: '100%',
-        alignItems: 'center',
     }
 })

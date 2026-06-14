@@ -9,7 +9,7 @@ import { StyleSheet, View } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
-import { useSurveyService } from "../services/survey-service-context";
+import { useSurveyService } from "../../services/surveyServiceContext";
 import { DatePickerInput } from "@components/DatePickerInput";
 import { TimePickerInput } from "@components/TimePickerInput";
 
@@ -22,10 +22,10 @@ export function CreateSurvey(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const [name, setName] = useState('');
     const [postcode, setPostcode] = useState('');
-    const [date, setDate] = useState(new Date());
-    const [startTime, setStartTime] = useState(new Date());
-    const [endTime, setEndTime] = useState(new Date());
-    const [sunsetTime, setSunsetTime] = useState(new Date());
+    const [date, setDate] = useState<Date | undefined>(undefined);
+    const [startTime, setStartTime] = useState<Date | undefined>(undefined);
+    const [endTime, setEndTime] = useState<Date | undefined>(undefined);
+    const [sunsetTime, setSunsetTime] = useState<Date | undefined>(undefined);
 
     return (
         <View style={styles.screen}>
@@ -56,6 +56,7 @@ export function CreateSurvey(): React.JSX.Element {
 
 const styles = StyleSheet.create({
     screen: {
-        ...screen.justifyScreen
+        ...screen.justifyScreen,
+        overflow: "scroll"
     }
 });

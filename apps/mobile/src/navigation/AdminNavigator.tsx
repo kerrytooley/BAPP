@@ -1,9 +1,9 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
-import { BeginOrContinueSurveyScreen } from "@screens/BeginOrContinueSurveyScreen";
-import { CreateSurvey } from "@screens/CreateSurvey";
-import { EmailScreen } from "@screens/EmailScreen";
-import { UploadRedLineBoundaryScreen } from "@screens/UploadRedLineBoundaryScreen"
-import { AddSurveyorScreen } from "@screens/AddSurveyorScreen";
+import { BeginOrContinueSurveyScreen } from "@screens/Admin/BeginOrContinueSurveyScreen";
+import { CreateSurvey } from "@screens/Admin/CreateSurvey";
+import { EmailScreen } from "@screens/Admin/EmailScreen";
+import { UploadRedLineBoundaryScreen } from "@screens/Admin/UploadRedLineBoundaryScreen"
+import { AddSurveyorScreen } from "@screens/Admin/AddSurveyorScreen";
 
 export type AdminStackParamList = {
     BeginOrContinueSurveyScreen: undefined;

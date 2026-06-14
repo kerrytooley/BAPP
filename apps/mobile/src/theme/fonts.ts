@@ -12,6 +12,7 @@ export const fonts = {
         md: 16,
         lg: 18,
         xl: 24,
+        xxl: 48
     },
 } as const;
 
@@ -60,7 +61,7 @@ export const textStyles = {
     },
     title: {
         fontSize: fonts.size.xl,
-        lineHeight: 24,
+        lineHeight: 36,
         fontFamily: fonts.family.semiBold,
         color: colours.light,
         textAlign: "center"

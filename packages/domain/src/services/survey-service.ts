@@ -19,7 +19,7 @@ export class SurveyService {
     private readonly observationRepository: ObservationRepository,
     private readonly mediaRepository: MediaRepository,
     private readonly validator: SurveyValidator,
-  ) {}
+  ) { }
 
   // --- Entry points ---
 
@@ -70,7 +70,7 @@ export class SurveyService {
   async addLocation(surveyId: string, input: Omit<CreateLocationInput, 'surveyId'>): Promise<Location> {
     const location = await this.locationRepository.create({ surveyId, ...input });
     try {
-      await this.withContext(surveyId, { type: 'location', locationId: location.id }, () => {});
+      await this.withContext(surveyId, { type: 'location', locationId: location.id }, () => { });
       return location;
     } catch (e) {
       await this.locationRepository.delete(location.id);
@@ -105,7 +105,7 @@ export class SurveyService {
   async addSurveyor(surveyId: string, input: Omit<CreateSurveyorInput, 'surveyId'>): Promise<Surveyor> {
     const surveyor = await this.surveyorRepository.create({ surveyId, ...input });
     try {
-      await this.withContext(surveyId, { type: 'surveyor', surveyorId: surveyor.id }, () => {});
+      await this.withContext(surveyId, { type: 'surveyor', surveyorId: surveyor.id }, () => { });
       return surveyor;
     } catch (e) {
       await this.surveyorRepository.delete(surveyor.id);
@@ -140,7 +140,7 @@ export class SurveyService {
   async addObservation(input: CreateObservationInput): Promise<Observation> {
     const observation = await this.observationRepository.create(input);
     try {
-      await this.withContext(input.surveyId, { type: 'observation', observationId: observation.id }, () => {});
+      await this.withContext(input.surveyId, { type: 'observation', observationId: observation.id }, () => { });
       return observation;
     } catch (e) {
       await this.observationRepository.delete(observation.id);

@@ -53,7 +53,6 @@ export const InputField = ({
 const styles = StyleSheet.create({
     inputField: {
         width: "100%",
-
         alignItems: "flex-start"
     },
     inputTitle: {

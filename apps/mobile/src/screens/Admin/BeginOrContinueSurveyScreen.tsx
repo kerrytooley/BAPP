@@ -6,7 +6,7 @@ import { StyleSheet, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
-import { useSurveyService } from "../services/survey-service-context";
+import { useSurveyService } from "../../services/surveyServiceContext";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
