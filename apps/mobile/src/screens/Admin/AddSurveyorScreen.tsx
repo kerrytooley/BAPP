@@ -13,7 +13,7 @@ type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
 export function AddSurveyorScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
-    var surveyorCount = 1;
+    let surveyorCount = 1;
 
     //TODO : add functionality to add more surveyors
     //TODO : implement bottom sheet to add surveyor location
@@ -29,7 +29,11 @@ export function AddSurveyorScreen(): React.JSX.Element {
                 </Card>
                 <InlineButton label="Add More Surveyors" onPress={() => { surveyorCount++ }} />
             </View>
-            <ButtonGroup variant="mixed" labels={['Continue', 'Skip']} onPress={[() => { }, () => { }]} />
+            <ButtonGroup
+                variant="mixed"
+                labels={['Continue', 'Skip']}
+                onPress={[() => { }, () => { }]}
+            />
         </View>
     );
 }

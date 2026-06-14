@@ -18,6 +18,7 @@ export interface ButtonProps {
 export interface ButtonGroupProps {
   variant?: 'mixed' | 'dark' | 'light';
   labels: Array<string>;
+  actions?: Array<"add" | "location" | "right arrow">;
   onPress: Array<() => void>
 }
 
@@ -49,6 +50,7 @@ export const Button = ({
 export const ButtonGroup = ({
   variant = 'dark',
   labels,
+  actions,
   onPress
 }: ButtonGroupProps) => {
 
@@ -64,6 +66,7 @@ export const ButtonGroup = ({
         <Button
           key={`${label}-${index}`}
           label={label}
+          action={actions?.[index]}
           variant={buttonVariant(index)}
           onPress={onPress[index]}
         />
@@ -74,7 +77,7 @@ export const ButtonGroup = ({
 
 export interface BackButtonProps {
   navigation: { goBack: () => void };
-};
+}
 
 export const BackButton = ({
   navigation
@@ -158,7 +161,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 60,
+    top: 50,
     left: 24,
   },
   backButtonText: {

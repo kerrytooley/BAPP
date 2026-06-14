@@ -1,7 +1,5 @@
 import { colours } from "@theme/colours";
 import { fonts } from "@theme/fonts";
-import { screen } from "@theme/screen";
-import { useState } from "react";
 import { StyleSheet, TextInput, View } from "react-native";
 
 export interface CodeInputProps {

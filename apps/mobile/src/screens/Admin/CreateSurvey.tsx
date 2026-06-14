@@ -1,15 +1,13 @@
 import { BackButton, Button } from "@components/Button";
-import { DateInput } from "@components/DateInput";
 import { InputField } from "@components/InputField";
-import { TimeInput } from "@components/TimeInput";
 import { Title } from "@components/Titles";
 import { screen } from "@theme/screen";
-import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useRef, useState } from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
-import { useSurveyService } from "../../services/surveyServiceContext";
+import { useSurveyService } from "@services/surveyServiceContext";
 import { DatePickerInput } from "@components/DatePickerInput";
 import { TimePickerInput } from "@components/TimePickerInput";
 
@@ -27,18 +25,37 @@ export function CreateSurvey(): React.JSX.Element {
     const [endTime, setEndTime] = useState<Date | undefined>(undefined);
     const [sunsetTime, setSunsetTime] = useState<Date | undefined>(undefined);
 
+    const scrollRef = useRef<ScrollView>(null);
+    const fieldY = useRef<Record<string, number>>({});
+
+    const scrollToField = (key: string) => {
+        const y = fieldY.current[key];
+        if (y == null) return;
+        setTimeout(() => {
+            scrollRef.current?.scrollTo({ y: Math.max(y - 16, 0), animated: true });
+        }, 100);
+    };
+
     return (
         <View style={styles.screen}>
             <BackButton navigation={navigation} />
-            <View style={screen.content}>
+            <ScrollView ref={scrollRef} style={{ width: "100%" }} contentContainerStyle={screen.content} keyboardShouldPersistTaps="handled">
                 <Title title="Create Survey" />
                 <InputField fieldLabel="Survey Name" placeholderText="Input survey name" value={name} onChangeText={setName} />
                 <InputField fieldLabel="Survey Postcode" placeholderText="Input survey postcode" value={postcode} onChangeText={setPostcode} />
-                <DatePickerInput fieldLabel="SurveyDate" value={date} onChange={setDate} />
-                <TimePickerInput fieldLabel="Start Time" value={startTime} onChange={setStartTime} />
-                <TimePickerInput fieldLabel="End Time" value={endTime} onChange={setEndTime} />
-                <TimePickerInput fieldLabel="Sunrise/Sunset Time" value={sunsetTime} onChange={setSunsetTime} />
-            </View>
+                <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.date = e.nativeEvent.layout.y; }}>
+                    <DatePickerInput fieldLabel="Survey Date" value={date} onChange={setDate} onOpen={() => scrollToField("date")} />
+                </View>
+                <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.start = e.nativeEvent.layout.y; }}>
+                    <TimePickerInput fieldLabel="Start Time" value={startTime} onChange={setStartTime} onOpen={() => scrollToField("start")} />
+                </View>
+                <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.end = e.nativeEvent.layout.y; }}>
+                    <TimePickerInput fieldLabel="End Time" value={endTime} onChange={setEndTime} onOpen={() => scrollToField("end")} />
+                </View>
+                <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.sunset = e.nativeEvent.layout.y; }}>
+                    <TimePickerInput fieldLabel="Sunrise/Sunset Time" value={sunsetTime} onChange={setSunsetTime} onOpen={() => scrollToField("sunset")} />
+                </View>
+            </ScrollView>
             <Button variant="light" label="Continue" onPress={() => {
                 try {
                     service.updateSurvey(surveyId, {
@@ -57,6 +74,5 @@ export function CreateSurvey(): React.JSX.Element {
 const styles = StyleSheet.create({
     screen: {
         ...screen.justifyScreen,
-        overflow: "scroll"
     }
 });

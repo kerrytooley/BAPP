@@ -21,4 +21,4 @@ export function RootNavigator() {
             <Stack.Screen name="Surveyor" component={SurveyorNavigator} />
         </Stack.Navigator>
     );
-};
+}

@@ -9,6 +9,7 @@ export interface TimePickerInputProps {
     fieldLabel: string;
     value?: Date;
     onChange?: (time: Date) => void;
+    onOpen?: () => void;
     style?: StyleProp<ViewStyle>;
 }
 
@@ -16,9 +17,18 @@ export const TimePickerInput = ({
     fieldLabel,
     value,
     onChange,
+    onOpen,
     style,
 }: TimePickerInputProps) => {
     const [show, setShow] = useState(false);
+
+    const toggleShow = () => {
+        setShow((prev) => {
+            const next = !prev;
+            if (next) onOpen?.();
+            return next;
+        });
+    };
 
     const handleChange = (_event: DateTimePickerEvent, selected?: Date) => {
         if (selected) setTimeout(() => {
@@ -35,7 +45,7 @@ export const TimePickerInput = ({
             <View style={styles.inputTitle}>
                 <Text style={styles.inputTitleText}>{fieldLabel}</Text>
             </View>
-            <TouchableOpacity style={styles.inputBox} onPress={() => show == false ? setShow(true) : setShow(false)} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.inputBox} onPress={toggleShow} activeOpacity={0.7}>
                 <Text style={[styles.inputText, !value && styles.placeholder]}>
                     {displayValue}
                 </Text>
@@ -58,7 +68,7 @@ const styles = StyleSheet.create({
     field: {
         width: '100%',
         minWidth: 360,
-        paddingTop: 8,
+
         alignItems: 'center',
     },
     inputTitle: {

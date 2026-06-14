@@ -9,6 +9,7 @@ export interface DatePickerInputProps {
     fieldLabel: string;
     value?: Date;
     onChange?: (date: Date) => void;
+    onOpen?: () => void;
     style?: StyleProp<ViewStyle>;
 }
 
@@ -16,9 +17,18 @@ export const DatePickerInput = ({
     fieldLabel,
     value,
     onChange,
+    onOpen,
     style,
 }: DatePickerInputProps) => {
     const [show, setShow] = useState(false);
+
+    const toggleShow = () => {
+        setShow((prev) => {
+            const next = !prev;
+            if (next) onOpen?.();
+            return next;
+        });
+    };
 
     const handleChange = (_event: DateTimePickerEvent, selected?: Date) => {
         setShow(false);
@@ -34,7 +44,7 @@ export const DatePickerInput = ({
             <View style={styles.inputTitle}>
                 <Text style={styles.inputTitleText}>{fieldLabel}</Text>
             </View>
-            <TouchableOpacity style={styles.inputBox} onPress={() => show == false ? setShow(true) : setShow(false)} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.inputBox} onPress={toggleShow} activeOpacity={0.7}>
                 <Text style={[styles.inputText, !value && styles.placeholder]}>
                     {displayValue}
                 </Text>
@@ -56,7 +66,7 @@ const styles = StyleSheet.create({
     field: {
         width: '100%',
         minWidth: 360,
-        paddingTop: 8,
+
         alignItems: 'flex-start',
     },
     inputTitle: {
