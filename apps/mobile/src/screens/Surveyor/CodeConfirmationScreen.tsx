@@ -22,8 +22,12 @@ export function CodeConfirmationScreen(
 
     useEffect(() => {
         const loadSurvey = async () => {
-            const { survey } = await service.getSurveyContext(surveyId);
-            setSurvey(survey);
+            try {
+                const { survey } = await service.getSurveyContext(surveyId);
+                setSurvey(survey);
+            } catch (e) {
+                console.error('getSurveyContext failed:', e);
+            }
         };
 
         loadSurvey();

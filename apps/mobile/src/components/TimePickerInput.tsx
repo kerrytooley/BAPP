@@ -30,10 +30,13 @@ export const TimePickerInput = ({
         });
     };
 
-    const handleChange = (_event: DateTimePickerEvent, selected?: Date) => {
-        if (selected) setTimeout(() => {
-            onChange?.(selected);
-        }, 150)
+    const handleChange = (event: DateTimePickerEvent, selected?: Date) => {
+        if (event.type === 'dismissed') {
+            setShow(false);
+            return;
+        }
+        setShow(false);
+        if (selected) onChange?.(selected);
     };
 
     const displayValue = value

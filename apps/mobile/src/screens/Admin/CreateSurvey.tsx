@@ -56,17 +56,25 @@ export function CreateSurvey(): React.JSX.Element {
                     <TimePickerInput fieldLabel="Sunrise/Sunset Time" value={sunsetTime} onChange={setSunsetTime} onOpen={() => scrollToField("sunset")} />
                 </View>
             </ScrollView>
-            <Button variant="light" label="Continue" onPress={() => {
-                try {
-                    service.updateSurvey(surveyId, {
-                        name: name, postcode: postcode, date: date, startTime: startTime, endTime: endTime, sunsetTime: sunsetTime
-                    })
-                        .then((survey) => console.log('Updating create survey details:', survey))
-                    navigation.navigate('UploadRedLineBoundaryScreen', { surveyId })
-                } catch (e) {
-                    console.error('Error updating create survey fields: ', e)
-                }
-            }} />
+            <Button
+                variant="light"
+                label="Continue"
+                onPress={async () => {
+                    try {
+                        await service.updateSurvey(surveyId, {
+                            name,
+                            postcode,
+                            date: date ?? null,
+                            startTime: startTime ?? null,
+                            endTime: endTime ?? null,
+                            sunsetTime: sunsetTime ?? null,
+                        });
+                        navigation.navigate('UploadRedLineBoundaryScreen', { surveyId });
+                    } catch (e) {
+                        console.error('Error updating create survey fields: ', e);
+                    }
+                }}
+            />
         </View>
     );
 }
