@@ -1,12 +1,12 @@
-import { View } from "react-native";
-import { colours } from "@theme/colours";
-import { textStyles } from "@theme/fonts";
-import { StyleProp, StyleSheet, ViewStyle, Text } from "react-native";
+import type { ReactNode } from 'react';
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { colours } from '@theme/colours';
+import { textStyles } from '@theme/fonts';
 
 export interface CardProps {
-    cardLabel: string
-    children?: React.ReactNode
-    style?: StyleProp<ViewStyle>
+    cardLabel: string;
+    children?: ReactNode;
+    style?: StyleProp<ViewStyle>;
 }
 
 export const Card = ({

@@ -83,7 +83,7 @@ export const BackButton = ({
   navigation
 }: BackButtonProps) => {
   return (
-    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={styles.backButton} onPress={() => navigation.goBack()}>
       <Text style={styles.backButtonText}>{'←'}</Text>
     </TouchableOpacity>
   );
@@ -112,10 +112,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-  },
-  buttonActionText: {
-    fontSize: fonts.size.xl,
-    color: colours.light,
   },
   dark: {
     backgroundColor: colours.dark,
