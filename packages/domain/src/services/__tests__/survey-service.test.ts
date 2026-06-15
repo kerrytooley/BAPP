@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { SurveyService } from '../survey-service';
 import { NoOpValidator } from '../../validation';
 import { ValidationError } from '../../validation-error';

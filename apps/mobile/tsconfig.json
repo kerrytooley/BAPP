@@ -24,7 +24,13 @@
       ],
       "@navigators/*": [
         "../../apps/mobile/src/navigation/*"
-      ]
+      ],
+      "@services/*": [
+        "../../apps/mobile/src/services/*"
+      ],
+      "@utils/*": [
+        "../../apps/mobile/src/utils/*"
+      ],
     }
   },
   "include": [

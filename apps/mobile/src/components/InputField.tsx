@@ -5,7 +5,7 @@ import { colours } from '@theme/colours';
 export interface InputFieldProps {
     variant?: 'primary' | 'unit';
     size?: 'standard' | 'large';
-    fieldLabel: string;
+    fieldLabel?: string;
     placeholderText: string;
     value?: string;
     unit?: string;
@@ -29,9 +29,11 @@ export const InputField = ({
 
     return (
         <View style={[styles.inputField, style]}>
-            <View style={styles.inputTitle}>
-                <Text style={styles.inputTitleText}>{fieldLabel}</Text>
-            </View>
+            {fieldLabel &&
+                < View style={styles.inputTitle}>
+                    <Text style={styles.inputTitleText}>{fieldLabel}</Text>
+                </View>
+            }
             <View style={[styles.inputBox, isLarge && styles.large, isLarge && styles.topAlign]}>
                 <TextInput
                     style={[styles.inputText, isLarge && styles.inputTextLarge]}
@@ -50,10 +52,7 @@ export const InputField = ({
 
 const styles = StyleSheet.create({
     inputField: {
-        flex: 1,
         width: "100%",
-        minWidth: 360,
-        paddingTop: 8,
         alignItems: "flex-start"
     },
     inputTitle: {

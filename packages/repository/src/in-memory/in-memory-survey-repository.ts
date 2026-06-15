@@ -13,14 +13,30 @@ import type {
 let nextId = 1;
 
 export class InMemorySurveyRepository implements SurveyRepository {
-  private store = new Map<string, Survey>();
+  private store = new Map<string, Survey>().set('bift', {
+    id: 'bift',
+    adminCode: 'ABCDEF',
+    surveyorCode: '123456',
+    name: 'BERS Survey 1',
+    postcode: 'HW17 4TR',
+    date: new Date,
+    sunsetTime: new Date,
+    startTime: new Date,
+    endTime: new Date,
+    boundaryImageRef: null,
+    status: 'draft',
+    weather: {},
+    data: {},
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
   private listeners = new Map<string, Set<(survey: Survey | null) => void>>();
 
   constructor(
     private readonly locationRepository?: LocationRepository,
     private readonly surveyorRepository?: SurveyorRepository,
     private readonly observationRepository?: ObservationRepository,
-  ) {}
+  ) { }
 
   async create(input: CreateSurveyInput): Promise<Survey> {
     const now = new Date();

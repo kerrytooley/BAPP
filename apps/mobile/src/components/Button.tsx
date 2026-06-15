@@ -1,16 +1,16 @@
 import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { textStyles } from '@theme/fonts';
+import { fonts, textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';
+import MapPin from '@assets/images/mapPin.svg';
+import Plus from '@assets/images/plus.svg';
+import RightArrow from '@assets/images/rightArrow.svg';
 
 export interface ButtonProps {
-  /** Visual style variant */
   variant?: 'dark' | 'light' | 'grey';
-  /** Size variant */
   size?: 'medium' | 'large';
-  /** Button contents */
+  action?: 'add' | 'right arrow' | 'location'
   label: string;
-  /** Optional click handler */
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 }
@@ -18,33 +18,30 @@ export interface ButtonProps {
 export interface ButtonGroupProps {
   variant?: 'mixed' | 'dark' | 'light';
   labels: Array<string>;
+  actions?: Array<"add" | "location" | "right arrow">;
   onPress: Array<() => void>
 }
 
 export const Button = ({
   variant = 'dark',
   size = 'large',
+  action,
   label,
   style,
   onPress,
 }: ButtonProps) => {
   const modeStyle = styles[variant];
   const textModeStyle = styles[`${variant}Text` as keyof typeof styles];
-
   const sizeStyle = styles[size];
   const textSizeStyle = textSizeStyles[size];
 
   return (
     <TouchableOpacity accessibilityRole="button" activeOpacity={0.6} onPress={onPress}>
-      <View
-        style={[
-          styles.button,
-          modeStyle,
-          sizeStyle,
-          style,
-        ]}
-      >
+      <View style={[styles.button, modeStyle, sizeStyle, style]} >
         <Text style={[textStyles.buttonLabel, textModeStyle, textSizeStyle]}>{label}</Text>
+        {action === "add" && <Plus style={styles.actionItem} />}
+        {action === "right arrow" && <RightArrow style={styles.actionItem} />}
+        {action === "location" && <MapPin style={styles.actionItem} />}
       </View>
     </TouchableOpacity>
   );
@@ -53,6 +50,7 @@ export const Button = ({
 export const ButtonGroup = ({
   variant = 'dark',
   labels,
+  actions,
   onPress
 }: ButtonGroupProps) => {
 
@@ -68,6 +66,7 @@ export const ButtonGroup = ({
         <Button
           key={`${label}-${index}`}
           label={label}
+          action={actions?.[index]}
           variant={buttonVariant(index)}
           onPress={onPress[index]}
         />
@@ -76,11 +75,36 @@ export const ButtonGroup = ({
   )
 }
 
+export interface BackButtonProps {
+  navigation: { goBack: () => void };
+}
+
+export const BackButton = ({
+  navigation
+}: BackButtonProps) => {
+  return (
+    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={styles.backButton} onPress={() => navigation.goBack()}>
+      <Text style={styles.backButtonText}>{'←'}</Text>
+    </TouchableOpacity>
+  );
+}
+
+export const InlineButton = ({
+  label,
+  onPress
+}: ButtonProps) => {
+  return (
+    <TouchableOpacity accessibilityRole="button" onPress={onPress} >
+      <Text style={styles.inlineButtonText}>{label}</Text>
+    </TouchableOpacity>
+  )
+}
+
 const styles = StyleSheet.create({
   button: {
     borderRadius: 48,
     width: "100%",
-    minWidth: 360,
+    minWidth: '100%',
     height: 48,
     borderStyle: "solid",
     borderWidth: 1,
@@ -124,8 +148,25 @@ const styles = StyleSheet.create({
   largeText: {
     fontSize: 16,
   },
+  actionItem: {
+    position: 'absolute',
+    right: 16
+  },
   buttonGroup: {
     gap: 16
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 24,
+  },
+  backButtonText: {
+    color: colours.light,
+    fontSize: fonts.size.xl
+  },
+  inlineButtonText: {
+    ...textStyles.subtitle,
+    color: colours.light,
   }
 });
 

@@ -12,6 +12,7 @@ export const fonts = {
         md: 16,
         lg: 18,
         xl: 24,
+        xxl: 48
     },
 } as const;
 
@@ -29,10 +30,23 @@ export const textStyles = {
         fontWeight: '600',
         letterSpacing: 0.6,
         lineHeight: 24,
+        textTransform: "uppercase",
+        color: colours.inputTitle,
+        textAlign: "left"
     },
     inputText: {
         fontFamily: fonts.family.body,
         fontSize: fonts.size.md,
+        fontWeight: '400',
+        letterSpacing: 0,
+        textAlign: 'left',
+    },
+    dateTimeInputText: {
+        fontFamily: fonts.family.semiBold,
+        fontSize: fonts.size.md,
+        fontWeight: '600',
+        letterSpacing: 4,
+        textAlign: "center"
     },
     unit: {
         fontFamily: fonts.family.semiBold,
@@ -47,7 +61,7 @@ export const textStyles = {
     },
     title: {
         fontSize: fonts.size.xl,
-        lineHeight: 24,
+        lineHeight: 36,
         fontFamily: fonts.family.semiBold,
         color: colours.light,
         textAlign: "center"

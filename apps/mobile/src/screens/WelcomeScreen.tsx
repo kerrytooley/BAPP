@@ -24,7 +24,7 @@ export function WelcomeScreen(): React.JSX.Element {
                     'Join as Surveyor']}
                 onPress={[
                     () => navigation.navigate('Admin'),
-                    () => { }
+                    () => navigation.navigate('Surveyor')
                 ]}
             />
             <Text style={styles.bappLogo}>BAPP</Text>
