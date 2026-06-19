@@ -22,6 +22,6 @@ export const screen: { baseScreen: ViewStyle, justifyScreen: ViewStyle, content:
     content: {
         width: '100%',
         alignItems: 'center',
-        gap: 8
+        gap: 8,
     }
 }
