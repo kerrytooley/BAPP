@@ -1,12 +1,10 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { screen } from "@theme/screen";
 import { textStyles } from "@theme/fonts";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootNavigator, RouteProp, useNavigation, useRoute } from "@react-navigation/native";
-import { AdminStackParamList } from "@navigators/AdminNavigator";
-import { BeginOrContinueSurveyScreen } from "./BeginOrContinueSurveyScreen";
-import { BackButton } from "@components/Button";
+import { useNavigation } from "@react-navigation/native";
+import { BackButton, Button } from "@components/Button";
 import { RootStackParamList } from "@navigators/index";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -19,13 +17,11 @@ export function SurveySavedScreen(): React.JSX.Element {
         <View style={screen.justifyScreen}>
             <View style={styles.header}>
                 <BackButton navigation={navigation} />
-                <TouchableOpacity onPress={() => navigation.navigate("Welcome")} >
-                    <Text style={textStyles.subtitle}>Close</Text>
-                </TouchableOpacity>
             </View>
             <View style={styles.content} >
                 <Text style={textStyles.title}>Survey Saved!</Text>
             </View>
+            <Button label="Return Home" variant="light" onPress={() => navigation.navigate("Welcome")} />
         </View>
     )
 }

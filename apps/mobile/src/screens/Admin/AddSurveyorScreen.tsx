@@ -3,11 +3,14 @@ import { SurveyorCard } from "@components/SurveyorCard";
 import { Title } from "@components/Titles";
 import { screen } from "@theme/screen";
 import { ScrollView, StyleSheet, View } from "react-native";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { useSurveyService } from "@services/surveyServiceContext";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { BoundaryPosition, Location, Surveyor } from "@bapp/domain";
+import { AddLocationBottomSheet } from "@components/AddLocationBottomSheet";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
@@ -16,36 +19,73 @@ export function AddSurveyorScreen(): React.JSX.Element {
     const service = useSurveyService();
     const navigation = useNavigation<Nav>();
 
-    type SurveyorDraft = { id: number, name: string };
-    const [surveyors, setSurveyors] = useState<SurveyorDraft[]>([
-        { id: 0, name: "" },
-    ]);
+    const [surveyors, setSurveyors] = useState<Surveyor[]>([]);
+    const [locations, setLocations] = useState<Location[]>([]);
+    const [activeSurveyorId, setActiveSurveyorId] = useState<string | null>(null);
+    const [boundaryImageRef, setBoundaryImageRef] = useState<string | null>(null);
+    const sheetRef = useRef<BottomSheetModal>(null);
 
-    const nextId = useRef(1);
+    useEffect(() => {
+        const load = async () => {
+            const context = await service.getSurveyContext(surveyId);
+            setLocations(context.locations);
+            if (context.surveyors.length === 0) {
+                const lead = await service.addSurveyor(surveyId, { name: "", isLead: true });
+                setSurveyors([lead]);
+            } else {
+                setSurveyors(context.surveyors)
+            }
 
-    const isLead = (surveyor: SurveyorDraft) => surveyor.id == 0;
-    const addSurveyor = () => setSurveyors((prevSurveyorList) => [...prevSurveyorList, { id: nextId.current++, name: "" }]);
-    const updateName = (id: number, name: string) => setSurveyors((prev) => prev.map((s) => (s.id === id ? { ...s, name } : s)));
+        };
+        load().catch((e) => console.error("Failed to load surveyors", e));
+    }, [service, surveyId])
 
-    const createSurveyors = async () => {
-        try {
-            const { surveyors: existing } = await service.getSurveyContext(surveyId);
-            await Promise.all(existing.map((e) => service.removeSurveyor(e.id)));
-            await Promise.all(surveyors.map((s) =>
-                service.addSurveyor(surveyId, { name: s.name, isLead: isLead(s) })
-            ))
-            navigation.navigate('ReviewSurveyDetailsScreen', { surveyId })
-        }
-        catch (e) {
-            console.error("error adding surveyor", e);
-        }
-    }
+    useEffect(() => {
+        service.getBoundaryImageUrl(surveyId)
+            .then(setBoundaryImageRef)
+            .catch((e) => console.error("Failed to fetch boundary image", e));
+    }, [service, surveyId]);
 
-    const removeSurveyor = (id: number) => {
+    const isLead = (surveyor: Surveyor) => surveyor.isLead
+
+    const leadSurveyor = surveyors.find((surveyor) => surveyor.isLead);
+    const canContinue = (leadSurveyor?.name ?? "").trim().length > 0;
+    const activeSurveyor = surveyors.find((surveyor) => surveyor.id === activeSurveyorId);
+    const activePosition = locations.find((location) => location.id === activeSurveyor?.locationId)?.boundaryPosition ?? null;
+
+    const addSurveyor = async () => {
+        const newSurveyor = await service.addSurveyor(surveyId, { name: "", isLead: false });
+        setSurveyors((prevSurveyorList) => [...prevSurveyorList, newSurveyor]);
+    };
+
+    const removeSurveyor = async (id: string) => {
+        await service.removeSurveyor(id);
         setSurveyors((prevSurveyorList) => prevSurveyorList.filter((surveyor) => surveyor.id !== id));
     }
 
-    //TODO : implement bottom sheet to add surveyor location
+    const updateName = (id: string, name: string) => setSurveyors((prev) => prev.map((surveyor) => (surveyor.id === id ? { ...surveyor, name } : surveyor)));
+    const saveName = (id: string, name: string) => service.updateSurveyor(id, { name }).catch((e) => console.log("Error saving surveyor name", e))
+
+    const openLocationSheet = (surveyorId: string) => {
+        setActiveSurveyorId(surveyorId);
+        sheetRef.current?.present();
+    };
+
+    const saveLocation = async (position: BoundaryPosition) => {
+        const surveyor = surveyors.find((s) => s.id === activeSurveyorId);
+        if (!surveyor) return;
+
+        if (surveyor.locationId) {
+            const updatedLocation = await service.updateLocation(surveyor.locationId, { boundaryPosition: position });
+            setLocations((prev) => prev.map((location) => (location.id === updatedLocation.id ? updatedLocation : location)));
+        } else {
+            const location = await service.addLocation(surveyId, { boundaryPosition: position });
+            const updated = await service.updateSurveyor(surveyor.id, { locationId: location.id });
+            setSurveyors((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+            setLocations((prev) => [...prev, location]);
+        }
+        sheetRef.current?.dismiss();
+    }
 
     return (
         <View style={screen.justifyScreen}>
@@ -59,9 +99,12 @@ export function AddSurveyorScreen(): React.JSX.Element {
                         <SurveyorCard
                             key={surveyor.id}
                             isLead={isLead(surveyor)}
-                            name={surveyor.name}
+                            name={surveyor.name ?? ""}
                             onChangeName={(text) => updateName(surveyor.id, text)}
+                            onEndEditingName={() => saveName(surveyor.id, surveyor.name ?? "")}
+                            onAddLocation={() => openLocationSheet(surveyor.id)}
                             onClose={() => removeSurveyor(surveyor.id)}
+                            hasLocation={surveyor.locationId != null}
                         />
                     ))}
                     <InlineButton label="Add More Surveyors" onPress={addSurveyor} />
@@ -69,12 +112,18 @@ export function AddSurveyorScreen(): React.JSX.Element {
                 <ButtonGroup
                     variant="mixed"
                     labels={['Continue', 'Skip']}
+                    disabled={[!canContinue, false]}
                     onPress={[
-                        async () => {
-                            createSurveyors();
-                        },
+                        () => { navigation.navigate('ReviewSurveyDetailsScreen', { surveyId }) },
                         () => { navigation.navigate('ReviewSurveyDetailsScreen', { surveyId }) }
                     ]}
+                />
+                <AddLocationBottomSheet
+                    ref={sheetRef}
+                    boundaryImageRef={boundaryImageRef}
+                    isEditing={activeSurveyor?.locationId != null}
+                    initialPosition={activePosition}
+                    onChange={saveLocation}
                 />
             </ScrollView>
         </View>

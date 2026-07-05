@@ -35,7 +35,6 @@ export const TimePickerInput = ({
             setShow(false);
             return;
         }
-        setShow(false);
         if (selected) onChange?.(selected);
     };
 

@@ -104,7 +104,7 @@ export function ReviewSurveyDetailsScreen(): React.JSX.Element {
                     summaryRows={
                         getSurveyorArray()
                     } />
-                <Text style={textStyles.inputTitleText}>Red Line Boundary</Text>
+                <Text style={styles.summaryTitle}>Red Line Boundary</Text>
                 <DocumentPreview value={boundaryImage} />
             </ScrollView>
             <ButtonGroup variant="mixed" labels={[
@@ -128,5 +128,10 @@ const styles = StyleSheet.create({
         justifyContent: "flex-start",
         flexGrow: 1,
         paddingVertical: 16
+    },
+    summaryTitle: {
+        ...textStyles.inputTitleText,
+        textAlign: "left",
+        width: "100%"
     }
 })

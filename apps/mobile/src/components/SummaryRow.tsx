@@ -12,6 +12,7 @@ export interface SummaryRowProps {
 export interface SummaryGroupProps {
     groupTitle: string;
     summaryRows: Array<SummaryRowProps>;
+    key: string;
 }
 
 export const SummaryRow = ({
@@ -30,13 +31,13 @@ export const SummaryRow = ({
 
 export const SummaryGroup = ({
     groupTitle,
-    summaryRows
+    summaryRows,
 }: SummaryGroupProps) => {
     return (
         <View style={styles.summaryGroup} >
             <Text style={textStyles.inputTitleText}>{groupTitle}</Text>
-            {summaryRows.map(row =>
-                <SummaryRow label={row.label} value={row.value} />
+            {summaryRows.map((row, index) =>
+                <SummaryRow key={row.label + index} label={row.label} value={row.value} />
             )}
             <View style={styles.divider} />
         </View>

@@ -44,7 +44,7 @@ export const Button = ({
         <Text style={[textStyles.buttonLabel, textModeStyle, textSizeStyle]}>{label}</Text>
         {action === "add" && <Plus style={styles.actionItem} />}
         {action === "right arrow" && <RightArrow style={styles.actionItem} />}
-        {action === "location" && <MapPin style={styles.actionItem} />}
+        {action === "location" && <MapPin style={styles.actionItem} stroke={colours.light} strokeWidth={2} />}
       </View>
     </TouchableOpacity>
   );

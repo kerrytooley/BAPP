@@ -1,15 +1,14 @@
-import { BackButton } from "@components/Button";
+import { BackButton, Button } from "@components/Button";
 import { RootStackParamList } from "@navigators/index";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { screen } from "@theme/screen";
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { Title } from "@components/Titles";
 import { CodeShare } from "@components/CodeShare";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { useSurveyService } from "@services/surveyServiceContext";
-import { textStyles } from "@theme/fonts";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -36,15 +35,13 @@ export function ShareCodeScreen(): React.JSX.Element {
             <View style={{ width: "100%" }} >
                 <View style={styles.header}>
                     <BackButton navigation={navigation} />
-                    <TouchableOpacity onPress={() => navigation.navigate("Welcome")} >
-                        <Text style={textStyles.subtitle}>Done</Text>
-                    </TouchableOpacity>
                 </View>
                 <Title title="Share Your Survey Code" subtitle="Share this surveyor code with your team to invite them to the survey." />
             </View>
             <View style={styles.content} >
                 <CodeShare value={surveyorCode} />
             </View>
+            <Button label="Return Home" variant="light" onPress={() => navigation.navigate("Welcome")} />
         </View>
     )
 }

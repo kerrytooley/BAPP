@@ -30,8 +30,11 @@ export const DatePickerInput = ({
         });
     };
 
-    const handleChange = (_event: DateTimePickerEvent, selected?: Date) => {
-        setShow(false);
+    const handleChange = (event: DateTimePickerEvent, selected?: Date) => {
+        if (event.type === 'dismissed') {
+            setShow(false);
+            return;
+        }
         if (selected) onChange?.(selected);
     };
 
