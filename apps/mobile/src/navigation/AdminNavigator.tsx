@@ -5,6 +5,8 @@ import { EmailScreen } from "@screens/Admin/EmailScreen";
 import { UploadRedLineBoundaryScreen } from "@screens/Admin/UploadRedLineBoundaryScreen"
 import { AddSurveyorScreen } from "@screens/Admin/AddSurveyorScreen";
 import { ReviewSurveyDetailsScreen } from "@screens/Admin/ReviewSurveyDetailsScreen";
+import { SurveySavedScreen } from "@screens/Admin/SurveySavedScreen";
+import { ShareCodeScreen } from "@screens/Admin/ShareCodeScreen";
 
 export type AdminStackParamList = {
     BeginOrContinueSurveyScreen: undefined;
@@ -13,6 +15,8 @@ export type AdminStackParamList = {
     UploadRedLineBoundaryScreen: { surveyId: string };
     AddSurveyorScreen: { surveyId: string };
     ReviewSurveyDetailsScreen: { surveyId: string };
+    SurveySavedScreen: undefined;
+    ShareCodeScreen: { surveyId: string }
 };
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();
@@ -26,6 +30,8 @@ export function AdminNavigator() {
             <Stack.Screen name="UploadRedLineBoundaryScreen" component={UploadRedLineBoundaryScreen} />
             <Stack.Screen name="AddSurveyorScreen" component={AddSurveyorScreen} />
             <Stack.Screen name="ReviewSurveyDetailsScreen" component={ReviewSurveyDetailsScreen} />
+            <Stack.Screen name="SurveySavedScreen" component={SurveySavedScreen} />
+            <Stack.Screen name="ShareCodeScreen" component={ShareCodeScreen} />
         </Stack.Navigator>
     )
 }

@@ -5,11 +5,13 @@ import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { screen } from "@theme/screen";
 import React, { useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { Survey, Surveyor } from "@bapp/domain";
 import { formatTime } from "@utils/dateTimeUtils";
+import { DocumentPreview } from "@components/DocumentPreview";
+import { textStyles } from "@theme/fonts";
 
 // TODO: red line boundary summary
 
@@ -28,6 +30,7 @@ export function ReviewSurveyDetailsScreen(): React.JSX.Element {
 
     const [survey, setSurvey] = useState<Survey>();
     const [surveyors, setSurveyors] = useState<Surveyor[]>();
+    const [boundaryImage, setBoundaryImage] = useState<string | null>();
 
     useEffect(() => {
         const loadSurvey = async () => {
@@ -35,6 +38,8 @@ export function ReviewSurveyDetailsScreen(): React.JSX.Element {
                 const surveyContext = await service.getSurveyContext(surveyId);
                 setSurvey(surveyContext.survey);
                 setSurveyors(surveyContext.surveyors);
+                const imageUrl = await service.getBoundaryImageUrl(surveyId)
+                setBoundaryImage(imageUrl);
             } catch (e) {
                 console.error('failed to fetch survey', e)
             }
@@ -53,9 +58,12 @@ export function ReviewSurveyDetailsScreen(): React.JSX.Element {
 
     return (
         <View style={screen.justifyScreen}>
-            <BackButton navigation={navigation} />
-            <Title title="Review Survey Details" />
-            <View style={styles.content}>
+            <View style={{ width: "100%" }}>
+                <BackButton navigation={navigation} />
+                <Title title="Review Survey Details" />
+            </View>
+
+            <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
                 <SummaryGroup
                     key="survey"
                     groupTitle="Survey"
@@ -96,17 +104,29 @@ export function ReviewSurveyDetailsScreen(): React.JSX.Element {
                     summaryRows={
                         getSurveyorArray()
                     } />
-            </View>
-            <ButtonGroup variant="mixed" labels={["Complete Survey Setup", "Save for Later"]} onPress={[]} />
+                <Text style={textStyles.inputTitleText}>Red Line Boundary</Text>
+                <DocumentPreview value={boundaryImage} />
+            </ScrollView>
+            <ButtonGroup variant="mixed" labels={[
+                "Complete Survey Setup",
+                "Save for Later"]}
+                onPress={[
+                    () => navigation.navigate("ShareCodeScreen", { surveyId }),
+                    () => navigation.navigate("SurveySavedScreen")
+                ]} />
         </View>
     )
 }
 
 const styles = StyleSheet.create({
-    content: {
+    scroll: {
+        width: '100%',
+        flex: 1,
+    },
+    scrollContent: {
         ...screen.content,
         justifyContent: "flex-start",
-        flex: 1,
+        flexGrow: 1,
         paddingVertical: 16
     }
 })

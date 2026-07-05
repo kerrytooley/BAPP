@@ -22,7 +22,7 @@ function createService(validator?: SurveyValidator) {
     surveyRepo, locationRepo, surveyorRepo, observationRepo, mediaRepo,
     validator ?? new NoOpValidator(),
   );
-  return { service, surveyRepo, locationRepo, surveyorRepo, observationRepo };
+  return { service, surveyRepo, locationRepo, surveyorRepo, observationRepo, mediaRepo };
 }
 
 describe('SurveyService', () => {
@@ -118,6 +118,71 @@ describe('SurveyService', () => {
       const { service } = createService(validator);
       const survey = await service.createSurvey();
       await expect(service.updateSurvey(survey.id, { name: 'X' })).rejects.toThrow('bad');
+    });
+  });
+
+  describe('setBoundaryImage', () => {
+    const bytes = new Uint8Array([1, 2, 3, 4]);
+
+    it('uploads the image and stores the reference on the survey', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+
+      const updated = await service.setBoundaryImage(survey.id, 'boundary.png', bytes);
+
+      expect(updated.boundaryImageRef).toBe(`surveys/${survey.id}/boundary/boundary.png`);
+    });
+
+    it('persists the reference so it can be read back', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+
+      await service.setBoundaryImage(survey.id, 'boundary.png', bytes);
+
+      const ctx = await service.getSurveyContext(survey.id);
+      expect(ctx.survey.boundaryImageRef).toBe(`surveys/${survey.id}/boundary/boundary.png`);
+    });
+
+    it('deletes the previous image when replaced', async () => {
+      const { service, mediaRepo } = createService();
+      const survey = await service.createSurvey();
+
+      await service.setBoundaryImage(survey.id, 'first.png', bytes);
+      const firstRef = `surveys/${survey.id}/boundary/first.png`;
+
+      await service.setBoundaryImage(survey.id, 'second.png', bytes);
+
+      await expect(mediaRepo.getDownloadUrl(firstRef)).rejects.toThrow();
+      const ctx = await service.getSurveyContext(survey.id);
+      expect(ctx.survey.boundaryImageRef).toBe(`surveys/${survey.id}/boundary/second.png`);
+    });
+
+    it('does not delete when re-uploading the same file name', async () => {
+      const { service, mediaRepo } = createService();
+      const survey = await service.createSurvey();
+
+      await service.setBoundaryImage(survey.id, 'boundary.png', bytes);
+      const ref = `surveys/${survey.id}/boundary/boundary.png`;
+      await service.setBoundaryImage(survey.id, 'boundary.png', bytes);
+
+      await expect(mediaRepo.getDownloadUrl(ref)).resolves.toBe(`inmemory://${ref}`);
+    });
+  });
+
+  describe('getBoundaryImageUrl', () => {
+    it('returns null when no image is set', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      await expect(service.getBoundaryImageUrl(survey.id)).resolves.toBeNull();
+    });
+
+    it('returns a download url when an image is set', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      await service.setBoundaryImage(survey.id, 'boundary.png', new Uint8Array([1, 2, 3]));
+
+      const url = await service.getBoundaryImageUrl(survey.id);
+      expect(url).toBe(`inmemory://surveys/${survey.id}/boundary/boundary.png`);
     });
   });
 

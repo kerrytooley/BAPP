@@ -7,10 +7,11 @@ import Plus from '@assets/images/plus.svg';
 import RightArrow from '@assets/images/rightArrow.svg';
 
 export interface ButtonProps {
-  variant?: 'dark' | 'light' | 'grey';
+  variant?: 'dark' | 'light';
   size?: 'medium' | 'large';
   action?: 'add' | 'right arrow' | 'location'
   label: string;
+  disabled?: boolean;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 }
@@ -19,6 +20,7 @@ export interface ButtonGroupProps {
   variant?: 'mixed' | 'dark' | 'light';
   labels: Array<string>;
   actions?: Array<"add" | "location" | "right arrow">;
+  disabled?: Array<boolean>;
   onPress: Array<() => void>
 }
 
@@ -28,15 +30,16 @@ export const Button = ({
   action,
   label,
   style,
+  disabled,
   onPress,
 }: ButtonProps) => {
-  const modeStyle = styles[variant];
-  const textModeStyle = styles[`${variant}Text` as keyof typeof styles];
+  const modeStyle = disabled ? styles.disabled : styles[variant];
+  const textModeStyle = disabled ? styles.disabledText : styles[`${variant}Text` as keyof typeof styles];
   const sizeStyle = styles[size];
   const textSizeStyle = textSizeStyles[size];
 
   return (
-    <TouchableOpacity accessibilityRole="button" activeOpacity={0.6} onPress={onPress}>
+    <TouchableOpacity accessibilityRole="button" activeOpacity={0.6} onPress={disabled ? () => { } : onPress}>
       <View style={[styles.button, modeStyle, sizeStyle, style]} >
         <Text style={[textStyles.buttonLabel, textModeStyle, textSizeStyle]}>{label}</Text>
         {action === "add" && <Plus style={styles.actionItem} />}
@@ -51,6 +54,7 @@ export const ButtonGroup = ({
   variant = 'dark',
   labels,
   actions,
+  disabled,
   onPress
 }: ButtonGroupProps) => {
 
@@ -68,6 +72,7 @@ export const ButtonGroup = ({
           label={label}
           action={actions?.[index]}
           variant={buttonVariant(index)}
+          disabled={disabled?.[index]}
           onPress={onPress[index]}
         />
       ))}
@@ -127,11 +132,11 @@ const styles = StyleSheet.create({
   lightText: {
     color: colours.dark,
   },
-  grey: {
+  disabled: {
     backgroundColor: colours.inputBackground,
     borderColor: colours.buttonBorder,
   },
-  greyText: {
+  disabledText: {
     color: colours.dark,
   },
   medium: {
@@ -156,9 +161,7 @@ const styles = StyleSheet.create({
     gap: 16
   },
   backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 24,
+    justifyContent: "flex-start",
   },
   backButtonText: {
     color: colours.light,

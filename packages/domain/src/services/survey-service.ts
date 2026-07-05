@@ -65,6 +65,34 @@ export class SurveyService {
     return this.surveyRepository.update(surveyId, { status: 'completed' });
   }
 
+  // --- Media ---
+
+  async setBoundaryImage(
+    surveyId: string,
+    fileName: string,
+    data: ArrayBuffer | Uint8Array,
+  ): Promise<Survey> {
+    const { survey } = await this.surveyRepository.getSurveyContext(surveyId);
+    const previousRef = survey.boundaryImageRef;
+
+    const path = `surveys/${surveyId}/boundary/${fileName}`;
+    const reference = await this.mediaRepository.upload(path, data);
+
+    const updated = await this.updateSurvey(surveyId, { boundaryImageRef: reference });
+
+    if (previousRef && previousRef !== reference) {
+      await this.mediaRepository.delete(previousRef);
+    }
+
+    return updated;
+  }
+
+  async getBoundaryImageUrl(surveyId: string): Promise<string | null> {
+    const { survey } = await this.surveyRepository.getSurveyContext(surveyId);
+    if (!survey.boundaryImageRef) return null;
+    return this.mediaRepository.getDownloadUrl(survey.boundaryImageRef);
+  }
+
   // --- Locations ---
 
   async addLocation(surveyId: string, input: Omit<CreateLocationInput, 'surveyId'>): Promise<Location> {

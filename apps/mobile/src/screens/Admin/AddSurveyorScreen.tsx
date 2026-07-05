@@ -24,7 +24,7 @@ export function AddSurveyorScreen(): React.JSX.Element {
     const nextId = useRef(1);
 
     const isLead = (surveyor: SurveyorDraft) => surveyor.id == 0;
-    const addSurveyor = () => setSurveyors((prev) => [...prev, { id: nextId.current++, name: "" }]);
+    const addSurveyor = () => setSurveyors((prevSurveyorList) => [...prevSurveyorList, { id: nextId.current++, name: "" }]);
     const updateName = (id: number, name: string) => setSurveyors((prev) => prev.map((s) => (s.id === id ? { ...s, name } : s)));
 
     const createSurveyors = async () => {
@@ -41,12 +41,17 @@ export function AddSurveyorScreen(): React.JSX.Element {
         }
     }
 
+    const removeSurveyor = (id: number) => {
+        setSurveyors((prevSurveyorList) => prevSurveyorList.filter((surveyor) => surveyor.id !== id));
+    }
+
     //TODO : implement bottom sheet to add surveyor location
 
     return (
         <View style={screen.justifyScreen}>
-            <BackButton navigation={navigation} />
-
+            <View style={{ width: "100%" }}>
+                <BackButton navigation={navigation} />
+            </View>
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
                 <Title title="Add Surveyors" subtitle="Add the name and site location of each surveyor for this survey" />
                 <View style={styles.content} >
@@ -56,6 +61,7 @@ export function AddSurveyorScreen(): React.JSX.Element {
                             isLead={isLead(surveyor)}
                             name={surveyor.name}
                             onChangeName={(text) => updateName(surveyor.id, text)}
+                            onClose={() => removeSurveyor(surveyor.id)}
                         />
                     ))}
                     <InlineButton label="Add More Surveyors" onPress={addSurveyor} />

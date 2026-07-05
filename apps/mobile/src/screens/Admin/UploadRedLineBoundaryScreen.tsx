@@ -1,12 +1,14 @@
-import { BackButton, Button } from "@components/Button";
+import { BackButton, ButtonGroup } from "@components/Button";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { screen } from "@theme/screen"
-import React from "react"
-import { View, Text } from "react-native"
+import React, { useState } from "react"
+import { View, StyleSheet } from "react-native"
 import { useSurveyService } from "@services/surveyServiceContext";
 import { Title } from "@components/Titles";
+import { DocumentUpload } from "@components/DocumentUpload";
+import * as FileSystem from "expo-file-system";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
@@ -14,18 +16,46 @@ export function UploadRedLineBoundaryScreen(): React.JSX.Element {
     const service = useSurveyService();
     const { surveyId } = useRoute<RouteProp<AdminStackParamList, 'UploadRedLineBoundaryScreen'>>().params;
     const navigation = useNavigation<Nav>();
+    const [imageUri, setImageUri] = useState<string | undefined>();
+
+    const handleContinue = async () => {
+        if (imageUri) {
+            const base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
+            const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+            const fileName = imageUri?.split("/").pop() ?? `boundary-${Date.now()}.jpg`;
+            await service.setBoundaryImage(surveyId, fileName, bytes);
+        }
+        navigation.navigate('AddSurveyorScreen', { surveyId })
+    };
+
+    const handleSkip = async () => {
+        navigation.navigate('AddSurveyorScreen', { surveyId })
+    }
 
     return (
         //TODO: implement uploading a photo and storing it to the media repo
         <View style={screen.justifyScreen}>
-            <BackButton navigation={navigation} />
-            <View style={screen.content} >
+            <View>
+                <BackButton navigation={navigation} />
                 <Title title="Upload Red Line Boundary" subtitle="Upload an image of the red line boundary of the property" />
-                <Text style={{ color: "white" }}>TODO: Implement this</Text>
             </View>
-            <Button label="Continue" variant='light' onPress={() => {
-                navigation.navigate('AddSurveyorScreen', { surveyId })
-            }} />
+            <View style={styles.content} >
+                <DocumentUpload value={imageUri} onChange={setImageUri} />
+            </View>
+            <ButtonGroup labels={["Continue", "Skip"]}
+                onPress={[handleContinue, handleSkip]}
+                disabled={imageUri ? [false, false] : [true, false]}
+                variant={"mixed"} />
         </View>
     )
 }
+
+const styles = StyleSheet.create({
+    content: {
+        ...screen.content,
+        flex: 1,
+        gap: 24,
+        justifyContent: "center"
+    }
+
+})

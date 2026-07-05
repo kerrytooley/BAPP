@@ -1,28 +1,37 @@
 import type { ReactNode } from 'react';
-import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { colours } from '@theme/colours';
 import { textStyles } from '@theme/fonts';
+import Close from '@assets/images/close.svg'
 
 export interface CardProps {
     cardLabel: string;
     children?: ReactNode;
     style?: StyleProp<ViewStyle>;
+    removeable?: boolean,
+    onClose?: () => void;
 }
 
 export const Card = ({
     cardLabel,
     children,
-    style
+    style,
+    removeable = false,
+    onClose
 }: CardProps) => {
     return (
         <View style={[styles.cardFlexBox, style]}>
-            <View>
+            <View style={styles.labelRow}>
                 <Text style={textStyles.inputTitleText}>{cardLabel}</Text>
+                {removeable &&
+                    <TouchableOpacity onPress={onClose}>
+                        <Close width={12} color={colours.light} />
+                    </TouchableOpacity>
+                }
             </View>
             <View style={styles.card}>
                 {children}
             </View>
-
         </View>
 
     );
@@ -51,5 +60,12 @@ const styles = StyleSheet.create({
         textTransform: "uppercase",
         color: colours.inputTitle,
         textAlign: "left"
+    },
+    labelRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "flex-end",
+        "paddingEnd": 8
+
     }
 })

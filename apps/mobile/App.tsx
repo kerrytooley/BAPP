@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { useFonts, OleoScript_700Bold } from '@expo-google-fonts/oleo-script';
 import { OpenSans_400Regular, OpenSans_600SemiBold } from '@expo-google-fonts/open-sans';
+import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { RootNavigator } from '@navigators/index';
 // TODO: Initialize Firebase via packages/repository's initFirebase()
 // TODO: Initialize Sentry for error monitoring (@sentry/react-native)
@@ -15,10 +16,14 @@ export default function App(): React.JSX.Element | null {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
-      <NavigationContainer>
-        <RootNavigator />
-      </NavigationContainer>
+      <ActionSheetProvider>
+        <>
+          <StatusBar style="light" />
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+        </>
+      </ActionSheetProvider>
     </SafeAreaProvider>
   );
 }

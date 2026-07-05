@@ -22,8 +22,8 @@ export const SummaryRow = ({
 
     return (
         <View style={styles.summaryRow}>
-            <Text style={styles.summaryText}>{label}</Text>
-            <Text style={styles.summaryText}>{formattedValue}</Text>
+            <Text style={styles.summaryLabel}>{label}</Text>
+            <Text style={styles.summaryValue}>{formattedValue}</Text>
         </View>
     );
 }
@@ -47,10 +47,17 @@ const styles = StyleSheet.create({
     summaryRow: {
         flexDirection: "row",
         width: "100%",
-        justifyContent: "space-between"
+        justifyContent: "space-between",
+        gap: 8,
     },
-    summaryText: {
-        ...textStyles.subtitle
+    summaryLabel: {
+        ...textStyles.subtitle,
+        flexShrink: 0
+    },
+    summaryValue: {
+        ...textStyles.subtitle,
+        flex: 1,
+        textAlign: "right"
     },
     summaryGroup: {
         width: "100%",

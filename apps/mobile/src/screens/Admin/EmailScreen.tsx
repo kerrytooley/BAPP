@@ -18,9 +18,10 @@ export function EmailScreen(): React.JSX.Element {
 
     return (
         <View style={styles.screen}>
-            <BackButton navigation={navigation} />
-            <Title title="Enter Email Address" subtitle="Enter the email address to send the completed survey report to." />
-
+            <View>
+                <BackButton navigation={navigation} />
+                <Title title="Enter Email Address" subtitle="Enter the email address to send the completed survey report to." />
+            </View>
             <View style={styles.content}>
                 <InputField fieldLabel="Email Address" placeholderText="Input email address" value={email} onChangeText={setEmail} />
             </View>
@@ -45,7 +46,6 @@ export function EmailScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
     screen: {
         ...screen.justifyScreen,
-
     },
     content: {
         ...screen.content,

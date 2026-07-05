@@ -38,7 +38,9 @@ export function CreateSurvey(): React.JSX.Element {
 
     return (
         <View style={styles.screen}>
-            <BackButton navigation={navigation} />
+            <View style={{ width: "100%" }}>
+                <BackButton navigation={navigation} />
+            </View>
             <ScrollView ref={scrollRef} style={{ width: "100%" }} contentContainerStyle={screen.content} keyboardShouldPersistTaps="handled">
                 <Title title="Create Survey" />
                 <InputField fieldLabel="Survey Name" placeholderText="Input survey name" value={name} onChangeText={setName} />
