@@ -22,9 +22,10 @@ export function AddSurveyorScreen(): React.JSX.Element {
     const [surveyors, setSurveyors] = useState<Surveyor[]>([]);
     const [locations, setLocations] = useState<Location[]>([]);
     const [activeSurveyorId, setActiveSurveyorId] = useState<string | null>(null);
-    const [boundaryImageRef, setBoundaryImageRef] = useState<string | null>(null);
+    const [boundaryImageUrl, setBoundaryImageUrl] = useState<string | null>(null);
     const sheetRef = useRef<BottomSheetModal>(null);
 
+    //retrieve data
     useEffect(() => {
         const load = async () => {
             const context = await service.getSurveyContext(surveyId);
@@ -42,34 +43,52 @@ export function AddSurveyorScreen(): React.JSX.Element {
 
     useEffect(() => {
         service.getBoundaryImageUrl(surveyId)
-            .then(setBoundaryImageRef)
+            .then(setBoundaryImageUrl)
             .catch((e) => console.error("Failed to fetch boundary image", e));
     }, [service, surveyId]);
 
-    const isLead = (surveyor: Surveyor) => surveyor.isLead
 
-    const leadSurveyor = surveyors.find((surveyor) => surveyor.isLead);
-    const canContinue = (leadSurveyor?.name ?? "").trim().length > 0;
+    // set selected surveyor when tapping between cards
     const activeSurveyor = surveyors.find((surveyor) => surveyor.id === activeSurveyorId);
     const activePosition = locations.find((location) => location.id === activeSurveyor?.locationId)?.boundaryPosition ?? null;
-
-    const addSurveyor = async () => {
-        const newSurveyor = await service.addSurveyor(surveyId, { name: "", isLead: false });
-        setSurveyors((prevSurveyorList) => [...prevSurveyorList, newSurveyor]);
-    };
-
-    const removeSurveyor = async (id: string) => {
-        await service.removeSurveyor(id);
-        setSurveyors((prevSurveyorList) => prevSurveyorList.filter((surveyor) => surveyor.id !== id));
-    }
-
-    const updateName = (id: string, name: string) => setSurveyors((prev) => prev.map((surveyor) => (surveyor.id === id ? { ...surveyor, name } : surveyor)));
-    const saveName = (id: string, name: string) => service.updateSurveyor(id, { name }).catch((e) => console.log("Error saving surveyor name", e))
 
     const openLocationSheet = (surveyorId: string) => {
         setActiveSurveyorId(surveyorId);
         sheetRef.current?.present();
     };
+
+    // add, remove and save actions
+    const addSurveyor = async () => {
+        const newSurveyor = await service.addSurveyor(surveyId, { name: "", isLead: false });
+        console.log('Surveyor added:', newSurveyor);
+        setSurveyors((prevSurveyorList) => [...prevSurveyorList, newSurveyor]);
+    };
+
+    const removeSurveyor = async (id: string) => {
+        const locationId = surveyors.find((s) => s.id === id)?.locationId ?? null;
+        await service.removeSurveyor(id);
+        console.log('Surveyor removed:', id);
+        setSurveyors((prevSurveyorList) => prevSurveyorList.filter((surveyor) => surveyor.id !== id));
+        if (locationId) {
+            try {
+                await service.removeLocation(locationId);
+                console.log('Surveyor location removed:', locationId);
+                setLocations((prev) => prev.filter((location) => location.id !== locationId));
+            } catch (e) {
+                console.log("Error removing surveyor location", e);
+            }
+        }
+    }
+
+    const updateName = (id: string, name: string) => {
+        setSurveyors((prev) => prev.map((surveyor) => (
+            surveyor.id === id ? { ...surveyor, name } : surveyor
+        )));
+    }
+
+    const saveName = (id: string, name: string) => service.updateSurveyor(id, { name })
+        .then((surveyor) => console.log('Surveyor name saved:', surveyor))
+        .catch((e) => console.log("Error saving surveyor name", e))
 
     const saveLocation = async (position: BoundaryPosition) => {
         const surveyor = surveyors.find((s) => s.id === activeSurveyorId);
@@ -77,15 +96,40 @@ export function AddSurveyorScreen(): React.JSX.Element {
 
         if (surveyor.locationId) {
             const updatedLocation = await service.updateLocation(surveyor.locationId, { boundaryPosition: position });
+            console.log('Surveyor location updated:', updatedLocation);
             setLocations((prev) => prev.map((location) => (location.id === updatedLocation.id ? updatedLocation : location)));
         } else {
             const location = await service.addLocation(surveyId, { boundaryPosition: position });
-            const updated = await service.updateSurveyor(surveyor.id, { locationId: location.id });
-            setSurveyors((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+            await service.updateSurveyor(surveyor.id, { locationId: location.id });
+            console.log('Surveyor location saved:', location);
+            setSurveyors((prev) => prev.map((s) => (s.id === surveyor.id ? { ...s, locationId: location.id } : s)));
             setLocations((prev) => [...prev, location]);
         }
         sheetRef.current?.dismiss();
     }
+
+
+    // continue checks
+    const isLead = (surveyor: Surveyor) => surveyor.isLead
+    const leadSurveyor = surveyors.find((surveyor) => surveyor.isLead);
+    const canContinue = (leadSurveyor?.name ?? "").trim().length > 0;
+
+    const continueToReview = async () => {
+        const isBlank = (s: Surveyor) => !s.isLead && (s.name ?? "").trim() === "" && !s.locationId;
+        const blank = surveyors.filter(isBlank);
+        const remaining = surveyors.filter((s) => !isBlank(s));
+        try {
+            await Promise.all(blank.map((s) => service.removeSurveyor(s.id)));
+            if (blank.length) console.log('Removed blank surveyors:', blank.map((s) => s.id));
+            const saved = await Promise.all(remaining.map((s) => service.updateSurveyor(s.id, { name: s.name ?? "" })));
+            console.log('Surveyor names saved:', saved);
+            setSurveyors(remaining);
+        } catch (e) {
+            console.log("Error saving surveyors", e);
+        }
+        navigation.navigate('ReviewSurveyDetailsScreen', { surveyId });
+    };
+
 
     return (
         <View style={screen.justifyScreen}>
@@ -114,13 +158,13 @@ export function AddSurveyorScreen(): React.JSX.Element {
                     labels={['Continue', 'Skip']}
                     disabled={[!canContinue, false]}
                     onPress={[
-                        () => { navigation.navigate('ReviewSurveyDetailsScreen', { surveyId }) },
+                        continueToReview,
                         () => { navigation.navigate('ReviewSurveyDetailsScreen', { surveyId }) }
                     ]}
                 />
                 <AddLocationBottomSheet
                     ref={sheetRef}
-                    boundaryImageRef={boundaryImageRef}
+                    boundaryImageRef={boundaryImageUrl}
                     isEditing={activeSurveyor?.locationId != null}
                     initialPosition={activePosition}
                     onChange={saveLocation}

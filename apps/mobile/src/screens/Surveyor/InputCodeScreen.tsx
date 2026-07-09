@@ -18,8 +18,10 @@ export function InputCodeScreen(): React.JSX.Element {
 
     return (
         <View style={styles.screen}>
-            <BackButton navigation={navigation} />
-            <Title title="Input Survey Code" subtitle="Join survey by entering code shared by lead surveyor" />
+            <View style={{ width: "100%" }}>
+                <BackButton navigation={navigation} />
+                <Title title="Input Survey Code" subtitle="Join survey by entering code shared by lead surveyor" />
+            </View>
             <View style={styles.content}>
                 <CodeInput placeholder="XXXXXX" value={code} onChangeText={setCode} />
             </View>
@@ -45,7 +47,6 @@ export function InputCodeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
     screen: {
         ...screen.justifyScreen,
-        paddingTop: 120,
     },
     content: {
         ...screen.content,

@@ -22,6 +22,8 @@ export const CodeInput = ({
                 placeholderTextColor={colours.placeholderText}
                 value={value}
                 onChangeText={onChangeText}
+                autoCapitalize="none"
+                autoCorrect={false}
             />
         </View>
     );

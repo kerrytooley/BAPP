@@ -25,7 +25,7 @@ export function BeginOrContinueSurveyScreen(): React.JSX.Element {
             <View style={styles.content}>
                 <ButtonGroup
                     labels={['Begin a new survey', 'Continue existing survey']}
-                    actions={["right arrow", "right arrow"]}
+                    variant="mixed"
                     onPress={[
                         () => {
                             service.createSurvey()

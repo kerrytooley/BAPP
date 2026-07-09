@@ -9,6 +9,7 @@ import { useSurveyService } from "@services/surveyServiceContext";
 import { Title } from "@components/Titles";
 import { DocumentUpload } from "@components/DocumentUpload";
 import * as FileSystem from "expo-file-system";
+import { base64ToBytes } from "@utils/base64";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
@@ -19,21 +20,26 @@ export function UploadRedLineBoundaryScreen(): React.JSX.Element {
     const [imageUri, setImageUri] = useState<string | undefined>();
 
     const handleContinue = async () => {
-        if (imageUri) {
-            const base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
-            const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-            const fileName = imageUri?.split("/").pop() ?? `boundary-${Date.now()}.jpg`;
-            await service.setBoundaryImage(surveyId, fileName, bytes);
+        try {
+            if (imageUri) {
+                const base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
+                const bytes = base64ToBytes(base64);
+                const fileName = imageUri?.split("/").pop() ?? `boundary-${Date.now()}.jpg`;
+                await service.setBoundaryImage(surveyId, fileName, bytes);
+                console.log('Red line boundary uploaded:', fileName);
+            }
+            navigation.navigate('AddSurveyorScreen', { surveyId })
+        } catch (e) {
+            console.log("Error uploading red line boundary: ", e)
         }
-        navigation.navigate('AddSurveyorScreen', { surveyId })
     };
 
     const handleSkip = async () => {
+        console.log('Skipped red line boundary upload');
         navigation.navigate('AddSurveyorScreen', { surveyId })
     }
 
     return (
-        //TODO: implement uploading a photo and storing it to the media repo
         <View style={screen.justifyScreen}>
             <View>
                 <BackButton navigation={navigation} />

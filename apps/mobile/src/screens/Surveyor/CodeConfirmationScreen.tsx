@@ -42,8 +42,10 @@ export function CodeConfirmationScreen(
 
     return (
         <View style={styles.screen}>
-            <BackButton navigation={navigation} />
-            <Title title="You are joining:" />
+            <View style={{ width: "100%" }}>
+                <BackButton navigation={navigation} />
+                <Title title="You are joining:" />
+            </View>
             <View style={styles.content}>
                 <Title title={surveyTitle} />
                 <Title title={surveyDate.toString()} />
@@ -59,7 +61,6 @@ export function CodeConfirmationScreen(
 const styles = StyleSheet.create({
     screen: {
         ...screen.justifyScreen,
-        paddingTop: 120
     },
     content: {
         ...screen.content,

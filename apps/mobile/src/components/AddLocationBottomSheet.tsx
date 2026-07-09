@@ -1,6 +1,5 @@
 import { Image, StyleSheet, Text, View } from "react-native"
 import { Title } from "./Titles"
-import MapPin from "@assets/images/mapPin.svg"
 import { forwardRef, useEffect, useState } from "react"
 import { BottomSheetBackdrop, BottomSheetBackdropProps, BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet"
 import { colours } from "@theme/colours"

@@ -25,6 +25,7 @@ type Story = StoryObj<typeof meta>;
 
 export const SurveySummaryGroup: Story = {
     args: {
+        key: "survey-details",
         groupTitle: "Survey Details",
         summaryRows: [
             {
