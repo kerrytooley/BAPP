@@ -119,6 +119,20 @@ describe('AddSurveyorScreen', () => {
         );
     });
 
+    it('loads a ready boundary image without error', async () => {
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+        const service = createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(leadOnlyContext()),
+            getBoundaryImage: jest.fn().mockResolvedValue({ status: 'ready', url: 'file://boundary.png' }),
+        });
+        renderWithService(<AddSurveyorScreen />, service);
+        await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalledWith('survey-1'));
+        expect(errorSpy).not.toHaveBeenCalledWith(
+            'Failed to fetch boundary image',
+            expect.any(Error),
+        );
+    });
+
     it('logs an error when the boundary image fails to load', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = createMockService({
