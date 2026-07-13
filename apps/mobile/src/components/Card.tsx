@@ -8,7 +8,7 @@ export interface CardProps {
     cardLabel: string;
     children?: ReactNode;
     style?: StyleProp<ViewStyle>;
-    removeable?: boolean,
+    removable?: boolean,
     onClose?: () => void;
 }
 
@@ -16,14 +16,14 @@ export const Card = ({
     cardLabel,
     children,
     style,
-    removeable = false,
+    removable = false,
     onClose
 }: CardProps) => {
     return (
         <View style={[styles.cardFlexBox, style]}>
             <View style={styles.labelRow}>
                 <Text style={textStyles.inputTitleText}>{cardLabel}</Text>
-                {removeable &&
+                {removable &&
                     <TouchableOpacity onPress={onClose}>
                         <Close width={12} color={colours.light} />
                     </TouchableOpacity>

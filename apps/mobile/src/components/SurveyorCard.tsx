@@ -23,7 +23,7 @@ export const SurveyorCard = ({
     hasLocation = false,
 }: SurveyorCardProps) => {
     return (
-        <Card cardLabel={isLead ? "Add Lead Surveyor" : "Add Surveyor"} removeable={isLead ? false : true} onClose={isLead ? () => { } : onClose}>
+        <Card cardLabel={isLead ? "Add Lead Surveyor" : "Add Surveyor"} removable={isLead ? false : true} onClose={isLead ? () => { } : onClose}>
             <InputField
                 placeholderText="Input Surveyor Name"
                 value={name}
