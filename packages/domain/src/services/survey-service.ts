@@ -85,7 +85,11 @@ export class SurveyService {
     const updated = await this.updateSurvey(surveyId, { boundaryImageRef: reference });
 
     if (previousRef && previousRef !== reference) {
-      await this.mediaRepository.delete(previousRef);
+      try {
+        await this.mediaRepository.delete(previousRef);
+      } catch {
+        // Best-effort cleanup; avoid failing the main write path.
+      }
     }
 
     return updated;
