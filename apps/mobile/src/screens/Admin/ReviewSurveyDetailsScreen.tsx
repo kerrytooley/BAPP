@@ -13,8 +13,6 @@ import { formatTime } from "@utils/dateTimeUtils";
 import { DocumentPreview } from "@components/DocumentPreview";
 import { textStyles } from "@theme/fonts";
 
-// TODO: red line boundary summary
-
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
 const displayValue = (value?: string | Date | null, format?: string): string | Date =>
