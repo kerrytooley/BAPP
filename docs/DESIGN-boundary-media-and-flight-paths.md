@@ -25,7 +25,7 @@ Three distinct steps, at different times, on different machines:
 
 | Term | What | Where / when | Touches file format? |
 |---|---|---|---|
-| **Rasterize** | Convert a non-pixel source (PDF, HEIC) into a flat raster image (PNG/JPEG) | Adapter, once, at upload time (Cloud Function in Firebase) | **Yes** — the only step that does |
+| **Rasterize** | Convert a non-pixel source (PDF, HEIC) into a flat raster image (PNG/JPEG) | Adapter, once, at upload time (client-side and/or server Cloud Function — see offline-PDF constraint below) | **Yes** — the only step that does |
 | **Render** | Display a raster image on screen | Frontend, every view (`<Image>`) | No |
 | **Overlay** | Draw flight-path lines / pins on top of the rendered image | Frontend, every view, interactive | No |
 
@@ -138,6 +138,13 @@ type BoundaryImageResult =
 
 UI shows: nothing / spinner / retry / the image. "Not set", "processing", and
 "unavailable offline" are now distinguishable.
+
+**`status` is a global / other-devices signal, not a local one.** `processing`
+means "the shared render isn't ready for devices that don't already have the
+bytes." The device that *originated* the image must NOT spinner on its own
+boundary — see "Originating device draws immediately" below. Frontends should
+prefer a drawable they already hold (or a local cache hit) over the global
+`status`.
 
 ---
 
@@ -371,6 +378,59 @@ that branch fire less often.
 
 ---
 
+## Originating device draws immediately (offline-first); `status` is for others
+
+A correction to any "show a spinner while `processing`" reading of this doc:
+that guidance applies **only to devices that did not originate the image.**
+
+Two devices, two truths:
+
+- **Originating device** (the admin who just picked the file) already holds the
+  bytes locally. It must render and draw on them **immediately — no upload wait,
+  no rasterization wait, no network.** This is the app's offline-first
+  principle: the person who just chose the image cannot be blocked on a
+  round-trip. A `processing` spinner here would be a bug.
+- **Other devices** (surveyors, a co-admin) only receive a `renderRef` via
+  subscription and must download it. For *them*, `processing` → spinner is
+  correct — they genuinely don't have the bytes yet.
+
+So `status` on the doc is a **global / other-devices** signal. The originating
+device trusts its **local drawable**, not the global status.
+
+**How this is honoured — frontend behaviour + adapter, NOT an API change:**
+
+1. *Same session:* carry the local URI from the upload screen to the drawing
+   screen (nav param / upload store) so it's used directly — instant, offline.
+   Currently the drawing screen (`AddSurveyorScreen`) discards the local URI and
+   re-fetches, which round-trips for an image it just had in hand.
+2. *Later sessions, same device:* the local-first `getDownloadUrl` contract
+   (check filesystem before network) serves it from cache with no hop. The
+   adapter should prime that cache at upload/rasterization time so the origin
+   device resolves `ready` locally.
+
+The port already spans both worlds — this is frontend wiring (prefer the
+drawable you hold) plus adapter cache behaviour, not a new method or signature.
+
+## Offline PDF drawing is the deciding input for rasterization location
+
+The one place "draw immediately, offline" is *not* automatic:
+
+- **Raster source** (photo/PNG/JPEG): drawable offline immediately, always.
+- **PDF source**: normalized overlays can't be drawn on a PDF via `<Image>` —
+  the drawable is the *rendered PNG*. If rasterization is **server-side only**
+  (Cloud Function), a PDF boundary is **not drawable offline** on the
+  originating device until it round-trips to the server and back — which breaks
+  offline-first for the PDF case.
+
+This is the concrete scenario that should **decide the deferred client-vs-server
+rasterization question**: pure server-side breaks offline PDF use; **client-side
+(or hybrid) rasterization** lets the originating device produce a local raster
+and draw on it immediately, with the server render as the canonical copy for
+everyone else. Recorded here so the decision is driven by this guarantee, not
+made incidentally when the adapter is written.
+
+---
+
 ## Execution plan (sequenced)
 
 Ordered to keep the tree building at each step; domain-inward first.
@@ -390,8 +450,11 @@ Ordered to keep the tree building at each step; domain-inward first.
    `clearCache`, normalize covers PDF+HEIC identity); Firebase stubs updated to
    new signatures so the workspace compiles.
 7. **Frontend** — upload screen, `AddSurveyorScreen`, `ReviewSurveyDetailsScreen`,
-   `AddLocationBottomSheet`, `BoundaryPinLayer`: consume status API, show
-   processing/failed states; flight-path drawing tags `surface`.
+   `AddLocationBottomSheet`, `BoundaryPinLayer`: consume status API, showing
+   `processing`/`failed` states **only for non-originating devices**; the
+   originating device draws on its local image immediately (don't block on
+   upload; carry the local URI to the drawing screen). Flight-path drawing tags
+   `surface`.
 8. **Tests** — domain service (boundary + reads), in-memory media repo,
    observation surface, affected mobile tests; add status-transition, holistic
    delete, `clearCache` coverage.

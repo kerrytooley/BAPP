@@ -84,9 +84,16 @@ same object. `MediaAsset` makes the upload→display pipeline explicit:
 
 The repository adapter normalizes any source into a renderable raster
 (rasterizing PDFs, transcoding HEIC), so the domain and frontend stay
-format-agnostic. Under Firebase this rasterization is asynchronous (a Cloud
-Function), so a `MediaAsset` can be `processing` with `renderRef: null`; the
-status flips to `ready` via the survey/location subscription. See
+format-agnostic. When rasterization is asynchronous (e.g. a server-side Cloud
+Function), a `MediaAsset` can be `processing` with `renderRef: null`, and the
+status flips to `ready` via the survey/location subscription.
+
+`status` is a **global / other-devices** signal: `processing` means "the shared
+render isn't ready for devices that don't already hold the bytes." The device
+that just picked the image draws on it **immediately and offline** — it must not
+wait on upload or rasterization. (This offline-first requirement is why PDF
+rasterization may need to run client-side rather than server-only; see the
+architecture note.) See
 `packages/repository/src/FIREBASE_ARCHITECTURE.md` and
 `docs/DESIGN-boundary-media-and-flight-paths.md`.
 

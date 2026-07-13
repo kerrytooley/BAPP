@@ -91,15 +91,33 @@ Function triggered on upload-finalize rasterizes page 0 to a PNG, writes
 `renderRef` + `status: 'ready'` back onto the parent doc, and the subscription
 delivers it.
 
-**Rasterize location is deferrable.** Whether rasterization runs in a Cloud
-Function (server) or on-device (client) only changes *who writes `renderRef`*.
-The composed read flow is identical either way:
+**Rasterize location is deferrable — but constrained by offline PDF drawing.**
+Whether rasterization runs in a Cloud Function (server) or on-device (client)
+only changes *who writes `renderRef`*. The composed read flow for **other
+devices** (which receive `renderRef` via subscription and download it) is
+identical either way:
 
 ```
 subscribe(surveyId) → MediaAsset → (status === 'ready')
                                  → mediaRepo.getDownloadUrl(renderRef)  // cache-or-download
                                  → local file:// URI → render → overlay flight paths
 ```
+
+The constraint on the choice: the **originating device must be able to draw
+immediately and offline** (offline-first). A raster source is fine either way.
+But a **PDF** can only be drawn as its rendered raster — so **server-side-only**
+rasterization means a freshly-picked PDF is *not drawable offline* until it
+round-trips to the Cloud Function and back. Preserving offline PDF use therefore
+requires **client-side (or hybrid)** rasterization: the origin device produces a
+local raster to draw on immediately, with the server render as the canonical
+copy other devices download. This guarantee — not incidental convenience —
+should decide the rasterization location.
+
+**`status` is a global / other-devices signal.** `processing` means "the shared
+render isn't ready for devices that don't already hold the bytes." The
+originating device must never spinner on its own boundary: it draws on the local
+bytes it just picked (in-session) or a local cache hit (later), and treats the
+doc `status` as informing *other* devices, not itself.
 
 **Replace lifecycle & garbage collection.** A media asset is ≥2 Storage objects
 (e.g. a boundary PDF source + its PNG render). Deletion is holistic (the whole
