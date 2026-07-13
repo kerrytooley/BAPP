@@ -118,16 +118,18 @@ export function AddSurveyorScreen(): React.JSX.Element {
         const isBlank = (s: Surveyor) => !s.isLead && (s.name ?? "").trim() === "" && !s.locationId;
         const blank = surveyors.filter(isBlank);
         const remaining = surveyors.filter((s) => !isBlank(s));
+
         try {
             await Promise.all(blank.map((s) => service.removeSurveyor(s.id)));
             if (blank.length) console.log('Removed blank surveyors:', blank.map((s) => s.id));
             const saved = await Promise.all(remaining.map((s) => service.updateSurveyor(s.id, { name: s.name ?? "" })));
             console.log('Surveyor names saved:', saved);
             setSurveyors(remaining);
+
+            navigation.navigate('ReviewSurveyDetailsScreen', { surveyId });
         } catch (e) {
             console.log("Error saving surveyors", e);
         }
-        navigation.navigate('ReviewSurveyDetailsScreen', { surveyId });
     };
 
 

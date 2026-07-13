@@ -3,11 +3,15 @@ import { StyleSheet, Text, View } from "react-native";
 import { screen } from "@theme/screen";
 import { textStyles } from "@theme/fonts";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
+import { CompositeNavigationProp, useNavigation } from "@react-navigation/native";
 import { BackButton, Button } from "@components/Button";
 import { RootStackParamList } from "@navigators/index";
+import { AdminStackParamList } from "@navigators/AdminNavigator";
 
-type Nav = NativeStackNavigationProp<RootStackParamList>;
+type Nav = CompositeNavigationProp<
+    NativeStackNavigationProp<AdminStackParamList>,
+    NativeStackNavigationProp<RootStackParamList>
+>;
 
 export function SurveySavedScreen(): React.JSX.Element {
 

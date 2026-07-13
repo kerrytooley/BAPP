@@ -39,7 +39,7 @@ export const Button = ({
   const textSizeStyle = textSizeStyles[size];
 
   return (
-    <TouchableOpacity accessibilityRole="button" activeOpacity={0.6} onPress={disabled ? () => { } : onPress}>
+    <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} activeOpacity={disabled ? 1 : 0.6} onPress={onPress}>
       <View style={[styles.button, modeStyle, sizeStyle, style]} >
         <Text style={[textStyles.buttonLabel, textModeStyle, textSizeStyle]}>{label}</Text>
         {action === "add" && <Plus style={styles.actionItem} />}
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     borderColor: colours.buttonBorder,
   },
   disabledText: {
-    color: colours.dark,
+    color: colours.placeholderText,
   },
   medium: {
     paddingVertical: 11,

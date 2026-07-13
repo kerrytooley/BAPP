@@ -48,12 +48,11 @@ export function ReviewSurveyDetailsScreen(): React.JSX.Element {
     }, [service, surveyId])
 
     const getSurveyorArray = () => {
-        return surveyors?.map((s) => {
-            return {
-                label: s.isLead ? "Lead Surveyor" : `Surveyor ${surveyors.indexOf(s)}`,
-                value: displayValue(s.name)
-            }
-        }) ?? []
+        let nonLeadIndex = 0;
+        return (surveyors ?? []).map((s) => ({
+            label: s.isLead ? "Lead Surveyor" : `Surveyor ${++nonLeadIndex}`,
+            value: displayValue(s.name)
+        }));
     }
 
     return (

@@ -1,7 +1,7 @@
 import { BackButton, Button } from "@components/Button";
 import { RootStackParamList } from "@navigators/index";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { CompositeNavigationProp, RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { screen } from "@theme/screen";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
@@ -10,7 +10,10 @@ import { CodeShare } from "@components/CodeShare";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { useSurveyService } from "@services/surveyServiceContext";
 
-type Nav = NativeStackNavigationProp<RootStackParamList>;
+type Nav = CompositeNavigationProp<
+    NativeStackNavigationProp<AdminStackParamList>,
+    NativeStackNavigationProp<RootStackParamList>
+>;
 
 export function ShareCodeScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();

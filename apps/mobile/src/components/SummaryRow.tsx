@@ -12,7 +12,6 @@ export interface SummaryRowProps {
 export interface SummaryGroupProps {
     groupTitle: string;
     summaryRows: Array<SummaryRowProps>;
-    key: string;
 }
 
 export const SummaryRow = ({
