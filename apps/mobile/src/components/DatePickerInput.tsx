@@ -23,15 +23,19 @@ export const DatePickerInput = ({
     const [show, setShow] = useState(false);
 
     const toggleShow = () => {
-        setShow((prev) => {
-            const next = !prev;
-            if (next) onOpen?.();
-            return next;
-        });
+        const next = !show;
+        setShow(next);
+        if (next) {
+            onOpen?.();
+            if (!value) onChange?.(new Date());
+        }
     };
 
-    const handleChange = (_event: DateTimePickerEvent, selected?: Date) => {
-        setShow(false);
+    const handleChange = (event: DateTimePickerEvent, selected?: Date) => {
+        if (event.type === 'dismissed') {
+            setShow(false);
+            return;
+        }
         if (selected) onChange?.(selected);
     };
 

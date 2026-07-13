@@ -18,12 +18,14 @@ export function BeginOrContinueSurveyScreen(): React.JSX.Element {
 
     return (
         <View style={screen.justifyScreen}>
-            <BackButton navigation={navigation} />
-            <Title title="Begin or continue a survey" subtitle="Start a new survey or pick up where you left with an existing one" />
+            <View>
+                <BackButton navigation={navigation} />
+                <Title title="Begin or continue a survey" subtitle="Start a new survey or pick up where you left with an existing one" />
+            </View>
             <View style={styles.content}>
                 <ButtonGroup
                     labels={['Begin a new survey', 'Continue existing survey']}
-                    actions={["right arrow", "right arrow"]}
+                    variant="mixed"
                     onPress={[
                         () => {
                             service.createSurvey()

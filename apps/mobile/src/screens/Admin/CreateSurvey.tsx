@@ -38,7 +38,9 @@ export function CreateSurvey(): React.JSX.Element {
 
     return (
         <View style={styles.screen}>
-            <BackButton navigation={navigation} />
+            <View style={{ width: "100%" }}>
+                <BackButton navigation={navigation} />
+            </View>
             <ScrollView ref={scrollRef} style={{ width: "100%" }} contentContainerStyle={screen.content} keyboardShouldPersistTaps="handled">
                 <Title title="Create Survey" />
                 <InputField fieldLabel="Survey Name" placeholderText="Input survey name" value={name} onChangeText={setName} />
@@ -49,19 +51,20 @@ export function CreateSurvey(): React.JSX.Element {
                 <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.start = e.nativeEvent.layout.y; }}>
                     <TimePickerInput fieldLabel="Start Time" value={startTime} onChange={setStartTime} onOpen={() => scrollToField("start")} />
                 </View>
-                <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.end = e.nativeEvent.layout.y; }}>
-                    <TimePickerInput fieldLabel="End Time" value={endTime} onChange={setEndTime} onOpen={() => scrollToField("end")} />
-                </View>
                 <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.sunset = e.nativeEvent.layout.y; }}>
                     <TimePickerInput fieldLabel="Sunrise/Sunset Time" value={sunsetTime} onChange={setSunsetTime} onOpen={() => scrollToField("sunset")} />
                 </View>
+                <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.end = e.nativeEvent.layout.y; }}>
+                    <TimePickerInput fieldLabel="End Time" value={endTime} onChange={setEndTime} onOpen={() => scrollToField("end")} />
+                </View>
+
             </ScrollView>
             <Button
                 variant="light"
                 label="Continue"
                 onPress={async () => {
                     try {
-                        await service.updateSurvey(surveyId, {
+                        const updated = await service.updateSurvey(surveyId, {
                             name,
                             postcode,
                             date: date ?? null,
@@ -69,6 +72,7 @@ export function CreateSurvey(): React.JSX.Element {
                             endTime: endTime ?? null,
                             sunsetTime: sunsetTime ?? null,
                         });
+                        console.log('Survey details updated:', updated);
                         navigation.navigate('UploadRedLineBoundaryScreen', { surveyId });
                     } catch (e) {
                         console.error('Error updating create survey fields: ', e);

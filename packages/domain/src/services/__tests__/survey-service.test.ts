@@ -22,7 +22,7 @@ function createService(validator?: SurveyValidator) {
     surveyRepo, locationRepo, surveyorRepo, observationRepo, mediaRepo,
     validator ?? new NoOpValidator(),
   );
-  return { service, surveyRepo, locationRepo, surveyorRepo, observationRepo };
+  return { service, surveyRepo, locationRepo, surveyorRepo, observationRepo, mediaRepo };
 }
 
 describe('SurveyService', () => {
@@ -67,6 +67,15 @@ describe('SurveyService', () => {
       const { service } = createService();
       const survey = await service.createSurvey();
       const ctx = await service.joinSurvey(survey.surveyorCode);
+      expect(ctx.survey.id).toBe(survey.id);
+    });
+
+    it('accepts surveyor code with surrounding whitespace and mixed case', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      const codeWithWhitespaceAndCase = `  ${survey.surveyorCode.toUpperCase()}  `;
+
+      const ctx = await service.joinSurvey(codeWithWhitespaceAndCase);
       expect(ctx.survey.id).toBe(survey.id);
     });
 
@@ -118,6 +127,124 @@ describe('SurveyService', () => {
       const { service } = createService(validator);
       const survey = await service.createSurvey();
       await expect(service.updateSurvey(survey.id, { name: 'X' })).rejects.toThrow('bad');
+    });
+  });
+
+  describe('setBoundaryImage', () => {
+    const bytes = new Uint8Array([1, 2, 3, 4]);
+
+    it('uploads the image and stores the reference on the survey', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+
+      const updated = await service.setBoundaryImage(survey.id, 'boundary.png', bytes);
+
+      expect(updated.boundaryImageRef).toBe(`surveys/${survey.id}/boundary/boundary.png`);
+    });
+
+    it('persists the reference so it can be read back', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+
+      await service.setBoundaryImage(survey.id, 'boundary.png', bytes);
+
+      const ctx = await service.getSurveyContext(survey.id);
+      expect(ctx.survey.boundaryImageRef).toBe(`surveys/${survey.id}/boundary/boundary.png`);
+    });
+
+    it('deletes the previous image when replaced', async () => {
+      const { service, mediaRepo } = createService();
+      const survey = await service.createSurvey();
+
+      await service.setBoundaryImage(survey.id, 'first.png', bytes);
+      const firstRef = `surveys/${survey.id}/boundary/first.png`;
+
+      await service.setBoundaryImage(survey.id, 'second.png', bytes);
+
+      await expect(mediaRepo.getDownloadUrl(firstRef)).rejects.toThrow();
+      const ctx = await service.getSurveyContext(survey.id);
+      expect(ctx.survey.boundaryImageRef).toBe(`surveys/${survey.id}/boundary/second.png`);
+    });
+
+    it('does not delete when re-uploading the same file name', async () => {
+      const { service, mediaRepo } = createService();
+      const survey = await service.createSurvey();
+
+      await service.setBoundaryImage(survey.id, 'boundary.png', bytes);
+      const ref = `surveys/${survey.id}/boundary/boundary.png`;
+      await service.setBoundaryImage(survey.id, 'boundary.png', bytes);
+
+      await expect(mediaRepo.getDownloadUrl(ref)).resolves.toMatch(/^data:image\/png;base64,/);
+    });
+
+    it('points a PDF upload at the derived .png reference (produced by the adapter)', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 1, 2]); // %PDF...
+
+      const updated = await service.setBoundaryImage(survey.id, 'boundary.pdf', pdfBytes);
+
+      expect(updated.boundaryImageRef).toBe(`surveys/${survey.id}/boundary/boundary.png`);
+    });
+
+    it('retains the original PDF bytes alongside the derived image', async () => {
+      const { service, mediaRepo } = createService();
+      const survey = await service.createSurvey();
+      const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 1, 2]);
+
+      await service.setBoundaryImage(survey.id, 'boundary.pdf', pdfBytes);
+
+      const pdfUrl = await mediaRepo.getDownloadUrl(`surveys/${survey.id}/boundary/boundary.pdf`);
+      expect(pdfUrl).toMatch(/^data:application\/pdf;base64,/);
+    });
+
+    it('detects a PDF by magic bytes even without a .pdf extension', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 7]);
+
+      const updated = await service.setBoundaryImage(survey.id, 'boundary', pdfBytes);
+
+      expect(updated.boundaryImageRef).toBe(`surveys/${survey.id}/boundary/boundary.png`);
+    });
+
+    it('stores a non-PDF image ref unchanged', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+
+      const updated = await service.setBoundaryImage(survey.id, 'boundary.png', bytes);
+
+      expect(updated.boundaryImageRef).toBe(`surveys/${survey.id}/boundary/boundary.png`);
+    });
+
+    it('resolves a renderable image URL for a PDF upload', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 1, 2]);
+
+      await service.setBoundaryImage(survey.id, 'boundary.pdf', pdfBytes);
+
+      // The in-memory adapter stands in for the Cloud Function, so the boundary
+      // resolves to a displayable PNG the app can render.
+      const url = await service.getBoundaryImageUrl(survey.id);
+      expect(url).toMatch(/^data:image\/png;base64,/);
+    });
+  });
+
+  describe('getBoundaryImageUrl', () => {
+    it('returns null when no image is set', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      await expect(service.getBoundaryImageUrl(survey.id)).resolves.toBeNull();
+    });
+
+    it('returns a download url when an image is set', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      await service.setBoundaryImage(survey.id, 'boundary.png', new Uint8Array([1, 2, 3]));
+
+      const url = await service.getBoundaryImageUrl(survey.id);
+      expect(url).toBe('data:image/png;base64,AQID');
     });
   });
 

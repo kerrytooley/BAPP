@@ -10,6 +10,7 @@ export interface InputFieldProps {
     value?: string;
     unit?: string;
     onChangeText?: (text: string) => void;
+    onEndEditing?: () => void;
     style?: StyleProp<ViewStyle>;
 }
 
@@ -21,6 +22,7 @@ export const InputField = ({
     value,
     unit,
     onChangeText,
+    onEndEditing,
     style
 }: InputFieldProps) => {
 
@@ -39,6 +41,7 @@ export const InputField = ({
                     style={[styles.inputText, isLarge && styles.inputTextLarge]}
                     value={value}
                     onChangeText={onChangeText}
+                    onEndEditing={onEndEditing}
                     placeholder={placeholderText}
                     placeholderTextColor={colours.placeholderText}
                     multiline={isLarge}

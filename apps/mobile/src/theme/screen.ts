@@ -15,13 +15,13 @@ export const screen: { baseScreen: ViewStyle, justifyScreen: ViewStyle, content:
         backgroundColor: colours.dark,
         alignItems: 'center',
         paddingHorizontal: 16,
-        paddingTop: 80,
+        paddingTop: 60,
         paddingBottom: 48,
         justifyContent: 'space-between'
     },
     content: {
         width: '100%',
         alignItems: 'center',
-        gap: 8
+        gap: 8,
     }
 }

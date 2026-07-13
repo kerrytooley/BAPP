@@ -39,9 +39,9 @@ export const Light: Story = {
   },
 };
 
-export const Grey: Story = {
+export const Disabled: Story = {
   args: {
-    variant: 'grey',
+    disabled: true,
     label: 'Button',
   },
 };

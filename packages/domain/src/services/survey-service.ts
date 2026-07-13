@@ -36,7 +36,8 @@ export class SurveyService {
   }
 
   async joinSurvey(surveyorCode: string): Promise<SurveyContext> {
-    const survey = await this.surveyRepository.findBySurveyorCode(surveyorCode);
+    // Codes are matched case-insensitively; generated codes are always lowercase.
+    const survey = await this.surveyRepository.findBySurveyorCode(surveyorCode.trim().toLowerCase());
     if (!survey) throw new Error('Survey not found for surveyor code');
     return this.surveyRepository.getSurveyContext(survey.id);
   }
@@ -63,6 +64,41 @@ export class SurveyService {
       );
     }
     return this.surveyRepository.update(surveyId, { status: 'completed' });
+  }
+
+  // --- Media ---
+
+  async setBoundaryImage(
+    surveyId: string,
+    fileName: string,
+    data: ArrayBuffer | Uint8Array,
+  ): Promise<Survey> {
+    const { survey } = await this.surveyRepository.getSurveyContext(surveyId);
+    const previousRef = survey.boundaryImageRef;
+
+    const safeFileName = fileName.replace(/[/\\]/g, '_').replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = `surveys/${surveyId}/boundary/${safeFileName}`;
+    // Adapter returns a ref to a renderable image; it handles any format
+    // conversion (e.g. PDF rasterization) so the domain stays format-agnostic.
+    const reference = await this.mediaRepository.upload(path, data);
+
+    const updated = await this.updateSurvey(surveyId, { boundaryImageRef: reference });
+
+    if (previousRef && previousRef !== reference) {
+      try {
+        await this.mediaRepository.delete(previousRef);
+      } catch {
+        // Best-effort cleanup; avoid failing the main write path.
+      }
+    }
+
+    return updated;
+  }
+
+  async getBoundaryImageUrl(surveyId: string): Promise<string | null> {
+    const { survey } = await this.surveyRepository.getSurveyContext(surveyId);
+    if (!survey.boundaryImageRef) return null;
+    return this.mediaRepository.getDownloadUrl(survey.boundaryImageRef);
   }
 
   // --- Locations ---
