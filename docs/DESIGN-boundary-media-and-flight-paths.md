@@ -306,6 +306,71 @@ frontend are unchanged either way.
 
 ---
 
+## Upload progress & app-kill resumability (deferred to Firebase; recorded here)
+
+We want a background-upload UX: start an upload, navigate away, come back (or
+even relaunch the app) and see how far it's got — without blocking the UI.
+Analysis of how this composes with the model:
+
+**`await mediaRepository.upload(...)` does not block the UI** (JS stays
+responsive; native transfer runs off-thread), but two things stop the
+background UX today: the upload screen `await`s completion *before* navigating,
+and progress would feed screen-local state that dies on unmount.
+
+**Two signals, two homes** (the same two-substrate split as the crux above):
+
+| Signal | Example | Lives on | Survives nav? | Survives app kill? |
+|---|---|---|---|---|
+| Coarse status | `uploading`/`processing`/`ready` | survey doc → subscription | yes | yes |
+| Fine % progress | 30% → 70% | (in-memory task) OR (doc, throttled) | depends | depends |
+| The half-uploaded bytes | resume vs restart | Storage + adapter | n/a | adapter capability |
+
+**Resumability does NOT need to be exposed to the frontend.** Resume mechanics
+(chunk offsets, a persisted task token, on-launch rehydrate, resume-vs-restart)
+are pure Firebase-adapter concerns. The only thing that would *force* a frontend
+seam is sourcing a live *smooth* % from an in-memory task (which can't survive
+navigation/kill, so the frontend would need to reacquire it). The old
+percentage itself is inherently unrecoverable across a kill — that's a law, not
+a limitation; a resumed transfer reports wherever it resumes.
+
+**Decision — Option 2: doc-sourced, throttled progress.** The adapter streams
+real progress to the service via the existing `UploadOptions.onProgress`; the
+service writes **throttled** checkpoints (e.g. every ~10% / few seconds) to the
+survey doc, and the frontend reads them through the **subscription it already
+has**. This makes progress survive navigation, app kill, and cross-device — and
+keeps resumability 100% hidden in the backend. Trade-off: a *stepped* bar
+(10→20→…→70), not buttery-smooth. Acceptable for this app's volumes; the extra
+throttled Firestore writes are negligible. (Rejected: Option 1 = coarse status
+only, no bar; Option 3 = smooth live % from an in-memory task, which is the only
+option that leaks a frontend seam. Also dropped the earlier
+`canResumeAfterKill` flag / `getPendingUploads` idea — unnecessary once progress
+is doc-sourced.)
+
+**What this needs now: nothing.** The foundations already exist —
+`UploadOptions.onProgress` is in the port, and `'uploading'` is already a valid
+`MediaAsset` status. The behaviour can't be built meaningfully against the
+synchronous in-memory adapter (it resolves in one tick; `onProgress` fires `1`
+immediately), and none of it is a port-*signature* change: progress checkpoints
+are written by the service via the existing callback, and a typed
+`progress?: number` on `MediaAsset` would be purely additive. So it's
+Firebase-time work, done in one pass with the real adapter and verified against
+the emulator.
+
+**On writing `status: 'uploading'` first:** also deferred, and it has a
+dependency worth naming. Writing `uploading` *before* the transfer completes
+needs a `sourceRef` up-front, but `sourceRef` currently comes *back from*
+`upload()` (the adapter owns path derivation — see gap #5). Resolving that means
+a two-phase upload / provisional ref / nullable-while-uploading `sourceRef` —
+i.e. it rides on the eventual upload-task shape. Doing it now would drag that in
+early for a state that is invisible against the only adapter we have. Pre-
+Firebase, a relaunched app already re-subscribes and sees `processing`/`ready`
+from the doc, so nothing is lost by waiting. The frontend needs an
+"unfinished/stale upload" fallback branch **regardless** (status stuck at
+`uploading` past a threshold → offer re-upload); implementing resume only makes
+that branch fire less often.
+
+---
+
 ## Execution plan (sequenced)
 
 Ordered to keep the tree building at each step; domain-inward first.
