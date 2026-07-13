@@ -70,6 +70,15 @@ describe('SurveyService', () => {
       expect(ctx.survey.id).toBe(survey.id);
     });
 
+    it('accepts surveyor code with surrounding whitespace and mixed case', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      const codeWithWhitespaceAndCase = `  ${survey.surveyorCode.toUpperCase()}  `;
+
+      const ctx = await service.joinSurvey(codeWithWhitespaceAndCase);
+      expect(ctx.survey.id).toBe(survey.id);
+    });
+
     it('throws for unknown surveyor code', async () => {
       const { service } = createService();
       await expect(service.joinSurvey('badcode')).rejects.toThrow();
