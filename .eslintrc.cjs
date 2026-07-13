@@ -15,5 +15,21 @@ module.exports = {
     // Allow underscore-prefixed parameters (used as "intentionally unused" markers)
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
   },
+  overrides: [
+    {
+      files: [
+        '**/tests/**/*.{ts,tsx}',
+        '**/features/**/*.{ts,tsx}',
+        '**/*.test.{ts,tsx}',
+        '**/*.steps.{ts,tsx}',
+      ],
+      env: { jest: true },
+      rules: {
+        // require() inside jest.mock factories is idiomatic and hoisted
+        '@typescript-eslint/no-var-requires': 'off',
+        '@typescript-eslint/no-explicit-any': 'off',
+      },
+    },
+  ],
   ignorePatterns: ['**/dist/**', '**/node_modules/**', '**/.expo/**'],
 };

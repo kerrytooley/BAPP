@@ -5,18 +5,22 @@ import { StyleSheet, TextInput, View } from "react-native";
 export interface CodeInputProps {
     value?: string;
     placeholder?: string;
+    testID?: string;
     onChangeText?: (text: string) => void
 }
 
 export const CodeInput = ({
     value,
     placeholder,
+    testID,
     onChangeText }
     : CodeInputProps) => {
 
     return (
         <View>
             <TextInput
+                testID={testID}
+                accessibilityLabel={testID}
                 style={styles.codeInput}
                 placeholder={placeholder}
                 placeholderTextColor={colours.placeholderText}

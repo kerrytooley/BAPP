@@ -21,13 +21,13 @@ export function UploadRedLineBoundaryScreen(): React.JSX.Element {
 
     const handleContinue = async () => {
         try {
-            if (imageUri) {
-                const base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
-                const bytes = base64ToBytes(base64);
-                const fileName = imageUri?.split("/").pop() ?? `boundary-${Date.now()}.jpg`;
-                await service.setBoundaryImage(surveyId, fileName, bytes);
-                console.log('Red line boundary uploaded:', fileName);
-            }
+            // Continue is only enabled once an image has been selected.
+            const uri = imageUri as string;
+            const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+            const bytes = base64ToBytes(base64);
+            const fileName = uri.split("/").pop() as string;
+            await service.setBoundaryImage(surveyId, fileName, bytes);
+            console.log('Red line boundary uploaded:', fileName);
             navigation.navigate('AddSurveyorScreen', { surveyId })
         } catch (e) {
             console.log("Error uploading red line boundary: ", e)

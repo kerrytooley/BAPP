@@ -7,16 +7,18 @@ interface TitleProps {
     title: string;
     subtitle?: string;
     style?: TextStyle;
+    testID?: string;
 }
 
 export const Title = ({
     title,
     subtitle,
-    style
+    style,
+    testID
 }: TitleProps) => {
     return (
         <View style={{ width: '100%', gap: 16 }}>
-            <Text style={[textStyles.title, style]}>{title}</Text>
+            <Text testID={testID} style={[textStyles.title, style]}>{title}</Text>
             {subtitle != null && <Text style={textStyles.subtitle}>{subtitle}</Text>}
         </View>
     );

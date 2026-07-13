@@ -11,6 +11,7 @@ export interface SurveyorCardProps {
     onAddLocation?: () => void;
     onClose: () => void;
     hasLocation?: boolean;
+    testID?: string;
 }
 
 export const SurveyorCard = ({
@@ -21,10 +22,12 @@ export const SurveyorCard = ({
     onAddLocation,
     onClose,
     hasLocation = false,
+    testID,
 }: SurveyorCardProps) => {
     return (
-        <Card cardLabel={isLead ? "Add Lead Surveyor" : "Add Surveyor"} removable={isLead ? false : true} onClose={isLead ? () => { } : onClose}>
+        <Card cardLabel={isLead ? "Add Lead Surveyor" : "Add Surveyor"} removable={!isLead} onClose={onClose}>
             <InputField
+                testID={testID}
                 placeholderText="Input Surveyor Name"
                 value={name}
                 onChangeText={onChangeName}

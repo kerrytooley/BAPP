@@ -65,7 +65,7 @@ export const AddLocationBottomSheet = forwardRef<BottomSheetModal, AddLocationPr
                         <Button
                             label="Save Location"
                             variant="light"
-                            onPress={() => { if (position) onChange(position) }}
+                            onPress={() => onChange(position as BoundaryPosition)}
                             disabled={!position}
                         />
                     </View>

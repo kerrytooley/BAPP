@@ -23,7 +23,7 @@ export function InputCodeScreen(): React.JSX.Element {
                 <Title title="Input Survey Code" subtitle="Join survey by entering code shared by lead surveyor" />
             </View>
             <View style={styles.content}>
-                <CodeInput placeholder="XXXXXX" value={code} onChangeText={setCode} />
+                <CodeInput testID="survey-code-input" placeholder="XXXXXX" value={code} onChangeText={setCode} />
             </View>
             <Button
                 variant="light"

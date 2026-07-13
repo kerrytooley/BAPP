@@ -43,8 +43,8 @@ export function CreateSurvey(): React.JSX.Element {
             </View>
             <ScrollView ref={scrollRef} style={{ width: "100%" }} contentContainerStyle={screen.content} keyboardShouldPersistTaps="handled">
                 <Title title="Create Survey" />
-                <InputField fieldLabel="Survey Name" placeholderText="Input survey name" value={name} onChangeText={setName} />
-                <InputField fieldLabel="Survey Postcode" placeholderText="Input survey postcode" value={postcode} onChangeText={setPostcode} />
+                <InputField testID="survey-name-input" fieldLabel="Survey Name" placeholderText="Input survey name" value={name} onChangeText={setName} />
+                <InputField testID="survey-postcode-input" fieldLabel="Survey Postcode" placeholderText="Input survey postcode" value={postcode} onChangeText={setPostcode} />
                 <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.date = e.nativeEvent.layout.y; }}>
                     <DatePickerInput fieldLabel="Survey Date" value={date} onChange={setDate} onOpen={() => scrollToField("date")} />
                 </View>

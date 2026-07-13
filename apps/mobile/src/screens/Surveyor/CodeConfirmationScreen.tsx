@@ -44,11 +44,11 @@ export function CodeConfirmationScreen(
         <View style={styles.screen}>
             <View style={{ width: "100%" }}>
                 <BackButton navigation={navigation} />
-                <Title title="You are joining:" />
+                <Title testID="confirmation-heading" title="You are joining:" />
             </View>
             <View style={styles.content}>
-                <Title title={surveyTitle} />
-                <Title title={surveyDate.toString()} />
+                <Title testID="confirmation-survey-title" title={surveyTitle} />
+                <Title testID="confirmation-survey-date" title={surveyDate.toString()} />
             </View>
             <View style={{ alignItems: "center", gap: 16 }}>
                 <Button label="Continue" variant="light" onPress={() => { }} />

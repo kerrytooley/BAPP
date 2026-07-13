@@ -1,0 +1,3 @@
+pnpm lint-staged
+pnpm typecheck
+pnpm --filter @bapp/mobile test:unit

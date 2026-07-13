@@ -145,6 +145,7 @@ export function AddSurveyorScreen(): React.JSX.Element {
                         <SurveyorCard
                             key={surveyor.id}
                             isLead={isLead(surveyor)}
+                            testID={isLead(surveyor) ? "lead-surveyor-name-input" : "surveyor-name-input"}
                             name={surveyor.name ?? ""}
                             onChangeName={(text) => updateName(surveyor.id, text)}
                             onEndEditingName={() => saveName(surveyor.id, surveyor.name ?? "")}

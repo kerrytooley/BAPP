@@ -39,7 +39,7 @@ export const Button = ({
   const textSizeStyle = textSizeStyles[size];
 
   return (
-    <TouchableOpacity accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} activeOpacity={disabled ? 1 : 0.6} onPress={onPress}>
+    <TouchableOpacity testID={label} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} activeOpacity={disabled ? 1 : 0.6} onPress={onPress}>
       <View style={[styles.button, modeStyle, sizeStyle, style]} >
         <Text style={[textStyles.buttonLabel, textModeStyle, textSizeStyle]}>{label}</Text>
         {action === "add" && <Plus style={styles.actionItem} />}
@@ -99,7 +99,7 @@ export const InlineButton = ({
   onPress
 }: ButtonProps) => {
   return (
-    <TouchableOpacity accessibilityRole="button" onPress={onPress} >
+    <TouchableOpacity testID={label} accessibilityRole="button" accessibilityLabel={label} onPress={onPress} >
       <Text style={styles.inlineButtonText}>{label}</Text>
     </TouchableOpacity>
   )

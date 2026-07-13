@@ -9,6 +9,7 @@ export interface InputFieldProps {
     placeholderText: string;
     value?: string;
     unit?: string;
+    testID?: string;
     onChangeText?: (text: string) => void;
     onEndEditing?: () => void;
     style?: StyleProp<ViewStyle>;
@@ -21,6 +22,7 @@ export const InputField = ({
     placeholderText,
     value,
     unit,
+    testID,
     onChangeText,
     onEndEditing,
     style
@@ -38,6 +40,8 @@ export const InputField = ({
             }
             <View style={[styles.inputBox, isLarge && styles.large, isLarge && styles.topAlign]}>
                 <TextInput
+                    testID={testID}
+                    accessibilityLabel={testID}
                     style={[styles.inputText, isLarge && styles.inputTextLarge]}
                     value={value}
                     onChangeText={onChangeText}

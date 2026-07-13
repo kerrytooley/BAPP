@@ -8,6 +8,9 @@ dist/
 build/
 out/
 
+# Test coverage reports
+coverage/
+
 # TypeScript incremental compilation cache
 *.tsbuildinfo
 

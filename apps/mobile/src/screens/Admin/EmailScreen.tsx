@@ -23,7 +23,7 @@ export function EmailScreen(): React.JSX.Element {
                 <Title title="Enter Email Address" subtitle="Enter the email address to send the completed survey report to." />
             </View>
             <View style={styles.content}>
-                <InputField fieldLabel="Email Address" placeholderText="Input email address" value={email} onChangeText={setEmail} />
+                <InputField testID="email-input" fieldLabel="Email Address" placeholderText="Input email address" value={email} onChangeText={setEmail} />
             </View>
             <Button
                 variant="light"

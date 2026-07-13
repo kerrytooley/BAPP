@@ -30,9 +30,9 @@ export const CodeShare = ({
     return (
         <View style={styles.container}>
             <View style={styles.codeContainer}>
-                <Text style={styles.codeText}>{value}</Text>
+                <Text testID="survey-code" accessibilityLabel={value} style={styles.codeText}>{value}</Text>
             </View>
-            <TouchableOpacity onPress={() => shareCode(value)}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Share survey code" onPress={() => shareCode(value)}>
                 <Export width={36} />
             </TouchableOpacity>
         </View >
