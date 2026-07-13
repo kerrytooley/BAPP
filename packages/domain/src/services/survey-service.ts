@@ -36,7 +36,8 @@ export class SurveyService {
   }
 
   async joinSurvey(surveyorCode: string): Promise<SurveyContext> {
-    const survey = await this.surveyRepository.findBySurveyorCode(surveyorCode);
+    // Codes are matched case-insensitively; generated codes are always lowercase.
+    const survey = await this.surveyRepository.findBySurveyorCode(surveyorCode.trim().toLowerCase());
     if (!survey) throw new Error('Survey not found for surveyor code');
     return this.surveyRepository.getSurveyContext(survey.id);
   }
@@ -75,7 +76,10 @@ export class SurveyService {
     const { survey } = await this.surveyRepository.getSurveyContext(surveyId);
     const previousRef = survey.boundaryImageRef;
 
-    const path = `surveys/${surveyId}/boundary/${fileName}`;
+    const safeFileName = fileName.replace(/[/\\]/g, '_').replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = `surveys/${surveyId}/boundary/${safeFileName}`;
+    // Adapter returns a ref to a renderable image; it handles any format
+    // conversion (e.g. PDF rasterization) so the domain stays format-agnostic.
     const reference = await this.mediaRepository.upload(path, data);
 
     const updated = await this.updateSurvey(surveyId, { boundaryImageRef: reference });

@@ -165,7 +165,60 @@ describe('SurveyService', () => {
       const ref = `surveys/${survey.id}/boundary/boundary.png`;
       await service.setBoundaryImage(survey.id, 'boundary.png', bytes);
 
-      await expect(mediaRepo.getDownloadUrl(ref)).resolves.toBe(`inmemory://${ref}`);
+      await expect(mediaRepo.getDownloadUrl(ref)).resolves.toMatch(/^data:image\/png;base64,/);
+    });
+
+    it('points a PDF upload at the derived .png reference (produced by the adapter)', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 1, 2]); // %PDF...
+
+      const updated = await service.setBoundaryImage(survey.id, 'boundary.pdf', pdfBytes);
+
+      expect(updated.boundaryImageRef).toBe(`surveys/${survey.id}/boundary/boundary.png`);
+    });
+
+    it('retains the original PDF bytes alongside the derived image', async () => {
+      const { service, mediaRepo } = createService();
+      const survey = await service.createSurvey();
+      const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 1, 2]);
+
+      await service.setBoundaryImage(survey.id, 'boundary.pdf', pdfBytes);
+
+      const pdfUrl = await mediaRepo.getDownloadUrl(`surveys/${survey.id}/boundary/boundary.pdf`);
+      expect(pdfUrl).toMatch(/^data:application\/pdf;base64,/);
+    });
+
+    it('detects a PDF by magic bytes even without a .pdf extension', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 7]);
+
+      const updated = await service.setBoundaryImage(survey.id, 'boundary', pdfBytes);
+
+      expect(updated.boundaryImageRef).toBe(`surveys/${survey.id}/boundary/boundary.png`);
+    });
+
+    it('stores a non-PDF image ref unchanged', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+
+      const updated = await service.setBoundaryImage(survey.id, 'boundary.png', bytes);
+
+      expect(updated.boundaryImageRef).toBe(`surveys/${survey.id}/boundary/boundary.png`);
+    });
+
+    it('resolves a renderable image URL for a PDF upload', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 1, 2]);
+
+      await service.setBoundaryImage(survey.id, 'boundary.pdf', pdfBytes);
+
+      // The in-memory adapter stands in for the Cloud Function, so the boundary
+      // resolves to a displayable PNG the app can render.
+      const url = await service.getBoundaryImageUrl(survey.id);
+      expect(url).toMatch(/^data:image\/png;base64,/);
     });
   });
 
@@ -182,7 +235,7 @@ describe('SurveyService', () => {
       await service.setBoundaryImage(survey.id, 'boundary.png', new Uint8Array([1, 2, 3]));
 
       const url = await service.getBoundaryImageUrl(survey.id);
-      expect(url).toBe(`inmemory://surveys/${survey.id}/boundary/boundary.png`);
+      expect(url).toBe('data:image/png;base64,AQID');
     });
   });
 

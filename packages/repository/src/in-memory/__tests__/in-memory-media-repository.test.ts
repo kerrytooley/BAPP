@@ -17,11 +17,18 @@ describe('InMemoryMediaRepository', () => {
   });
 
   describe('getDownloadUrl', () => {
-    it('returns a URL for uploaded media', async () => {
+    it('returns a base64 data URL for uploaded media', async () => {
       const data = new Uint8Array([1, 2, 3]);
       const ref = await repo.upload('test.png', data);
       const url = await repo.getDownloadUrl(ref);
-      expect(url).toBe('inmemory://test.png');
+      expect(url).toBe('data:image/png;base64,AQID');
+    });
+
+    it('infers the mime type from the file extension', async () => {
+      const data = new Uint8Array([1, 2, 3]);
+      const ref = await repo.upload('test.jpg', data);
+      const url = await repo.getDownloadUrl(ref);
+      expect(url).toBe('data:image/jpeg;base64,AQID');
     });
 
     it('throws for unknown reference', async () => {
