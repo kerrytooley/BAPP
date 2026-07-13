@@ -1,4 +1,4 @@
-import type { MediaRepository } from '@bapp/domain';
+import type { MediaRepository, UploadOptions, UploadResult } from '@bapp/domain';
 import { isPdf, derivedImagePath } from '../media/boundary-media';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -73,23 +73,46 @@ function mimeTypeFor(reference: string): string {
   return MIME_TYPES[extension] ?? 'application/octet-stream';
 }
 
+/** Sanitize the final path segment for filesystem/storage safety. */
+function sanitizePath(path: string): string {
+  const slash = path.lastIndexOf('/');
+  const dir = slash >= 0 ? path.slice(0, slash + 1) : '';
+  const name = (slash >= 0 ? path.slice(slash + 1) : path)
+    .replace(/[/\\]/g, '_')
+    .replace(/[^a-zA-Z0-9._-]/g, '_');
+  return dir + name;
+}
+
 export class InMemoryMediaRepository implements MediaRepository {
   private store = new Map<string, ArrayBuffer>();
 
-  async upload(path: string, data: ArrayBuffer | Uint8Array): Promise<string> {
+  async upload(
+    path: string,
+    data: ArrayBuffer | Uint8Array,
+    options?: UploadOptions,
+  ): Promise<UploadResult> {
+    // Storage-layout and name-sanitization knowledge lives in the adapter, not
+    // the domain. The caller passes a logical path; we own the safe form.
+    const sourceRef = sanitizePath(path);
     const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
     const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-    this.store.set(path, buffer);
+    this.store.set(sourceRef, buffer);
 
-    // Stand in for server-side rasterization: store a placeholder PNG at the
-    // derived path and return that ref, matching the Firebase adapter's contract.
-    if (isPdf(path, bytes)) {
-      const pngPath = derivedImagePath(path);
-      this.store.set(pngPath, placeholderPng());
-      return pngPath;
+    // Uploads are atomic here; report completion once for progress-aware callers.
+    options?.onProgress?.(1);
+
+    // Stand in for server-side rasterization: a PDF is normalized to a
+    // displayable PNG at a derived path. The in-memory fake does this
+    // synchronously and reports `ready`; a real async adapter would leave
+    // `renderRef: null`, `status: 'processing'` and resolve it via writeback.
+    if (isPdf(sourceRef, bytes)) {
+      const renderRef = derivedImagePath(sourceRef);
+      this.store.set(renderRef, placeholderPng());
+      return { sourceRef, renderRef, status: 'ready' };
     }
 
-    return path;
+    // Already a renderable raster: source and render are the same object.
+    return { sourceRef, renderRef: sourceRef, status: 'ready' };
   }
 
   async getDownloadUrl(reference: string): Promise<string> {
@@ -100,6 +123,15 @@ export class InMemoryMediaRepository implements MediaRepository {
   }
 
   async delete(reference: string): Promise<void> {
+    // Holistic: remove the reference and any artifact derived from it (a PDF
+    // source's rasterized PNG, or vice versa). Idempotent.
     this.store.delete(reference);
+    this.store.delete(derivedImagePath(reference));
+  }
+
+  async clearCache(_surveyId?: string): Promise<void> {
+    // No separate offline cache in the in-memory fake — `getDownloadUrl` reads
+    // straight from the store — so there is nothing to evict. The real adapter
+    // deletes cached files from the device filesystem here.
   }
 }

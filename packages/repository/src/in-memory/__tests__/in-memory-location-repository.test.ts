@@ -16,7 +16,8 @@ describe('InMemoryLocationRepository', () => {
       expect(loc.surveyId).toBe(surveyId);
       expect(loc.name).toBeNull();
       expect(loc.boundaryPosition).toBeNull();
-      expect(loc.frontViewImageRef).toBeNull();
+      expect(loc.frontViewImage).toBeNull();
+      expect(loc.equipmentImage).toBeNull();
       expect(loc.data).toEqual({});
     });
 

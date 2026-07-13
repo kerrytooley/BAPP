@@ -3,8 +3,17 @@ export interface FlightPathPoint {
   y: number;
 }
 
+/**
+ * Which image's coordinate space a flight path's points live in. Points are
+ * normalized [0,1], so they are only meaningful relative to a specific surface:
+ * - `boundary`  — the birds-eye view drawn on the survey's boundary image
+ * - `frontView` — the as-seen view drawn on the location's front-view photo
+ */
+export type FlightPathSurface = 'boundary' | 'frontView';
+
 export interface FlightPath {
   id: string;
+  surface: FlightPathSurface;
   points: FlightPathPoint[];
   data?: Record<string, unknown>;
 }

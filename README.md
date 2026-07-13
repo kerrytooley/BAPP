@@ -65,10 +65,37 @@ BAPP uses a **ports-and-adapters** (hexagonal) architecture with three layers:
 
 | Entity | Description | Key relationships |
 |---|---|---|
-| **Survey** | Top-level container with site details, timing, codes, weather, and status | Has many Locations, Surveyors |
-| **Location** | A physical survey point on the site, with position on the boundary image | Belongs to Survey, optionally assigned to a Surveyor. Has front-view and equipment photos. Has many Observations |
+| **Survey** | Top-level container with site details, timing, codes, weather, status, and the `boundary` media asset | Has many Locations, Surveyors |
+| **Location** | A physical survey point on the site, with position on the boundary image | Belongs to Survey, optionally assigned to a Surveyor. Has front-view and equipment photos (each a media asset). Has many Observations |
 | **Surveyor** | A participant in a survey (not a persistent user account in v1) | Belongs to Survey, optionally assigned to a Location |
 | **Observation** | A single bat record: species, counts, timestamps, flight paths | Belongs to Survey, Location, and Surveyor |
+
+#### Media assets
+
+Every image (the survey's `boundary`, and each location's `frontViewImage` /
+`equipmentImage`) is a **`MediaAsset`**, not a bare reference string. A source
+image may be a PDF (boundary maps are often downloaded, not photographed) or a
+HEIC photo (iOS), so "the file we stored" and "the image we display" are not the
+same object. `MediaAsset` makes the upload→display pipeline explicit:
+
+- `sourceRef` — the bytes that were uploaded (may be a PDF/HEIC)
+- `renderRef` — the displayable raster (PNG/JPEG); `null` until produced
+- `status` — `uploading` | `processing` | `ready` | `failed`
+
+The repository adapter normalizes any source into a renderable raster
+(rasterizing PDFs, transcoding HEIC), so the domain and frontend stay
+format-agnostic. Under Firebase this rasterization is asynchronous (a Cloud
+Function), so a `MediaAsset` can be `processing` with `renderRef: null`; the
+status flips to `ready` via the survey/location subscription. See
+`packages/repository/src/FIREBASE_ARCHITECTURE.md` and
+`docs/DESIGN-boundary-media-and-flight-paths.md`.
+
+#### Flight paths and surfaces
+
+An `Observation`'s `flightPaths` may be drawn on **two** images: the birds-eye
+view (the survey boundary) and the as-seen view (the location's front-view
+photo). Each `FlightPath` therefore carries a `surface: 'boundary' | 'frontView'`
+tag identifying which image's normalized coordinate space its points live in.
 
 ### Design Principles
 
@@ -82,7 +109,12 @@ BAPP uses a **ports-and-adapters** (hexagonal) architecture with three layers:
 
 **All writes go through `SurveyService`.** The frontend must not call repository write methods (`create`, `update`, `delete`) directly. The service is the single point for validation and business logic. This is enforced by convention, not by the type system — please respect it.
 
-**Reads go directly to repositories.** The frontend can call repository read methods (`findById`, `findBySurveyId`, `subscribe*`) directly. For a complete snapshot of a survey and all its child entities, use `surveyRepository.getSurveyContext(surveyId)`.
+**Reads currently go through the `SurveyService` façade.** Although repositories expose read methods (`findById`, `findBySurveyId`, `subscribe*`) that are safe to call directly, the mobile app routes *all* reads through the service (it only ever receives a `surveyId` and re-reads on demand). We keep a single read surface so that offline caching and real-time subscriptions can be added in one place when the Firebase adapter lands — rather than migrating two call patterns later. Prefer:
+
+- `getSurvey(surveyId)` — a single survey document (use this when you only need the survey, e.g. to read `boundary`).
+- `getSurveyContext(surveyId)` — a complete snapshot of a survey and all its child entities.
+
+A `subscribeSurveyContext(surveyId, cb)` method is planned as the real answer to reflecting remote updates live; it will be the single home for Firestore `onSnapshot` + offline cache.
 
 **Partial updates with null semantics.** Update inputs use `Partial<>` with explicit `null` support:
 - Omitting a field = don't touch it

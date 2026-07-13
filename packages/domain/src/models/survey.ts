@@ -1,3 +1,5 @@
+import type { MediaAsset } from './media';
+
 export type SurveyStatus = 'draft' | 'active' | 'completed';
 
 export interface Survey {
@@ -10,7 +12,7 @@ export interface Survey {
   sunsetTime: Date | null;
   startTime: Date | null;
   endTime: Date | null;
-  boundaryImageRef: string | null;
+  boundary: MediaAsset | null;
   status: SurveyStatus;
   weather: Record<string, unknown>;
   data: Record<string, unknown>;
@@ -25,7 +27,7 @@ export type CreateSurveyInput = {
   sunsetTime?: Date | null;
   startTime?: Date | null;
   endTime?: Date | null;
-  boundaryImageRef?: string | null;
+  boundary?: MediaAsset | null;
   status?: SurveyStatus;
   weather?: Record<string, unknown>;
   data?: Record<string, unknown>;
@@ -38,7 +40,7 @@ export type UpdateSurveyInput = Partial<{
   sunsetTime: Date | null;
   startTime: Date | null;
   endTime: Date | null;
-  boundaryImageRef: string | null;
+  boundary: MediaAsset | null;
   status: SurveyStatus;
   weather: Record<string, unknown>;
   data: Record<string, unknown>;

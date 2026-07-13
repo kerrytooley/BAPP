@@ -1,4 +1,5 @@
 // Domain models
+export * from './models/media';
 export * from './models/survey';
 export * from './models/location';
 export * from './models/surveyor';

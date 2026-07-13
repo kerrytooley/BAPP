@@ -27,7 +27,7 @@ defineFeature(feature, (test) => {
     resetNavigationMock();
     setRouteParams({ surveyId: 'survey-1' });
     service = createMockService();
-    service.getBoundaryImageUrl.mockResolvedValue(null);
+    service.getBoundaryImage.mockResolvedValue({ status: 'none' });
   });
 
   test('Admin adds another surveyor', ({ given, when, then }) => {

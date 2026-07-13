@@ -33,7 +33,7 @@ describe('InMemoryObservationRepository', () => {
         species: 'Common Pipistrelle',
         seenCount: 3,
         heardCount: 5,
-        flightPaths: [{ id: 'fp-1', points: [{ x: 0, y: 0 }, { x: 10, y: 20 }] }],
+        flightPaths: [{ id: 'fp-1', surface: 'frontView', points: [{ x: 0, y: 0 }, { x: 10, y: 20 }] }],
       });
       expect(obs.species).toBe('Common Pipistrelle');
       expect(obs.seenCount).toBe(3);
@@ -98,11 +98,13 @@ describe('InMemoryObservationRepository', () => {
       const created = await repo.create({ surveyId, locationId, surveyorId });
       const updated = await repo.update(created.id, {
         flightPaths: [
-          { id: 'fp-1', points: [{ x: 0, y: 0 }, { x: 5, y: 10 }] },
-          { id: 'fp-2', points: [{ x: 3, y: 3 }, { x: 8, y: 12 }] },
+          { id: 'fp-1', surface: 'frontView', points: [{ x: 0, y: 0 }, { x: 5, y: 10 }] },
+          { id: 'fp-2', surface: 'boundary', points: [{ x: 3, y: 3 }, { x: 8, y: 12 }] },
         ],
       });
       expect(updated.flightPaths).toHaveLength(2);
+      expect(updated.flightPaths[0].surface).toBe('frontView');
+      expect(updated.flightPaths[1].surface).toBe('boundary');
     });
 
     it('throws for unknown ID', async () => {

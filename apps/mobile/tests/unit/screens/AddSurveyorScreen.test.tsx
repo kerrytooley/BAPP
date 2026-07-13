@@ -123,7 +123,7 @@ describe('AddSurveyorScreen', () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = createMockService({
             getSurveyContext: jest.fn().mockResolvedValue(leadOnlyContext()),
-            getBoundaryImageUrl: jest.fn().mockRejectedValue(new Error('no image')),
+            getBoundaryImage: jest.fn().mockRejectedValue(new Error('no image')),
         });
         renderWithService(<AddSurveyorScreen />, service);
         await waitFor(() =>

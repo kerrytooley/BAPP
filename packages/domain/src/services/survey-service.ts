@@ -1,4 +1,5 @@
 import type { Survey, UpdateSurveyInput } from '../models/survey';
+import type { MediaAsset } from '../models/media';
 import type { Location, CreateLocationInput, UpdateLocationInput } from '../models/location';
 import type { Surveyor, CreateSurveyorInput, UpdateSurveyorInput } from '../models/surveyor';
 import type { Observation, CreateObservationInput, UpdateObservationInput } from '../models/observation';
@@ -10,6 +11,17 @@ import type { ObservationRepository } from '../repositories/observation-reposito
 import type { MediaRepository } from '../repositories/media-repository';
 import type { SurveyValidator, SurveyChange } from '../validation';
 import { ValidationError } from '../validation-error';
+
+/**
+ * Status-bearing result of resolving a boundary image. Lets the UI show the
+ * right state (nothing / spinner / retry / the image) instead of treating a
+ * not-yet-rendered image as an error.
+ */
+export type BoundaryImageResult =
+  | { status: 'none' }
+  | { status: 'processing' }
+  | { status: 'failed'; error: string | null }
+  | { status: 'ready'; url: string };
 
 export class SurveyService {
   constructor(
@@ -48,6 +60,17 @@ export class SurveyService {
     return this.surveyRepository.getSurveyContext(surveyId);
   }
 
+  /**
+   * Single-document read. Prefer this over `getSurveyContext` when you only need
+   * the survey (e.g. to read boundary state) — it avoids fetching every
+   * location, surveyor, and observation.
+   */
+  async getSurvey(surveyId: string): Promise<Survey> {
+    const survey = await this.surveyRepository.findById(surveyId);
+    if (!survey) throw new Error(`Survey ${surveyId} not found`);
+    return survey;
+  }
+
   async updateSurvey(surveyId: string, input: UpdateSurveyInput): Promise<Survey> {
     await this.withContext(surveyId, { type: 'survey', surveyId }, (ctx) => {
       ctx.survey = { ...ctx.survey, ...input };
@@ -68,37 +91,71 @@ export class SurveyService {
 
   // --- Media ---
 
+  /**
+   * Upload (or replace) the survey's boundary image.
+   *
+   * Eventually-consistent by contract: resolving means "the source is uploaded
+   * and its render state recorded" — NOT necessarily "the image is displayable".
+   * For a PDF (or any source needing async rasterization) the returned survey
+   * may carry `boundary.status === 'processing'` with `renderRef === null`;
+   * a later writeback (e.g. a Cloud Function) flips it to `ready`, which
+   * propagates to all devices via the survey subscription.
+   *
+   * Replacement is safe against slow uploads: the previous boundary stays the
+   * live one until the new upload records its state. Cleanup of the superseded
+   * media is best-effort garbage collection, decoupled from this write path, so
+   * a slow or failed new upload never blanks or breaks the existing boundary.
+   */
   async setBoundaryImage(
     surveyId: string,
     fileName: string,
     data: ArrayBuffer | Uint8Array,
+    onProgress?: (fraction: number) => void,
   ): Promise<Survey> {
-    const { survey } = await this.surveyRepository.getSurveyContext(surveyId);
-    const previousRef = survey.boundaryImageRef;
+    const previous = (await this.getSurvey(surveyId)).boundary;
 
-    const safeFileName = fileName.replace(/[/\\]/g, '_').replace(/[^a-zA-Z0-9._-]/g, '_');
-    const path = `surveys/${surveyId}/boundary/${safeFileName}`;
-    // Adapter returns a ref to a renderable image; it handles any format
-    // conversion (e.g. PDF rasterization) so the domain stays format-agnostic.
-    const reference = await this.mediaRepository.upload(path, data);
+    // The adapter owns storage layout, name sanitization, and any format
+    // conversion; we pass a logical path (survey + role + original name).
+    const path = `surveys/${surveyId}/boundary/${fileName}`;
+    const result = await this.mediaRepository.upload(path, data, { onProgress });
 
-    const updated = await this.updateSurvey(surveyId, { boundaryImageRef: reference });
+    const boundary: MediaAsset = {
+      sourceRef: result.sourceRef,
+      renderRef: result.renderRef,
+      status: result.status,
+      error: null,
+    };
+    const updated = await this.updateSurvey(surveyId, { boundary });
 
-    if (previousRef && previousRef !== reference) {
+    // GC the superseded media group only after the new state is durably
+    // recorded. Best-effort and out-of-band — never fail the write path.
+    if (previous && previous.sourceRef !== boundary.sourceRef) {
       try {
-        await this.mediaRepository.delete(previousRef);
+        await this.mediaRepository.delete(previous.sourceRef);
       } catch {
-        // Best-effort cleanup; avoid failing the main write path.
+        // Best-effort cleanup; a sweep on survey completion is the backstop.
       }
     }
 
     return updated;
   }
 
-  async getBoundaryImageUrl(surveyId: string): Promise<string | null> {
-    const { survey } = await this.surveyRepository.getSurveyContext(surveyId);
-    if (!survey.boundaryImageRef) return null;
-    return this.mediaRepository.getDownloadUrl(survey.boundaryImageRef);
+  /**
+   * Resolve the boundary image to a status-bearing result rather than throwing.
+   * Callers can distinguish "not set", "still processing", "failed", and
+   * "ready" (with a locally-available URL) and render each state appropriately.
+   */
+  async getBoundaryImage(surveyId: string): Promise<BoundaryImageResult> {
+    const { boundary } = await this.getSurvey(surveyId);
+    if (!boundary) return { status: 'none' };
+    if (boundary.status === 'failed') {
+      return { status: 'failed', error: boundary.error ?? null };
+    }
+    if (boundary.status !== 'ready' || !boundary.renderRef) {
+      return { status: 'processing' };
+    }
+    const url = await this.mediaRepository.getDownloadUrl(boundary.renderRef);
+    return { status: 'ready', url };
   }
 
   // --- Locations ---

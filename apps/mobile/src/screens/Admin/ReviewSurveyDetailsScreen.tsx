@@ -36,8 +36,8 @@ export function ReviewSurveyDetailsScreen(): React.JSX.Element {
                 const surveyContext = await service.getSurveyContext(surveyId);
                 setSurvey(surveyContext.survey);
                 setSurveyors(surveyContext.surveyors);
-                const imageUrl = await service.getBoundaryImageUrl(surveyId)
-                setBoundaryImage(imageUrl);
+                const boundary = await service.getBoundaryImage(surveyId)
+                setBoundaryImage(boundary.status === 'ready' ? boundary.url : null);
             } catch (e) {
                 console.error('failed to fetch survey', e)
             }
