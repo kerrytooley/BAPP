@@ -1,4 +1,4 @@
-import { byId } from '../support/selectors';
+import { byId, byTestId } from '../support/selectors';
 
 export const beginScreen = {
     beginNewSurvey: () => byId('Begin a new survey'),
@@ -29,6 +29,8 @@ export const reviewScreen = {
 };
 
 export const shareCodeScreen = {
-    code: () => byId('survey-code'),
+    // The code Text sets accessibilityLabel to the code value itself, so it is
+    // located by testID rather than by a fixed accessibility label.
+    code: () => byTestId('survey-code'),
     returnHome: () => byId('Return Home'),
 };

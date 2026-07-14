@@ -5,7 +5,7 @@
   "packageManager": "pnpm@9.15.9",
   "scripts": {
     "build": "pnpm --filter @bapp/domain build && pnpm --filter @bapp/repository build",
-    "typecheck": "pnpm -r --filter=!@bapp/e2e typecheck",
+    "typecheck": "pnpm -r typecheck",
     "lint": "eslint . --ext .ts,.tsx --max-warnings 0",
     "prepare": "husky"
   },
