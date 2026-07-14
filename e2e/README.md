@@ -2,8 +2,8 @@
 
 Real-device (simulator/emulator) end-to-end tests that drive the built BAPP
 mobile app through the OS accessibility layer — a real user tapping real
-buttons. This is distinct from the in-JS "e2e" Jest project under
-`apps/mobile/tests/features/e2e`, which renders React components in Node and
+buttons. This is distinct from the in-JS "flow" Jest project under
+`apps/mobile/tests/features/flow`, which renders React components in Node and
 simulates presses without a device.
 
 These tests are **run locally only** — they are not wired into CI, because they

@@ -53,7 +53,7 @@ jobs:
       - run: pnpm install
       - run: pnpm --filter @bapp/mobile test:integration
 
-  e2e:
+  flow:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,7 +63,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install
-      - run: pnpm --filter @bapp/mobile test:e2e
+      - run: pnpm --filter @bapp/mobile test:flow
 
   domain:
     runs-on: ubuntu-latest

@@ -1,9 +1,9 @@
 import { loadFeature, defineFeature } from 'jest-cucumber';
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { createRealService, renderApp } from '../../helpers/e2eApp';
+import { createRealService, renderApp } from '../../helpers/flowApp';
 import type { SurveyService } from '@bapp/domain';
 
-const feature = loadFeature('./tests/features/e2e/surveyor-joins-survey.feature');
+const feature = loadFeature('./tests/features/flow/surveyor-joins-survey.feature');
 
 defineFeature(feature, (test) => {
   let service: SurveyService;
