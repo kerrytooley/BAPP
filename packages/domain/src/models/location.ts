@@ -1,3 +1,5 @@
+import type { MediaAsset } from './media';
+
 export interface BoundaryPosition {
   x: number;
   y: number;
@@ -8,8 +10,8 @@ export interface Location {
   surveyId: string;
   name: string | null;
   boundaryPosition: BoundaryPosition | null;
-  frontViewImageRef: string | null;
-  equipmentImageRef: string | null;
+  frontViewImage: MediaAsset | null;
+  equipmentImage: MediaAsset | null;
   data: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
@@ -19,15 +21,15 @@ export type CreateLocationInput = {
   surveyId: string;
   name?: string | null;
   boundaryPosition?: BoundaryPosition | null;
-  frontViewImageRef?: string | null;
-  equipmentImageRef?: string | null;
+  frontViewImage?: MediaAsset | null;
+  equipmentImage?: MediaAsset | null;
   data?: Record<string, unknown>;
 };
 
 export type UpdateLocationInput = Partial<{
   name: string | null;
   boundaryPosition: BoundaryPosition | null;
-  frontViewImageRef: string | null;
-  equipmentImageRef: string | null;
+  frontViewImage: MediaAsset | null;
+  equipmentImage: MediaAsset | null;
   data: Record<string, unknown>;
 }>;

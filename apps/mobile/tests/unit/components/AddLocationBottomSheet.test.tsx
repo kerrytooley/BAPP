@@ -45,7 +45,7 @@ afterEach(() => jest.restoreAllMocks());
 describe('AddLocationBottomSheet', () => {
     it('shows the add title by default', () => {
         render(
-            <AddLocationBottomSheet boundaryImageRef="file://b.png" onChange={jest.fn()} />,
+            <AddLocationBottomSheet boundaryImageUri="file://b.png" onChange={jest.fn()} />,
         );
         expect(screen.getByText('Add Surveyor Location')).toBeOnTheScreen();
     });
@@ -53,7 +53,7 @@ describe('AddLocationBottomSheet', () => {
     it('shows the edit title when editing', () => {
         render(
             <AddLocationBottomSheet
-                boundaryImageRef="file://b.png"
+                boundaryImageUri="file://b.png"
                 isEditing
                 onChange={jest.fn()}
             />,
@@ -63,13 +63,13 @@ describe('AddLocationBottomSheet', () => {
 
     it('reads the image size to derive an aspect ratio', () => {
         render(
-            <AddLocationBottomSheet boundaryImageRef="file://b.png" onChange={jest.fn()} />,
+            <AddLocationBottomSheet boundaryImageUri="file://b.png" onChange={jest.fn()} />,
         );
         expect(Image.getSize).toHaveBeenCalledWith('file://b.png', expect.any(Function));
     });
 
     it('does not read image size when there is no boundary image', () => {
-        render(<AddLocationBottomSheet boundaryImageRef={null} onChange={jest.fn()} />);
+        render(<AddLocationBottomSheet boundaryImageUri={null} onChange={jest.fn()} />);
         expect(Image.getSize).not.toHaveBeenCalled();
         expect(screen.UNSAFE_queryByType(Pressable)).toBeNull();
     });
@@ -77,7 +77,7 @@ describe('AddLocationBottomSheet', () => {
     it('keeps Save disabled until a pin is dropped', () => {
         const onChange = jest.fn();
         render(
-            <AddLocationBottomSheet boundaryImageRef="file://b.png" onChange={onChange} />,
+            <AddLocationBottomSheet boundaryImageUri="file://b.png" onChange={onChange} />,
         );
         fireEvent.press(screen.getByText('Save Location'));
         expect(onChange).not.toHaveBeenCalled();
@@ -86,7 +86,7 @@ describe('AddLocationBottomSheet', () => {
     it('emits the dropped pin position when Save is pressed', () => {
         const onChange = jest.fn();
         render(
-            <AddLocationBottomSheet boundaryImageRef="file://b.png" onChange={onChange} />,
+            <AddLocationBottomSheet boundaryImageUri="file://b.png" onChange={onChange} />,
         );
         measureAndTap();
         expect(screen.getByText('Tap again to move pin')).toBeOnTheScreen();
@@ -98,7 +98,7 @@ describe('AddLocationBottomSheet', () => {
         const onChange = jest.fn();
         render(
             <AddLocationBottomSheet
-                boundaryImageRef="file://b.png"
+                boundaryImageUri="file://b.png"
                 initialPosition={{ x: 0.2, y: 0.3 }}
                 onChange={onChange}
             />,
@@ -112,7 +112,7 @@ describe('AddLocationBottomSheet', () => {
         const onChange = jest.fn();
         render(
             <AddLocationBottomSheet
-                boundaryImageRef="file://b.png"
+                boundaryImageUri="file://b.png"
                 initialPosition={{ x: 0.2, y: 0.3 }}
                 onChange={onChange}
             />,
@@ -126,7 +126,7 @@ describe('AddLocationBottomSheet', () => {
         const onChange = jest.fn();
         render(
             <AddLocationBottomSheet
-                boundaryImageRef="file://b.png"
+                boundaryImageUri="file://b.png"
                 initialPosition={{ x: 0.2, y: 0.3 }}
                 onChange={onChange}
             />,

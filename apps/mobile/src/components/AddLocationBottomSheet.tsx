@@ -9,22 +9,23 @@ import { Button } from "./Button"
 import { textStyles } from "@theme/fonts"
 
 export interface AddLocationProps {
-    boundaryImageRef: string | null | undefined
+    // A resolved, locally-renderable image URI (not a storage reference).
+    boundaryImageUri: string | null | undefined
     isEditing?: boolean
     initialPosition?: BoundaryPosition | null
     onChange: (position: BoundaryPosition) => void
 }
 
 export const AddLocationBottomSheet = forwardRef<BottomSheetModal, AddLocationProps>(
-    ({ boundaryImageRef, isEditing = false, initialPosition = null, onChange }, ref) => {
+    ({ boundaryImageUri, isEditing = false, initialPosition = null, onChange }, ref) => {
 
         const [aspectRatio, setAspectRatio] = useState(1);
         const [position, setPosition] = useState<BoundaryPosition | null>(null);
 
         useEffect(() => {
-            if (!boundaryImageRef) return
-            Image.getSize(boundaryImageRef, (imageWidth, imageHeight) => setAspectRatio(imageWidth / imageHeight))
-        }, [boundaryImageRef])
+            if (!boundaryImageUri) return
+            Image.getSize(boundaryImageUri, (imageWidth, imageHeight) => setAspectRatio(imageWidth / imageHeight))
+        }, [boundaryImageUri])
 
         const renderBackdrop = (props: BottomSheetBackdropProps) => (
             <BottomSheetBackdrop
@@ -50,9 +51,9 @@ export const AddLocationBottomSheet = forwardRef<BottomSheetModal, AddLocationPr
                     <Title title={isEditing ? "Edit Surveyor Location" : "Add Surveyor Location"} subtitle="Tap on the image to drop a pin" />
                     <View style={styles.imageBlock}>
                         <View style={styles.imageContainer}>
-                            {boundaryImageRef &&
+                            {boundaryImageUri &&
                                 <BoundaryPinLayer
-                                    imageUri={boundaryImageRef}
+                                    imageUri={boundaryImageUri}
                                     aspectRatio={aspectRatio}
                                     value={position}
                                     onChange={setPosition}

@@ -37,7 +37,7 @@ describe('ReviewSurveyDetailsScreen', () => {
     it('renders the loaded survey summary', async () => {
         const service = createMockService({
             getSurveyContext: jest.fn().mockResolvedValue(populatedContext()),
-            getBoundaryImageUrl: jest.fn().mockResolvedValue('https://img/boundary.jpg'),
+            getBoundaryImage: jest.fn().mockResolvedValue({ status: 'ready', url: 'https://img/boundary.jpg' }),
         });
         renderWithService(<ReviewSurveyDetailsScreen />, service);
         await waitFor(() => expect(screen.getByText('Dusk count')).toBeOnTheScreen());

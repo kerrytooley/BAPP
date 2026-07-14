@@ -42,8 +42,8 @@ export function AddSurveyorScreen(): React.JSX.Element {
     }, [service, surveyId])
 
     useEffect(() => {
-        service.getBoundaryImageUrl(surveyId)
-            .then(setBoundaryImageUrl)
+        service.getBoundaryImage(surveyId)
+            .then((result) => setBoundaryImageUrl(result.status === 'ready' ? result.url : null))
             .catch((e) => console.error("Failed to fetch boundary image", e));
     }, [service, surveyId]);
 
@@ -167,7 +167,7 @@ export function AddSurveyorScreen(): React.JSX.Element {
                 />
                 <AddLocationBottomSheet
                     ref={sheetRef}
-                    boundaryImageRef={boundaryImageUrl}
+                    boundaryImageUri={boundaryImageUrl}
                     isEditing={activeSurveyor?.locationId != null}
                     initialPosition={activePosition}
                     onChange={saveLocation}
