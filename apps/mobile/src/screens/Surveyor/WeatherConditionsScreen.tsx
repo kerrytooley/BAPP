@@ -1,0 +1,140 @@
+import { BackButton, Button } from "@components/Button";
+import { InputField } from "@components/InputField";
+import { Title } from "@components/Titles";
+import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { screen } from "@theme/screen";
+import { colours } from "@theme/colours";
+import React, { useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Card } from "@components/Card";
+import { useSurveyService } from "@services/surveyServiceContext";
+import { UpdateSurveyInput } from "@bapp/domain";
+import { textStyles } from "@theme/fonts";
+
+type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
+
+export function WeatherConditionsScreen(): React.JSX.Element {
+    const navigation = useNavigation<Nav>();
+    const { surveyId, surveyorId } = useRoute<RouteProp<SurveyorStackParamList, "WeatherCondtionsScreen">>().params;
+    const service = useSurveyService();
+
+    const [temperature, setTemperature] = useState<string>();
+    const [cloudCover, setCloudCover] = useState<string>();
+    const [humidity, setHumidity] = useState<string>();
+    const [wind, setWind] = useState<string>();
+    const [rain, setRain] = useState<string>();
+
+    const rainOptions: { label: string }[] = [
+        { label: "Wet" },
+        { label: "Dry" }
+    ];
+
+    const handleContinue = async () => {
+        const weatherConditions = {
+            weather: {
+                temperature: temperature,
+                cloudCover: cloudCover,
+                humidity: humidity,
+                wind: wind,
+                rain: rain
+            }
+        } as UpdateSurveyInput;
+        const updatedSurvey = await service.updateSurvey(surveyId, weatherConditions);
+        console.log('Survey updated with weather conditions: ', updatedSurvey);
+        navigation.navigate("SurveyorConfirmLocationScreen", { surveyId, surveyorId })
+    }
+
+    return (
+        <View style={screen.justifyScreen}>
+            <View style={{ width: "100%" }}>
+                <BackButton navigation={navigation} />
+                <Title title="Start Weather Conditions" />
+            </View>
+            <View style={styles.content} >
+                <InputField value={temperature} variant="unit" fieldLabel="Temperature" placeholderText="Input Temperature" unit="°C" onChangeText={setTemperature} />
+                <InputField value={cloudCover} variant="unit" fieldLabel="Cloud Cover" placeholderText="Input Cloud Cover" unit="%" onChangeText={setCloudCover} />
+                <InputField value={humidity} variant="unit" fieldLabel="Humidity" placeholderText="Input Humidity" unit="%" onChangeText={setHumidity} />
+                <InputField value={wind} variant="unit" fieldLabel="Wind" placeholderText="Input Wind" unit="Beaufort" onChangeText={setWind} />
+                <Card cardLabel="Rain" style={styles.rainCardWrapper} contentStyle={styles.rainCard}>
+                    <View style={styles.rainRow}>
+                        <Text style={styles.rainLabel}>Rain</Text>
+                        <View style={styles.radioGroup} accessibilityRole="radiogroup">
+                            {rainOptions.map((option) => {
+                                const selected = rain === option.label;
+                                return (
+                                    <TouchableOpacity
+                                        key={option.label}
+                                        style={styles.radioOption}
+                                        onPress={() => setRain(option.label)}
+                                        accessibilityRole="radio"
+                                        accessibilityState={{ selected }}
+                                    >
+                                        <Text style={styles.radioLabel}>{option.label}</Text>
+                                        <View style={styles.radioOuter}>
+                                            {selected && <View style={styles.radioInner} />}
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+                </Card>
+            </View>
+            <Button label="Continue" variant="light" onPress={() => handleContinue()} />
+        </View>
+    )
+}
+
+const styles = StyleSheet.create({
+    content: {
+        ...screen.content,
+        justifyContent: "flex-start",
+        flex: 1,
+        paddingTop: 16
+    },
+    rainCardWrapper: {
+        paddingTop: 8,
+    },
+    rainCard: {
+        minHeight: 0,
+        paddingVertical: 16,
+    },
+    rainRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between"
+    },
+    rainLabel: {
+        ...textStyles.subtitle,
+    },
+    radioGroup: {
+        flexDirection: "row",
+        alignItems: "center"
+    },
+    radioOption: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginLeft: 24
+    },
+    radioOuter: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        borderWidth: 2,
+        borderColor: colours.inputBorder,
+        alignItems: "center",
+        justifyContent: "center",
+        marginLeft: 8
+    },
+    radioInner: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: colours.light
+    },
+    radioLabel: {
+        ...textStyles.subtitle
+    }
+})

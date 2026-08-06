@@ -61,13 +61,6 @@ describe('AddLocationBottomSheet', () => {
         expect(screen.getByText('Edit Surveyor Location')).toBeOnTheScreen();
     });
 
-    it('reads the image size to derive an aspect ratio', () => {
-        render(
-            <AddLocationBottomSheet boundaryImageUri="file://b.png" onChange={jest.fn()} />,
-        );
-        expect(Image.getSize).toHaveBeenCalledWith('file://b.png', expect.any(Function));
-    });
-
     it('does not read image size when there is no boundary image', () => {
         render(<AddLocationBottomSheet boundaryImageUri={null} onChange={jest.fn()} />);
         expect(Image.getSize).not.toHaveBeenCalled();

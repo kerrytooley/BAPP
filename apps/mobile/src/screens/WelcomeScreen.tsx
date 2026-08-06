@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Logo from "@assets/images/logo.svg"
+import Logo from "@assets/icons/logo.svg"
 import { textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';
 import { ButtonGroup } from "@components/Button";

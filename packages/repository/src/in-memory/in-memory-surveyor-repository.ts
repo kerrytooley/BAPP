@@ -9,7 +9,29 @@ import type {
 let nextId = 1;
 
 export class InMemorySurveyorRepository implements SurveyorRepository {
-  private store = new Map<string, Surveyor>();
+  private store = new Map<string, Surveyor>().set(
+    'lead', {
+    id: 'lead',
+    surveyId: 'bift',
+    locationId: null,
+    name: 'Karen',
+    isLead: true,
+    status: 'pending',
+    data: {},
+    createdAt: new Date,
+    updatedAt: new Date,
+  }).set(
+    'next', {
+    id: 'next',
+    surveyId: 'bift',
+    locationId: null,
+    name: 'Bob',
+    isLead: false,
+    status: 'pending',
+    data: {},
+    createdAt: new Date,
+    updatedAt: new Date,
+  })
   private listeners = new Map<string, Set<(surveyors: Surveyor[]) => void>>();
 
   async create(input: CreateSurveyorInput): Promise<Surveyor> {

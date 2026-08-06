@@ -107,6 +107,18 @@ describe('ButtonGroup', () => {
         fireEvent.press(screen.getByRole('button'));
         expect(onPress).not.toHaveBeenCalled();
     });
+
+    it('applies a single action to every button', () => {
+        render(
+            <ButtonGroup
+                labels={['One', 'Two']}
+                actions="right arrow"
+                onPress={[jest.fn(), jest.fn()]}
+            />,
+        );
+        expect(screen.getByText('One')).toBeOnTheScreen();
+        expect(screen.getByText('Two')).toBeOnTheScreen();
+    });
 });
 
 describe('BackButton', () => {

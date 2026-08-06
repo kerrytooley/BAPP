@@ -51,7 +51,7 @@ export function CodeConfirmationScreen(
                 <Title testID="confirmation-survey-date" title={surveyDate.toString()} />
             </View>
             <View style={{ alignItems: "center", gap: 16 }}>
-                <Button label="Continue" variant="light" onPress={() => { }} />
+                <Button label="Continue" variant="light" onPress={() => navigation.navigate("SelectSurveyorScreen", { surveyId })} />
                 <InlineButton label="Doesn't look right?" onPress={navigation.goBack} /></View>
 
         </View>

@@ -1,10 +1,20 @@
 import { InputCodeScreen } from "@screens/Surveyor/InputCodeScreen";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { CodeConfirmationScreen } from "@screens/Surveyor/CodeConfirmationScreen";
+import { SelectSurveyorScreen } from "@screens/Surveyor/SelectSurveyorScreen";
+import { ConfirmSurveyorDetailsScreen } from "@screens/Surveyor/ConfirmSurveyorDetailsScreen";
+import { SurveyorConfirmLocationScreen } from "@screens/Surveyor/SurveyorConfirmLocationScreen";
+import { WeatherConditionsScreen } from "@screens/Surveyor/WeatherConditionsScreen";
+import { SelectSpeciesPage } from "@screens/Surveyor/SelectSpeciesScreen";
 
 export type SurveyorStackParamList = {
     InputCodeScreen: undefined,
     CodeConfirmationScreen: { surveyId: string }
+    SelectSurveyorScreen: { surveyId: string }
+    ConfirmSurveyorDetailsScreen: { surveyId: string, surveyorId: string }
+    SurveyorConfirmLocationScreen: { surveyId: string, surveyorId: string }
+    WeatherCondtionsScreen: { surveyId: string, surveyorId: string }
+    SelectSpeciesScreen: { surveyId: string, locationId: string, surveyorId: string }
 };
 
 const Stack = createNativeStackNavigator<SurveyorStackParamList>();
@@ -14,6 +24,11 @@ export function SurveyorNavigator() {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="InputCodeScreen" component={InputCodeScreen} />
             <Stack.Screen name="CodeConfirmationScreen" component={CodeConfirmationScreen} />
+            <Stack.Screen name="SelectSurveyorScreen" component={SelectSurveyorScreen} />
+            <Stack.Screen name="ConfirmSurveyorDetailsScreen" component={ConfirmSurveyorDetailsScreen} />
+            <Stack.Screen name="SurveyorConfirmLocationScreen" component={SurveyorConfirmLocationScreen} />
+            <Stack.Screen name="WeatherCondtionsScreen" component={WeatherConditionsScreen} />
+            <Stack.Screen name="SelectSpeciesScreen" component={SelectSpeciesPage} />
         </Stack.Navigator>
     )
 }
