@@ -1,6 +1,6 @@
 import { BoundaryPosition } from "@bapp/domain"
 import { GestureResponderEvent, LayoutChangeEvent, View } from "react-native"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Image, Pressable, StyleSheet } from "react-native"
 import MapPin from "@assets/icons/mapPin.svg"
 import { colours } from "@theme/colours"
@@ -18,7 +18,19 @@ const PIN_HEIGHT = 24;
 export const PressablePinLayer = ({ imageUri, value, onChange }: PressablePinLayerProps) => {
     const [layout, setLayout] = useState({ width: 0, height: 0 });
     const [aspectRatio, setAspectRatio] = useState<number>(0.5);
-    imageUri && getAspectRatio(imageUri).then((ratio) => setAspectRatio(ratio))
+
+    useEffect(() => {
+        if (!imageUri) return
+        let cancelled = false
+        getAspectRatio(imageUri)
+            .then((ratio) => {
+                if (!cancelled) setAspectRatio(ratio)
+            })
+            .catch((e) => console.error("Error getting image aspect ratio", e))
+        return () => {
+            cancelled = true
+        }
+    }, [imageUri])
 
     const onLayout = (event: LayoutChangeEvent) => {
         const { width, height } = event.nativeEvent.layout

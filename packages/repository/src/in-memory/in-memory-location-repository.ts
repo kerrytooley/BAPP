@@ -12,7 +12,7 @@ export class InMemoryLocationRepository implements LocationRepository {
   private store = new Map<string, Location>().set(
     'locationLead', {
     id: 'locationLead',
-    surveyId: 'locationLead',
+    surveyId: 'bift',
     name: 'Lead location',
     boundaryPosition: {
       x: 0.4,

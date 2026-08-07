@@ -30,20 +30,24 @@ export function ConfirmSurveyorDetailsScreen(): React.JSX.Element {
                 const currentSurveyor = surveyContext.surveyors.find((surveyor) => surveyor?.id == surveyorId)
                 setSurveyor(currentSurveyor);
                 setSurvey(surveyContext.survey);
-                const boundary = await service.getBoundaryImage(surveyId)
-                setBoundaryImage(boundary.status === 'ready' ? boundary.url : null);
             } catch (e) {
                 console.error("Error: unable to fetch survey context", e)
             }
+            try {
+                const boundary = await service.getBoundaryImage(surveyId)
+                setBoundaryImage(boundary.status === 'ready' ? boundary.url : null);
+            } catch (e) {
+                console.error("Error: unable to fetch boundary image", e)
+            }
         }
         loadSurveyor();
-    }, [service, surveyId])
+    }, [service, surveyId, surveyorId])
 
     return (
         <View style={screen.justifyScreen} >
             <View style={{ width: "100%" }} >
                 <BackButton navigation={navigation} />
-                <Title title="Confirm Surveyor Details " />
+                <Title title="Confirm Surveyor Details" />
             </View>
             {surveyor && surveyor.name != null &&
                 <ScrollView style={screen.scroll} contentContainerStyle={screen.scrollContent} keyboardShouldPersistTaps="handled">

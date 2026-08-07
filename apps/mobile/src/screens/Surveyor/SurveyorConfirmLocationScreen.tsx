@@ -44,7 +44,7 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
             }
         };
         loadSurvey();
-    }, [service, surveyId]);
+    }, [service, surveyId, surveyorId]);
 
     useEffect(() => {
         const loadBoundaryImage = async () => {
@@ -72,7 +72,8 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
             setPosition(newPosition);
         } else {
             const location = await service.addLocation(surveyId, { boundaryPosition: newPosition });
-            surveyor && await service.updateSurveyor(surveyor.id, { locationId: location.id });
+            await service.updateSurveyor(surveyorId, { locationId: location.id });
+            setSurveyor((prev) => (prev ? { ...prev, locationId: location.id } : prev));
             setLocationId(location.id);
             console.log('Surveyor location saved:', location);
             setPosition(newPosition);
