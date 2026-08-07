@@ -1,6 +1,6 @@
 import { BoundaryPosition } from "@bapp/domain"
 import { LayoutChangeEvent, View } from "react-native"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Image, StyleSheet } from "react-native"
 import MapPin from "@assets/icons/mapPin.svg"
 import { colours } from "@theme/colours"
@@ -17,7 +17,10 @@ const PIN_HEIGHT = 24;
 export const StaticPinLayer = ({ imageUri, value }: StaticPinLayerProps) => {
     const [layout, setLayout] = useState({ width: 0, height: 0 });
     const [aspectRatio, setAspectRatio] = useState<number>(0.5);
-    imageUri && getAspectRatio(imageUri).then((ratio) => setAspectRatio(ratio))
+
+    useEffect(() => {
+        getAspectRatio(imageUri).then((ratio) => setAspectRatio(ratio))
+    }, [imageUri])
 
     const onLayout = (event: LayoutChangeEvent) => {
         const { width, height } = event.nativeEvent.layout

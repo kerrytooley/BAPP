@@ -1,5 +1,5 @@
 import { getAspectRatio } from "@utils/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Image, StyleSheet, View } from "react-native";
 
 interface ImageCardProps {
@@ -10,7 +10,10 @@ export const ImageCard = ({
     imageUri
 }: ImageCardProps) => {
     const [aspectRatio, setAspectRatio] = useState<number>(0.5);
-    imageUri && getAspectRatio(imageUri).then((ratio) => setAspectRatio(ratio))
+
+    useEffect(() => {
+        getAspectRatio(imageUri).then((ratio) => setAspectRatio(ratio))
+    }, [imageUri])
 
     return (
         <View style={[styles.layer, { aspectRatio }]}>

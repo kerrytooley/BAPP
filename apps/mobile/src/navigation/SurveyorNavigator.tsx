@@ -13,7 +13,7 @@ export type SurveyorStackParamList = {
     SelectSurveyorScreen: { surveyId: string }
     ConfirmSurveyorDetailsScreen: { surveyId: string, surveyorId: string }
     SurveyorConfirmLocationScreen: { surveyId: string, surveyorId: string }
-    WeatherCondtionsScreen: { surveyId: string, surveyorId: string }
+    WeatherConditionsScreen: { surveyId: string, surveyorId: string }
     SelectSpeciesScreen: { surveyId: string, locationId: string, surveyorId: string }
 };
 
@@ -27,7 +27,7 @@ export function SurveyorNavigator() {
             <Stack.Screen name="SelectSurveyorScreen" component={SelectSurveyorScreen} />
             <Stack.Screen name="ConfirmSurveyorDetailsScreen" component={ConfirmSurveyorDetailsScreen} />
             <Stack.Screen name="SurveyorConfirmLocationScreen" component={SurveyorConfirmLocationScreen} />
-            <Stack.Screen name="WeatherCondtionsScreen" component={WeatherConditionsScreen} />
+            <Stack.Screen name="WeatherConditionsScreen" component={WeatherConditionsScreen} />
             <Stack.Screen name="SelectSpeciesScreen" component={SelectSpeciesPage} />
         </Stack.Navigator>
     )

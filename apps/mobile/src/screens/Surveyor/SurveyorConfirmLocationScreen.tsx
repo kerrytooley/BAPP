@@ -22,6 +22,7 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
     const service = useSurveyService();
 
     const [surveyor, setSurveyor] = useState<Surveyor>();
+    const [locationId, setLocationId] = useState<string>("1");
     const [boundaryImageUri, setBoundaryImageUri] = useState<string | null | undefined>();
     const [position, setPosition] = useState<BoundaryPosition | null | undefined>();
 
@@ -32,7 +33,10 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
             try {
                 const surveyContext = await service.getSurveyContext(surveyId);
                 const surveyor = surveyContext.surveyors.find((surveyor) => surveyor.id == surveyorId);
-                if (surveyor) setSurveyor(surveyor);
+                if (surveyor) {
+                    setSurveyor(surveyor);
+                    setLocationId(surveyor.locationId ?? "1");
+                }
                 const location = surveyContext.locations.find((location) => location.id == surveyor?.locationId);
                 setPosition(location?.boundaryPosition);
             } catch (e) {
@@ -61,7 +65,6 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
     const openLocationSheet = () => {
         sheetRef.current?.present();
     };
-    const locationId = surveyor?.locationId ?? "1";
     const saveLocation = async (newPosition: BoundaryPosition) => {
         if (surveyor && surveyor.locationId) {
             const updatedLocation = await service.updateLocation(surveyor.locationId, { boundaryPosition: newPosition });
@@ -70,6 +73,7 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
         } else {
             const location = await service.addLocation(surveyId, { boundaryPosition: newPosition });
             surveyor && await service.updateSurveyor(surveyor.id, { locationId: location.id });
+            setLocationId(location.id);
             console.log('Surveyor location saved:', location);
             setPosition(newPosition);
         }

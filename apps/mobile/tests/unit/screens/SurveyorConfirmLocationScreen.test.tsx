@@ -107,7 +107,7 @@ describe('SurveyorConfirmLocationScreen', () => {
         fireEvent.press(screen.getByText('Continue'));
         expect(mockNavigate).toHaveBeenCalledWith('SelectSpeciesScreen', {
             surveyId: 'survey-1',
-            locationId: '1',
+            locationId: 'location-1',
             surveyorId: 'surveyor-1',
         });
     });

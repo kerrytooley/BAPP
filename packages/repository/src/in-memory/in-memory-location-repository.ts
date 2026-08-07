@@ -10,7 +10,7 @@ let nextId = 1;
 
 export class InMemoryLocationRepository implements LocationRepository {
   private store = new Map<string, Location>().set(
-    'lead', {
+    'locationLead', {
     id: 'locationLead',
     surveyId: 'locationLead',
     name: 'Lead location',

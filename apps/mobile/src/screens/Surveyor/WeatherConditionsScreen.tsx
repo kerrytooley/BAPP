@@ -17,7 +17,7 @@ type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
 export function WeatherConditionsScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
-    const { surveyId, surveyorId } = useRoute<RouteProp<SurveyorStackParamList, "WeatherCondtionsScreen">>().params;
+    const { surveyId, surveyorId } = useRoute<RouteProp<SurveyorStackParamList, "WeatherConditionsScreen">>().params;
     const service = useSurveyService();
 
     const [temperature, setTemperature] = useState<string>();

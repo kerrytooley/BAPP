@@ -3,10 +3,10 @@
 // those files trigger "File ignored by default" warnings and fail
 // `--max-warnings 0`, even though the CI `eslint .` run skips them silently.
 module.exports = {
-  '*.{ts,tsx}': (files) => {
-    const lintable = files.filter((file) => !file.includes('.rnstorybook'));
-    return lintable.length
-      ? [`eslint --max-warnings 0 ${lintable.join(' ')}`]
-      : [];
-  },
+    '*.{ts,tsx}': (files) => {
+        const lintable = files.filter((file) => !file.includes('.rnstorybook'));
+        return lintable.length
+            ? [`eslint --max-warnings 0 ${lintable.map((file) => JSON.stringify(file)).join(' ')}`]
+            : [];
+    },
 };

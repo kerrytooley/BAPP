@@ -88,7 +88,7 @@ export function ConfirmSurveyorDetailsScreen(): React.JSX.Element {
                 </ScrollView>}
             <View style={{ gap: 8 }} >
                 <Button label="Continue" variant="light" onPress={() =>
-                    surveyor?.isLead ? navigation.navigate("WeatherCondtionsScreen", { surveyId, surveyorId }) :
+                    surveyor?.isLead ? navigation.navigate("WeatherConditionsScreen", { surveyId, surveyorId }) :
                         navigation.navigate("SurveyorConfirmLocationScreen", { surveyId, surveyorId })} />
                 <InlineButton label="Doesn't look right?" onPress={() => navigation.navigate("InputCodeScreen")} />
             </View>

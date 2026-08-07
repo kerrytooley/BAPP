@@ -38,7 +38,7 @@ describe('ConfirmSurveyorDetailsScreen', () => {
         );
         expect(screen.getByText('Dusk count')).toBeOnTheScreen();
         fireEvent.press(screen.getByText('Continue'));
-        expect(mockNavigate).toHaveBeenCalledWith('WeatherCondtionsScreen', {
+        expect(mockNavigate).toHaveBeenCalledWith('WeatherConditionsScreen', {
             surveyId: 'survey-1',
             surveyorId: 'surveyor-1',
         });
