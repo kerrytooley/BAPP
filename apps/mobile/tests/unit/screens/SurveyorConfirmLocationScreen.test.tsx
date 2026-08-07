@@ -112,6 +112,32 @@ describe('SurveyorConfirmLocationScreen', () => {
         });
     });
 
+    it('adds a location when the surveyor is not found and links it via the route', async () => {
+        const service = createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(
+                buildContext({ surveyors: [] }),
+            ),
+            getBoundaryImage: jest.fn().mockResolvedValue(readyImage),
+            addLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'location-1' })),
+        });
+        renderWithService(<SurveyorConfirmLocationScreen />, service);
+
+        await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
+        fireEvent.press(screen.getByLabelText('save-location'));
+        await waitFor(() =>
+            expect(service.updateSurveyor).toHaveBeenCalledWith('surveyor-1', {
+                locationId: 'location-1',
+            }),
+        );
+
+        fireEvent.press(screen.getByText('Continue'));
+        expect(mockNavigate).toHaveBeenCalledWith('SelectSpeciesScreen', {
+            surveyId: 'survey-1',
+            locationId: 'location-1',
+            surveyorId: 'surveyor-1',
+        });
+    });
+
     it('opens the location sheet when changing location', async () => {
         const service = createMockService({
             getSurveyContext: jest.fn().mockResolvedValue(

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react-native';
+import { render, screen, fireEvent, act } from '@testing-library/react-native';
 import { Image, Pressable } from 'react-native';
 import { AddLocationBottomSheet } from '@components/AddLocationBottomSheet';
 
@@ -42,15 +42,18 @@ beforeEach(() => {
 
 afterEach(() => jest.restoreAllMocks());
 
+const flush = () => act(async () => { });
+
 describe('AddLocationBottomSheet', () => {
-    it('shows the add title by default', () => {
+    it('shows the add title by default', async () => {
         render(
             <AddLocationBottomSheet boundaryImageUri="file://b.png" onChange={jest.fn()} />,
         );
         expect(screen.getByText('Add Surveyor Location')).toBeOnTheScreen();
+        await flush();
     });
 
-    it('shows the edit title when editing', () => {
+    it('shows the edit title when editing', async () => {
         render(
             <AddLocationBottomSheet
                 boundaryImageUri="file://b.png"
@@ -59,24 +62,27 @@ describe('AddLocationBottomSheet', () => {
             />,
         );
         expect(screen.getByText('Edit Surveyor Location')).toBeOnTheScreen();
+        await flush();
     });
 
-    it('does not read image size when there is no boundary image', () => {
+    it('does not read image size when there is no boundary image', async () => {
         render(<AddLocationBottomSheet boundaryImageUri={null} onChange={jest.fn()} />);
         expect(Image.getSize).not.toHaveBeenCalled();
         expect(screen.UNSAFE_queryByType(Pressable)).toBeNull();
+        await flush();
     });
 
-    it('keeps Save disabled until a pin is dropped', () => {
+    it('keeps Save disabled until a pin is dropped', async () => {
         const onChange = jest.fn();
         render(
             <AddLocationBottomSheet boundaryImageUri="file://b.png" onChange={onChange} />,
         );
         fireEvent.press(screen.getByText('Save Location'));
         expect(onChange).not.toHaveBeenCalled();
+        await flush();
     });
 
-    it('emits the dropped pin position when Save is pressed', () => {
+    it('emits the dropped pin position when Save is pressed', async () => {
         const onChange = jest.fn();
         render(
             <AddLocationBottomSheet boundaryImageUri="file://b.png" onChange={onChange} />,
@@ -85,9 +91,10 @@ describe('AddLocationBottomSheet', () => {
         expect(screen.getByText('Tap again to move pin')).toBeOnTheScreen();
         fireEvent.press(screen.getByText('Save Location'));
         expect(onChange).toHaveBeenCalledWith({ x: 0.5, y: 0.5 });
+        await flush();
     });
 
-    it('restores the initial position when the sheet opens', () => {
+    it('restores the initial position when the sheet opens', async () => {
         const onChange = jest.fn();
         render(
             <AddLocationBottomSheet
@@ -99,9 +106,10 @@ describe('AddLocationBottomSheet', () => {
         fireEvent(screen.getByTestId('bottom-sheet'), 'change', 0);
         fireEvent.press(screen.getByText('Save Location'));
         expect(onChange).toHaveBeenCalledWith({ x: 0.2, y: 0.3 });
+        await flush();
     });
 
-    it('ignores a close index change', () => {
+    it('ignores a close index change', async () => {
         const onChange = jest.fn();
         render(
             <AddLocationBottomSheet
@@ -113,9 +121,10 @@ describe('AddLocationBottomSheet', () => {
         fireEvent(screen.getByTestId('bottom-sheet'), 'change', -1);
         fireEvent.press(screen.getByText('Save Location'));
         expect(onChange).not.toHaveBeenCalled();
+        await flush();
     });
 
-    it('clears the position on dismiss', () => {
+    it('clears the position on dismiss', async () => {
         const onChange = jest.fn();
         render(
             <AddLocationBottomSheet
@@ -128,5 +137,6 @@ describe('AddLocationBottomSheet', () => {
         fireEvent(screen.getByTestId('bottom-sheet'), 'dismiss');
         fireEvent.press(screen.getByText('Save Location'));
         expect(onChange).not.toHaveBeenCalled();
+        await flush();
     });
 });

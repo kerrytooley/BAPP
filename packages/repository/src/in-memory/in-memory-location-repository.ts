@@ -19,13 +19,13 @@ export class InMemoryLocationRepository implements LocationRepository {
       y: 0.3
     },
     frontViewImage: {
-      renderRef: "surveys/1/boundary/DDF8407B-7F6E-4800-BBF9-C1D2C26E3C84.jpg",
-      sourceRef: "surveys/1/boundary/DDF8407B-7F6E-4800-BBF9-C1D2C26E3C84.jpg",
+      renderRef: 'surveys/1/boundary/DDF8407B-7F6E-4800-BBF9-C1D2C26E3C84.jpg',
+      sourceRef: 'surveys/1/boundary/DDF8407B-7F6E-4800-BBF9-C1D2C26E3C84.jpg',
       status: 'ready'
     },
     equipmentImage: {
-      renderRef: "surveys/1/boundary/DDF8407B-7F6E-4800-BBF9-C1D2C26E3C84.jpg",
-      sourceRef: "surveys/1/boundary/DDF8407B-7F6E-4800-BBF9-C1D2C26E3C84.jpg",
+      renderRef: 'surveys/1/boundary/DDF8407B-7F6E-4800-BBF9-C1D2C26E3C84.jpg',
+      sourceRef: 'surveys/1/boundary/DDF8407B-7F6E-4800-BBF9-C1D2C26E3C84.jpg',
       status: 'ready'
     },
     data: {},

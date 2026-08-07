@@ -18,4 +18,13 @@ describe('getAspectRatio', () => {
             .mockImplementation((_uri, _success, error) => error?.(failure));
         await expect(getAspectRatio('file://b.png')).rejects.toBe(failure);
     });
+
+    it('rejects when the image has invalid dimensions', async () => {
+        jest
+            .spyOn(Image, 'getSize')
+            .mockImplementation((_uri, success) => success?.(200, 0));
+        await expect(getAspectRatio('file://b.png')).rejects.toThrow(
+            'Invalid image dimensions',
+        );
+    });
 });

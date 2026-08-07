@@ -22,7 +22,7 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
     const service = useSurveyService();
 
     const [surveyor, setSurveyor] = useState<Surveyor>();
-    const [locationId, setLocationId] = useState<string>("1");
+    const [locationId, setLocationId] = useState<string>("");
     const [boundaryImageUri, setBoundaryImageUri] = useState<string | null | undefined>();
     const [position, setPosition] = useState<BoundaryPosition | null | undefined>();
 
@@ -32,12 +32,12 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
         const loadSurvey = async () => {
             try {
                 const surveyContext = await service.getSurveyContext(surveyId);
-                const surveyor = surveyContext.surveyors.find((surveyor) => surveyor.id == surveyorId);
+                const surveyor = surveyContext.surveyors.find((surveyor) => surveyor.id === surveyorId);
                 if (surveyor) {
                     setSurveyor(surveyor);
-                    setLocationId(surveyor.locationId ?? "1");
+                    setLocationId(surveyor.locationId ?? "");
                 }
-                const location = surveyContext.locations.find((location) => location.id == surveyor?.locationId);
+                const location = surveyContext.locations.find((location) => location.id === surveyor?.locationId);
                 setPosition(location?.boundaryPosition);
             } catch (e) {
                 console.error("Error fetching survey context", e);
@@ -50,7 +50,7 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
         const loadBoundaryImage = async () => {
             try {
                 const boundaryImageResult = await service.getBoundaryImage(surveyId);
-                if (boundaryImageResult.status == "ready") {
+                if (boundaryImageResult.status === "ready") {
                     setBoundaryImageUri(boundaryImageResult.url);
                 } else {
                     console.log(`Boundary image not available, status: ${boundaryImageResult.status}`);

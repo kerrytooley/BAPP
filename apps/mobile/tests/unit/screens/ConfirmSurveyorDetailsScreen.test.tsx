@@ -84,4 +84,19 @@ describe('ConfirmSurveyorDetailsScreen', () => {
             ),
         );
     });
+
+    it('logs an error when the boundary image fails to load', async () => {
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+        const service = createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(context(true)),
+            getBoundaryImage: jest.fn().mockRejectedValue(new Error('img failed')),
+        });
+        renderWithService(<ConfirmSurveyorDetailsScreen />, service);
+        await waitFor(() =>
+            expect(errorSpy).toHaveBeenCalledWith(
+                'Error: unable to fetch boundary image',
+                expect.any(Error),
+            ),
+        );
+    });
 });

@@ -2,9 +2,10 @@ jest.mock('@utils/image', () => ({
     getAspectRatio: jest.fn(() => Promise.resolve(1)),
 }));
 
-import { render, screen, fireEvent } from '@testing-library/react-native';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Image, View } from 'react-native';
 import { StaticPinLayer } from '@components/StaticPinLayer';
+import { getAspectRatio } from '@utils/image';
 
 const measure = (width = 100, height = 100) =>
     fireEvent(screen.UNSAFE_getAllByType(View)[0], 'layout', {
@@ -29,5 +30,39 @@ describe('StaticPinLayer', () => {
         render(<StaticPinLayer imageUri="file://boundary.png" value={null} />);
         measure(100, 100);
         expect(screen.UNSAFE_queryByProps({ pointerEvents: 'none' })).toBeNull();
+    });
+
+    it('logs an error when the aspect ratio cannot be resolved', async () => {
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+        (getAspectRatio as jest.Mock).mockRejectedValueOnce(new Error('size failed'));
+        render(<StaticPinLayer imageUri="file://boundary.png" value={null} />);
+        await waitFor(() =>
+            expect(errorSpy).toHaveBeenCalledWith(
+                'Error getting image aspect ratio',
+                expect.any(Error),
+            ),
+        );
+    });
+
+    it('does not resolve the aspect ratio without an image uri', () => {
+        (getAspectRatio as jest.Mock).mockClear();
+        render(<StaticPinLayer imageUri="" value={null} />);
+        expect(getAspectRatio).not.toHaveBeenCalled();
+    });
+
+    it('ignores a resolved aspect ratio after unmount', async () => {
+        let resolve: (ratio: number) => void = () => { };
+        (getAspectRatio as jest.Mock).mockReturnValueOnce(
+            new Promise<number>((r) => {
+                resolve = r;
+            }),
+        );
+        const { unmount } = render(
+            <StaticPinLayer imageUri="file://boundary.png" value={null} />,
+        );
+        unmount();
+        await act(async () => {
+            resolve(2);
+        });
     });
 });

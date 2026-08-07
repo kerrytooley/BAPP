@@ -19,7 +19,16 @@ export const StaticPinLayer = ({ imageUri, value }: StaticPinLayerProps) => {
     const [aspectRatio, setAspectRatio] = useState<number>(0.5);
 
     useEffect(() => {
-        getAspectRatio(imageUri).then((ratio) => setAspectRatio(ratio))
+        if (!imageUri) return
+        let cancelled = false
+        getAspectRatio(imageUri)
+            .then((ratio) => {
+                if (!cancelled) setAspectRatio(ratio)
+            })
+            .catch((e) => console.error("Error getting image aspect ratio", e))
+        return () => {
+            cancelled = true
+        }
     }, [imageUri])
 
     const onLayout = (event: LayoutChangeEvent) => {
