@@ -9,16 +9,11 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { Survey, Surveyor } from "@bapp/domain";
-import { formatTime } from "@utils/dateTimeUtils";
 import { DocumentPreview } from "@components/DocumentPreview";
 import { textStyles } from "@theme/fonts";
+import { displayValue } from "@utils/displayValue";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
-
-const displayValue = (value?: string | Date | null, format?: string): string | Date =>
-    value instanceof Date && format == "time"
-        ? formatTime(value)
-        : value || "N/A";
 
 
 export function ReviewSurveyDetailsScreen(): React.JSX.Element {
@@ -60,7 +55,7 @@ export function ReviewSurveyDetailsScreen(): React.JSX.Element {
                 <Title title="Review Survey Details" />
             </View>
 
-            <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+            <ScrollView style={screen.scroll} contentContainerStyle={screen.scrollContent} keyboardShouldPersistTaps="handled">
                 <SummaryGroup
                     key="survey"
                     groupTitle="Survey"
@@ -116,16 +111,6 @@ export function ReviewSurveyDetailsScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-    scroll: {
-        width: '100%',
-        flex: 1,
-    },
-    scrollContent: {
-        ...screen.content,
-        justifyContent: "flex-start",
-        flexGrow: 1,
-        paddingVertical: 16
-    },
     summaryTitle: {
         ...textStyles.inputTitleText,
         textAlign: "left",

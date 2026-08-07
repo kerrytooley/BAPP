@@ -1,4 +1,5 @@
 import { StyleProp, StyleSheet, ViewStyle, View, Text, TextInput } from "react-native";
+import { useState } from 'react';
 import { textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';
 
@@ -30,6 +31,7 @@ export const InputField = ({
 
     const isLarge = size === 'large';
     const isUnit = variant === 'unit';
+    const [isFocused, setIsFocused] = useState(false);
 
     return (
         <View style={[styles.inputField, style]}>
@@ -38,13 +40,15 @@ export const InputField = ({
                     <Text style={styles.inputTitleText}>{fieldLabel}</Text>
                 </View>
             }
-            <View style={[styles.inputBox, isLarge && styles.large, isLarge && styles.topAlign]}>
+            <View style={[styles.inputBox, isFocused && styles.inputBoxFocused, isLarge && styles.large, isLarge && styles.topAlign]}>
                 <TextInput
                     testID={testID}
                     accessibilityLabel={testID}
                     style={[styles.inputText, isLarge && styles.inputTextLarge]}
                     value={value}
                     onChangeText={onChangeText}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
                     onEndEditing={onEndEditing}
                     placeholder={placeholderText}
                     placeholderTextColor={colours.placeholderText}
@@ -87,6 +91,9 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         gap: 20,
         flexDirection: "row"
+    },
+    inputBoxFocused: {
+        borderColor: colours.light,
     },
     inputText: {
         ...textStyles.inputText,

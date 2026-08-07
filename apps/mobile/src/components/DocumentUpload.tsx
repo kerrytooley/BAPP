@@ -4,7 +4,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import { colours } from "@theme/colours";
 import { textStyles } from "@theme/fonts";
-import UploadIcon from "@assets/images/upload.svg"
+import UploadIcon from "@assets/icons/upload.svg"
 
 export interface DocumentUploadProps {
     onChange: (uri: string) => void;

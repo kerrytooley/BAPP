@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Image, Modal, Pressable, StyleSheet, TouchableOpacity, View } from "react-native";
 import { colours } from "@theme/colours";
-import Expand from "@assets/images/expand.svg";
+import Expand from "@assets/icons/expand.svg";
 
 export interface DocumentPreviewProps {
     value: string | undefined | null

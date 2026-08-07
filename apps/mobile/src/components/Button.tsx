@@ -2,9 +2,9 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { fonts, textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';
-import MapPin from '@assets/images/mapPin.svg';
-import Plus from '@assets/images/plus.svg';
-import RightArrow from '@assets/images/rightArrow.svg';
+import MapPin from '@assets/icons/mapPin.svg';
+import Plus from '@assets/icons/plus.svg';
+import RightArrow from '@assets/icons/rightArrow.svg';
 
 export interface ButtonProps {
   variant?: 'dark' | 'light';
@@ -19,7 +19,7 @@ export interface ButtonProps {
 export interface ButtonGroupProps {
   variant?: 'mixed' | 'dark' | 'light';
   labels: Array<string>;
-  actions?: Array<"add" | "location" | "right arrow">;
+  actions?: Array<"add" | "location" | "right arrow"> | "add" | "location" | "right arrow";
   disabled?: Array<boolean>;
   onPress: Array<() => void>
 }
@@ -70,7 +70,7 @@ export const ButtonGroup = ({
         <Button
           key={`${label}-${index}`}
           label={label}
-          action={actions?.[index]}
+          action={typeof actions === "string" ? actions : actions?.[index]}
           variant={buttonVariant(index)}
           disabled={disabled?.[index]}
           onPress={onPress[index]}

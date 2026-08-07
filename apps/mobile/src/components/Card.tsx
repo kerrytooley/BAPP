@@ -2,12 +2,13 @@ import type { ReactNode } from 'react';
 import { StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { colours } from '@theme/colours';
 import { textStyles } from '@theme/fonts';
-import Close from '@assets/images/close.svg'
+import Close from '@assets/icons/close.svg'
 
 export interface CardProps {
     cardLabel: string;
     children?: ReactNode;
     style?: StyleProp<ViewStyle>;
+    contentStyle?: StyleProp<ViewStyle>;
     removable?: boolean,
     onClose?: () => void;
 }
@@ -16,6 +17,7 @@ export const Card = ({
     cardLabel,
     children,
     style,
+    contentStyle,
     removable = false,
     onClose
 }: CardProps) => {
@@ -29,7 +31,7 @@ export const Card = ({
                     </TouchableOpacity>
                 }
             </View>
-            <View style={styles.card}>
+            <View style={[styles.card, contentStyle]}>
                 {children}
             </View>
         </View>
@@ -44,7 +46,7 @@ const styles = StyleSheet.create({
     },
     card: {
         backgroundColor: colours.cardbackground,
-        borderRadius: 24,
+        borderRadius: 16,
         minHeight: 100,
         alignContent: "center",
         justifyContent: "center",

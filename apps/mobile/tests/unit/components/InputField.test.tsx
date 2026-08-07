@@ -61,4 +61,12 @@ describe('InputField', () => {
         render(<InputField placeholderText="Notes" />);
         expect(screen.getByPlaceholderText('Notes').props.multiline).toBe(false);
     });
+
+    it('does not error when focused and blurred', () => {
+        render(<InputField placeholderText="Survey name" />);
+        const input = screen.getByPlaceholderText('Survey name');
+        fireEvent(input, 'focus');
+        fireEvent(input, 'blur');
+        expect(input).toBeOnTheScreen();
+    });
 });

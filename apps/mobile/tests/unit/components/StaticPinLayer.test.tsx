@@ -1,0 +1,68 @@
+jest.mock('@utils/image', () => ({
+    getAspectRatio: jest.fn(() => Promise.resolve(1)),
+}));
+
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { Image, View } from 'react-native';
+import { StaticPinLayer } from '@components/StaticPinLayer';
+import { getAspectRatio } from '@utils/image';
+
+const measure = (width = 100, height = 100) =>
+    fireEvent(screen.UNSAFE_getAllByType(View)[0], 'layout', {
+        nativeEvent: { layout: { width, height } },
+    });
+
+describe('StaticPinLayer', () => {
+    it('renders the boundary image', () => {
+        render(<StaticPinLayer imageUri="file://boundary.png" value={null} />);
+        expect(screen.UNSAFE_getByType(Image).props.source).toEqual({
+            uri: 'file://boundary.png',
+        });
+    });
+
+    it('renders a pin when a value is set and the layout is measured', () => {
+        render(<StaticPinLayer imageUri="file://boundary.png" value={{ x: 0.5, y: 0.5 }} />);
+        measure(100, 100);
+        expect(screen.UNSAFE_queryByProps({ pointerEvents: 'none' })).not.toBeNull();
+    });
+
+    it('renders no pin when there is no value', () => {
+        render(<StaticPinLayer imageUri="file://boundary.png" value={null} />);
+        measure(100, 100);
+        expect(screen.UNSAFE_queryByProps({ pointerEvents: 'none' })).toBeNull();
+    });
+
+    it('logs an error when the aspect ratio cannot be resolved', async () => {
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+        (getAspectRatio as jest.Mock).mockRejectedValueOnce(new Error('size failed'));
+        render(<StaticPinLayer imageUri="file://boundary.png" value={null} />);
+        await waitFor(() =>
+            expect(errorSpy).toHaveBeenCalledWith(
+                'Error getting image aspect ratio',
+                expect.any(Error),
+            ),
+        );
+    });
+
+    it('does not resolve the aspect ratio without an image uri', () => {
+        (getAspectRatio as jest.Mock).mockClear();
+        render(<StaticPinLayer imageUri="" value={null} />);
+        expect(getAspectRatio).not.toHaveBeenCalled();
+    });
+
+    it('ignores a resolved aspect ratio after unmount', async () => {
+        let resolve: (ratio: number) => void = () => { };
+        (getAspectRatio as jest.Mock).mockReturnValueOnce(
+            new Promise<number>((r) => {
+                resolve = r;
+            }),
+        );
+        const { unmount } = render(
+            <StaticPinLayer imageUri="file://boundary.png" value={null} />,
+        );
+        unmount();
+        await act(async () => {
+            resolve(2);
+        });
+    });
+});

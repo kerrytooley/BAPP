@@ -9,7 +9,30 @@ import type {
 let nextId = 1;
 
 export class InMemoryLocationRepository implements LocationRepository {
-  private store = new Map<string, Location>();
+  private store = new Map<string, Location>().set(
+    'locationLead', {
+    id: 'locationLead',
+    surveyId: 'bift',
+    name: 'Lead location',
+    boundaryPosition: {
+      x: 0.4,
+      y: 0.3
+    },
+    frontViewImage: {
+      renderRef: 'surveys/1/boundary/DDF8407B-7F6E-4800-BBF9-C1D2C26E3C84.jpg',
+      sourceRef: 'surveys/1/boundary/DDF8407B-7F6E-4800-BBF9-C1D2C26E3C84.jpg',
+      status: 'ready'
+    },
+    equipmentImage: {
+      renderRef: 'surveys/1/boundary/DDF8407B-7F6E-4800-BBF9-C1D2C26E3C84.jpg',
+      sourceRef: 'surveys/1/boundary/DDF8407B-7F6E-4800-BBF9-C1D2C26E3C84.jpg',
+      status: 'ready'
+    },
+    data: {},
+    createdAt: new Date,
+    updatedAt: new Date,
+  }
+  );
   private listeners = new Map<string, Set<(locations: Location[]) => void>>();
 
   async create(input: CreateLocationInput): Promise<Location> {
