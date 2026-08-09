@@ -53,7 +53,7 @@ export function WeatherConditionsScreen(): React.JSX.Element {
                 <Title title="Start Weather Conditions" />
             </View>
             <View style={styles.content} >
-                <InputField value={temperature} variant="unit" fieldLabel="Temperature" placeholderText="Input Temperature" unit="°C" onChangeText={setTemperature} />
+                <InputField testID="weather-temperature-input" value={temperature} variant="unit" fieldLabel="Temperature" placeholderText="Input Temperature" unit="°C" onChangeText={setTemperature} />
                 <InputField value={cloudCover} variant="unit" fieldLabel="Cloud Cover" placeholderText="Input Cloud Cover" unit="%" onChangeText={setCloudCover} />
                 <InputField value={humidity} variant="unit" fieldLabel="Humidity" placeholderText="Input Humidity" unit="%" onChangeText={setHumidity} />
                 <InputField value={wind} variant="unit" fieldLabel="Wind" placeholderText="Input Wind" unit="Beaufort" onChangeText={setWind} />
@@ -68,6 +68,8 @@ export function WeatherConditionsScreen(): React.JSX.Element {
                                         key={option.label}
                                         style={styles.radioOption}
                                         onPress={() => setRain(option.label)}
+                                        testID={option.label}
+                                        accessibilityLabel={option.label}
                                         accessibilityRole="radio"
                                         accessibilityState={{ selected }}
                                     >

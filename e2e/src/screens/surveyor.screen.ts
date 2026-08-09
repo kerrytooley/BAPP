@@ -12,3 +12,31 @@ export const codeConfirmationScreen = {
     surveyTitle: () => byTestId('confirmation-survey-title'),
     continue: () => byId('Continue'),
 };
+
+export const selectSurveyorScreen = {
+    // Each surveyor renders as a Button whose label (and thus testID /
+    // accessibility-id) is "Lead Surveyor: <name>" for the lead, or the plain
+    // name otherwise.
+    lead: (name: string) => byId(`Lead Surveyor: ${name}`),
+    surveyor: (name: string) => byId(name),
+};
+
+export const confirmSurveyorDetailsScreen = {
+    continue: () => byId('Continue'),
+};
+
+export const weatherConditionsScreen = {
+    temperatureInput: () => byId('weather-temperature-input'),
+    rain: (option: 'Wet' | 'Dry') => byId(option),
+    continue: () => byId('Continue'),
+};
+
+export const confirmLocationScreen = {
+    continue: () => byId('Continue'),
+};
+
+export const selectSpeciesScreen = {
+    // Each bat tile sets its species as testID / accessibility-id.
+    species: (species: string) => byId(species),
+    unknown: () => byId('Unknown'),
+};

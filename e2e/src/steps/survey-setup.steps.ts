@@ -11,7 +11,15 @@ import {
     reviewScreen,
     shareCodeScreen,
 } from '../screens/admin.screen';
-import { inputCodeScreen, codeConfirmationScreen } from '../screens/surveyor.screen';
+import {
+    inputCodeScreen,
+    codeConfirmationScreen,
+    selectSurveyorScreen,
+    confirmSurveyorDetailsScreen,
+    weatherConditionsScreen,
+    confirmLocationScreen,
+    selectSpeciesScreen,
+} from '../screens/surveyor.screen';
 import { tap, enterText, readText } from '../support/actions';
 import { state } from '../support/world';
 
@@ -82,5 +90,39 @@ Then(
         await expect(codeConfirmationScreen.heading()).toBeDisplayed();
         const title = await readText(codeConfirmationScreen.surveyTitle());
         expect(title).toEqual(expectedTitle);
+    },
+);
+
+When('confirms the survey they are joining', async () => {
+    await expect(codeConfirmationScreen.heading()).toBeDisplayed();
+    await tap(codeConfirmationScreen.continue());
+});
+
+When(/^selects the lead surveyor "(.*)"$/, async (name: string) => {
+    await tap(selectSurveyorScreen.lead(name));
+});
+
+When('confirms the surveyor details', async () => {
+    await tap(confirmSurveyorDetailsScreen.continue());
+});
+
+When('enters the start weather conditions', async () => {
+    await enterText(weatherConditionsScreen.temperatureInput(), '18');
+    await tap(weatherConditionsScreen.rain('Wet'));
+    await tap(weatherConditionsScreen.continue());
+});
+
+When('confirms their location on the map', async () => {
+    await tap(confirmLocationScreen.continue());
+});
+
+When(/^records a "(.*)" observation$/, async (species: string) => {
+    await tap(selectSpeciesScreen.species(species));
+});
+
+Then(
+    /^the "(.*)" species remains ready for the next observation$/,
+    async (species: string) => {
+        await expect(selectSpeciesScreen.species(species)).toBeDisplayed();
     },
 );
