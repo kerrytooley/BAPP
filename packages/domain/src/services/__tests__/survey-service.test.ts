@@ -216,6 +216,106 @@ describe('SurveyService', () => {
     });
   });
 
+  describe('setLocationsImage', () => {
+    const bytes = new Uint8Array([1, 2, 3, 4]);
+
+    it('uploads an equipment image and records it on the location', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      const loc = await service.addLocation(survey.id, { name: 'North Gate' });
+
+      const updated = await service.setLocationsImage(loc.id, 'gear.png', bytes, 'EQUIPMENT');
+
+      expect(updated.equipmentImage).toEqual({
+        sourceRef: `locations/${loc.id}/equipment/gear.png`,
+        renderRef: `locations/${loc.id}/equipment/gear.png`,
+        status: 'ready',
+        error: null,
+      });
+      expect(updated.frontViewImage).toBeNull();
+    });
+
+    it('uploads a front-view image under the frontView path', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      const loc = await service.addLocation(survey.id, { name: 'North Gate' });
+
+      const updated = await service.setLocationsImage(loc.id, 'front.png', bytes, 'FRONT_VIEW');
+
+      expect(updated.frontViewImage).toEqual({
+        sourceRef: `locations/${loc.id}/frontView/front.png`,
+        renderRef: `locations/${loc.id}/frontView/front.png`,
+        status: 'ready',
+        error: null,
+      });
+      expect(updated.equipmentImage).toBeNull();
+    });
+
+    it('persists the image so it can be read back', async () => {
+      const { service, locationRepo } = createService();
+      const survey = await service.createSurvey();
+      const loc = await service.addLocation(survey.id, { name: 'North Gate' });
+
+      await service.setLocationsImage(loc.id, 'gear.png', bytes, 'EQUIPMENT');
+
+      const persisted = await locationRepo.findById(loc.id);
+      expect(persisted?.equipmentImage?.sourceRef).toBe(`locations/${loc.id}/equipment/gear.png`);
+    });
+
+    it('reports upload progress to the caller', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      const loc = await service.addLocation(survey.id, { name: 'North Gate' });
+      const fractions: number[] = [];
+
+      await service.setLocationsImage(loc.id, 'gear.png', bytes, 'EQUIPMENT', (f) => fractions.push(f));
+
+      expect(fractions).toContain(1);
+    });
+
+    it('deletes the previous equipment media when replaced', async () => {
+      const { service, locationRepo, mediaRepo } = createService();
+      const survey = await service.createSurvey();
+      const loc = await service.addLocation(survey.id, { name: 'North Gate' });
+
+      await service.setLocationsImage(loc.id, 'first.png', bytes, 'EQUIPMENT');
+      const firstRef = `locations/${loc.id}/equipment/first.png`;
+
+      await service.setLocationsImage(loc.id, 'second.png', bytes, 'EQUIPMENT');
+
+      await expect(mediaRepo.getDownloadUrl(firstRef)).rejects.toThrow();
+      const updated = await locationRepo.findById(loc.id);
+      expect(updated?.equipmentImage?.sourceRef).toBe(`locations/${loc.id}/equipment/second.png`);
+    });
+
+    it('does not delete when re-uploading the same file name', async () => {
+      const { service, mediaRepo } = createService();
+      const survey = await service.createSurvey();
+      const loc = await service.addLocation(survey.id, { name: 'North Gate' });
+
+      await service.setLocationsImage(loc.id, 'gear.png', bytes, 'EQUIPMENT');
+      const ref = `locations/${loc.id}/equipment/gear.png`;
+      await service.setLocationsImage(loc.id, 'gear.png', bytes, 'EQUIPMENT');
+
+      await expect(mediaRepo.getDownloadUrl(ref)).resolves.toMatch(/^data:image\/png;base64,/);
+    });
+
+    it('does not touch the equipment image when replacing the front view', async () => {
+      const { service, locationRepo, mediaRepo } = createService();
+      const survey = await service.createSurvey();
+      const loc = await service.addLocation(survey.id, { name: 'North Gate' });
+
+      await service.setLocationsImage(loc.id, 'gear.png', bytes, 'EQUIPMENT');
+      const equipmentRef = `locations/${loc.id}/equipment/gear.png`;
+      await service.setLocationsImage(loc.id, 'front.png', bytes, 'FRONT_VIEW');
+
+      await expect(mediaRepo.getDownloadUrl(equipmentRef)).resolves.toMatch(/^data:image\/png;base64,/);
+      const updated = await locationRepo.findById(loc.id);
+      expect(updated?.equipmentImage?.sourceRef).toBe(equipmentRef);
+      expect(updated?.frontViewImage?.sourceRef).toBe(`locations/${loc.id}/frontView/front.png`);
+    });
+  });
+
   describe('getBoundaryImage', () => {
     it('reports none when no image is set', async () => {
       const { service } = createService();

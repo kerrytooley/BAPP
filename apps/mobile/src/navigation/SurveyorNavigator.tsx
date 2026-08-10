@@ -6,6 +6,8 @@ import { ConfirmSurveyorDetailsScreen } from "@screens/Surveyor/ConfirmSurveyorD
 import { SurveyorConfirmLocationScreen } from "@screens/Surveyor/SurveyorConfirmLocationScreen";
 import { WeatherConditionsScreen } from "@screens/Surveyor/WeatherConditionsScreen";
 import { SelectSpeciesPage } from "@screens/Surveyor/SelectSpeciesScreen";
+import { CapturePhotoScreen } from "@screens/Surveyor/CapturePhotoScreen";
+import { SetupCompleteScreen } from "@screens/Surveyor/SetupCompleteScreen";
 
 export type SurveyorStackParamList = {
     InputCodeScreen: undefined,
@@ -14,6 +16,8 @@ export type SurveyorStackParamList = {
     ConfirmSurveyorDetailsScreen: { surveyId: string, surveyorId: string }
     SurveyorConfirmLocationScreen: { surveyId: string, surveyorId: string }
     WeatherConditionsScreen: { surveyId: string, surveyorId: string }
+    CapturePhotoScreen: { surveyId: string, locationId: string, surveyorId: string, photoType: 'EQUIPMENT' | 'FRONT_VIEW' }
+    SetupCompleteScreen: { surveyId: string, locationId: string, surveyorId: string }
     SelectSpeciesScreen: { surveyId: string, locationId: string, surveyorId: string }
 };
 
@@ -28,6 +32,8 @@ export function SurveyorNavigator() {
             <Stack.Screen name="ConfirmSurveyorDetailsScreen" component={ConfirmSurveyorDetailsScreen} />
             <Stack.Screen name="SurveyorConfirmLocationScreen" component={SurveyorConfirmLocationScreen} />
             <Stack.Screen name="WeatherConditionsScreen" component={WeatherConditionsScreen} />
+            <Stack.Screen name="CapturePhotoScreen" component={CapturePhotoScreen} />
+            <Stack.Screen name="SetupCompleteScreen" component={SetupCompleteScreen} />
             <Stack.Screen name="SelectSpeciesScreen" component={SelectSpeciesPage} />
         </Stack.Navigator>
     )

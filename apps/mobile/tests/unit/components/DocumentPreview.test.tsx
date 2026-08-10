@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { Image, Modal, Pressable, TouchableOpacity } from 'react-native';
+import { Image, Modal, TouchableOpacity } from 'react-native';
 import { DocumentPreview } from '@components/DocumentPreview';
+import { PressableType } from '../../helpers/rnComponents';
 
 describe('DocumentPreview', () => {
     it('renders nothing when value is null', () => {
@@ -34,7 +35,7 @@ describe('DocumentPreview', () => {
     it('closes the modal when the backdrop is pressed', () => {
         render(<DocumentPreview value="file://boundary.png" />);
         fireEvent.press(screen.UNSAFE_getByType(TouchableOpacity));
-        fireEvent.press(screen.UNSAFE_getByType(Pressable));
+        fireEvent.press(screen.UNSAFE_getByType(PressableType));
         expect(screen.UNSAFE_getByType(Modal).props.visible).toBe(false);
     });
 

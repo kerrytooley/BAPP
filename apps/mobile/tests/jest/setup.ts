@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import '@testing-library/react-native/extend-expect';
+// RNTL v13 registers its Jest matchers automatically on import; the former
+// '@testing-library/react-native/extend-expect' entry point was removed.
 
 // Silence the reanimated warning and provide a functional mock.
 jest.mock('react-native-reanimated', () => {

@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bapp.mobile"
@@ -18,6 +19,15 @@
     "web": {
       "bundler": "metro"
     },
-    "plugins": []
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow BAPP to take photos of equipment.",
+          "photosPermission": "Allow BAPP to access your photos to attach survey images."
+        }
+      ],
+      "./plugins/withFmtConstevalPatch"
+    ]
   }
 }

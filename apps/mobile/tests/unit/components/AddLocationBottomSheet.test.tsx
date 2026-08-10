@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, act } from '@testing-library/react-native';
-import { Image, Pressable } from 'react-native';
+import { Image } from 'react-native';
 import { AddLocationBottomSheet } from '@components/AddLocationBottomSheet';
+import { PressableType } from '../../helpers/rnComponents';
 
 jest.mock('@gorhom/bottom-sheet', () => {
     const React = require('react');
@@ -27,7 +28,7 @@ jest.mock('@gorhom/bottom-sheet', () => {
 });
 
 const measureAndTap = () => {
-    const pressable = screen.UNSAFE_getByType(Pressable);
+    const pressable = screen.UNSAFE_getByType(PressableType);
     fireEvent(pressable, 'layout', {
         nativeEvent: { layout: { width: 100, height: 100 } },
     });
@@ -68,7 +69,7 @@ describe('AddLocationBottomSheet', () => {
     it('does not read image size when there is no boundary image', async () => {
         render(<AddLocationBottomSheet boundaryImageUri={null} onChange={jest.fn()} />);
         expect(Image.getSize).not.toHaveBeenCalled();
-        expect(screen.UNSAFE_queryByType(Pressable)).toBeNull();
+        expect(screen.UNSAFE_queryByType(PressableType)).toBeNull();
         await flush();
     });
 

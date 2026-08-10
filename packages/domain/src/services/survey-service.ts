@@ -141,6 +141,51 @@ export class SurveyService {
   }
 
   /**
+ * Upload (or replace) the location's equipment image.
+ */
+  async setLocationsImage(
+    locationId: string,
+    fileName: string,
+    data: ArrayBuffer | Uint8Array,
+    imageType: 'EQUIPMENT' | 'FRONT_VIEW',
+    onProgress?: (fraction: number) => void,
+  ): Promise<Location> {
+
+    const isEquipment = imageType === 'EQUIPMENT';
+    const existing = await this.locationRepository.findById(locationId);
+    const previous = isEquipment ? existing?.equipmentImage : existing?.frontViewImage;
+    const fileStub = isEquipment ? 'equipment' : 'frontView';
+
+    // The adapter owns storage layout, name sanitization, and any format
+    // conversion; we pass a logical path (survey + role + original name).
+    const path = `locations/${locationId}/${fileStub}/${fileName}`;
+    const result = await this.mediaRepository.upload(path, data, { onProgress });
+
+    const image: MediaAsset = {
+      sourceRef: result.sourceRef,
+      renderRef: result.renderRef,
+      status: result.status,
+      error: null,
+    };
+
+    const updated = isEquipment
+      ? await this.updateLocation(locationId, { equipmentImage: image })
+      : await this.updateLocation(locationId, { frontViewImage: image });
+
+    // GC the superseded media group only after the new state is durably
+    // recorded. Best-effort and out-of-band — never fail the write path.
+    if (previous && previous.sourceRef !== image.sourceRef) {
+      try {
+        await this.mediaRepository.delete(previous.sourceRef);
+      } catch {
+        // Best-effort cleanup; a sweep on survey completion is the backstop.
+      }
+    }
+
+    return updated;
+  }
+
+  /**
    * Resolve the boundary image to a status-bearing result rather than throwing.
    * Callers can distinguish "not set", "still processing", "failed", and
    * "ready" (with a locally-available URL) and render each state appropriately.

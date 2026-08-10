@@ -74,11 +74,14 @@ describe('SurveyorConfirmLocationScreen', () => {
         );
 
         fireEvent.press(screen.getByText('Continue'));
-        expect(mockNavigate).toHaveBeenCalledWith('SelectSpeciesScreen', {
-            surveyId: 'survey-1',
-            locationId: 'location-9',
-            surveyorId: 'surveyor-1',
-        });
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CapturePhotoScreen', {
+                surveyId: 'survey-1',
+                locationId: 'location-9',
+                surveyorId: 'surveyor-1',
+                photoType: 'FRONT_VIEW',
+            }),
+        );
     });
 
     it('adds a location for a surveyor without one and links it', async () => {
@@ -105,11 +108,14 @@ describe('SurveyorConfirmLocationScreen', () => {
         });
 
         fireEvent.press(screen.getByText('Continue'));
-        expect(mockNavigate).toHaveBeenCalledWith('SelectSpeciesScreen', {
-            surveyId: 'survey-1',
-            locationId: 'location-1',
-            surveyorId: 'surveyor-1',
-        });
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CapturePhotoScreen', {
+                surveyId: 'survey-1',
+                locationId: 'location-1',
+                surveyorId: 'surveyor-1',
+                photoType: 'FRONT_VIEW',
+            }),
+        );
     });
 
     it('adds a location when the surveyor is not found and links it via the route', async () => {
@@ -131,11 +137,14 @@ describe('SurveyorConfirmLocationScreen', () => {
         );
 
         fireEvent.press(screen.getByText('Continue'));
-        expect(mockNavigate).toHaveBeenCalledWith('SelectSpeciesScreen', {
-            surveyId: 'survey-1',
-            locationId: 'location-1',
-            surveyorId: 'surveyor-1',
-        });
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CapturePhotoScreen', {
+                surveyId: 'survey-1',
+                locationId: 'location-1',
+                surveyorId: 'surveyor-1',
+                photoType: 'FRONT_VIEW',
+            }),
+        );
     });
 
     it('opens the location sheet when changing location', async () => {
