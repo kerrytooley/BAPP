@@ -14,6 +14,11 @@ describe('BatItem', () => {
         expect(screen.getByLabelText('Noctule')).toBeOnTheScreen();
     });
 
+    it('exposes the species as a cross-platform testID for e2e selection', () => {
+        render(<BatItem bat={bat} onPress={jest.fn()} />);
+        expect(screen.getByTestId('Noctule')).toBeOnTheScreen();
+    });
+
     it('calls onPress when pressed', () => {
         const onPress = jest.fn();
         render(<BatItem bat={bat} onPress={onPress} />);

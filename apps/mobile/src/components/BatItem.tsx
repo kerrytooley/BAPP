@@ -17,7 +17,7 @@ export interface BatItemProps {
 
 export const BatItem = ({ bat, onPress }: BatItemProps) => {
     return (
-        <TouchableOpacity onPress={onPress} accessibilityRole="button" accessibilityLabel={bat.species} style={styles.container}>
+        <TouchableOpacity onPress={onPress} accessibilityRole="button" testID={bat.species} accessibilityLabel={bat.species} style={styles.container}>
             <View style={styles.batItem}>
                 <Image source={bat.image} style={styles.batImage} />
                 <LinearGradient

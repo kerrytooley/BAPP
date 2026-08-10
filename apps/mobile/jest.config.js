@@ -50,8 +50,8 @@ module.exports = {
         },
         {
             ...baseProject,
-            displayName: 'e2e',
-            testMatch: ['<rootDir>/tests/features/e2e/**/*.steps.tsx'],
+            displayName: 'flow',
+            testMatch: ['<rootDir>/tests/features/flow/**/*.steps.tsx'],
         },
     ],
 

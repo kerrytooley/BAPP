@@ -23,7 +23,7 @@ export const config: WebdriverIO.Config = {
             'appium:appPackage': 'com.bapp.mobile',
             'appium:autoGrantPermissions': true,
             'appium:newCommandTimeout': 240,
-            'appium:uiautom2ServerLaunchTimeout': 120000,
+            'appium:uiautomator2ServerLaunchTimeout': 120000,
         },
     ],
 };
