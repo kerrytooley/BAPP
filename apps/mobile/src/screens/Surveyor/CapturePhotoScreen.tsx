@@ -1,4 +1,4 @@
-import { BackButton, Button } from "@components/Button";
+import { BackButton, Button, ButtonGroup } from "@components/Button";
 import { Title } from "@components/Titles";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -57,11 +57,11 @@ export function CapturePhotoScreen(): React.JSX.Element {
             setAspectRatio(Math.max(ratio, 1)));
     }, [imageUri])
 
-    const launchCamera = async () => {
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
+    const pickFromLibrary = async () => {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) return;
 
-        const result = await ImagePicker.launchCameraAsync({
+        const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'],
             allowsEditing: true,
             quality: 0.8
@@ -69,7 +69,30 @@ export function CapturePhotoScreen(): React.JSX.Element {
 
         if (!result.canceled) {
             setImageUri(result.assets[0].uri);
-            console.log('Image captured: ', result.assets[0].uri);
+            console.log('Image selected: ', result.assets[0].uri);
+        }
+    }
+
+    const launchCamera = async () => {
+        try {
+            const permission = await ImagePicker.requestCameraPermissionsAsync();
+            if (!permission.granted) return;
+
+            const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ['images'],
+                allowsEditing: true,
+                quality: 0.8
+            });
+
+            if (!result.canceled) {
+                setImageUri(result.assets[0].uri);
+                console.log('Image captured: ', result.assets[0].uri);
+            }
+        } catch (error) {
+            // The iOS Simulator (and any device without a camera) can't launch
+            // the camera, so fall back to picking an existing photo instead.
+            console.warn('Camera unavailable, falling back to library:', error);
+            await pickFromLibrary();
         }
     }
 
@@ -106,9 +129,12 @@ export function CapturePhotoScreen(): React.JSX.Element {
                     <Rotate width={24} />
                 </View>
             </View>
-            <Button label="Take Photo" variant="light" onPress={() => launchCamera()} />
+            {
+                !imageUri &&
+                <Button label="Take Photo" variant="light" onPress={() => launchCamera()} />
+            }
             {imageUri &&
-                <Button label="Save photo and continue" onPress={() => saveAndContinue()} />
+                <ButtonGroup variant="mixed" labels={["Save photo and continue", "Retake photo"]} onPress={[() => saveAndContinue(), () => launchCamera()]} />
             }
         </View>
     )
