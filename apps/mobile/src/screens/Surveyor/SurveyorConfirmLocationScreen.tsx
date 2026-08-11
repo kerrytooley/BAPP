@@ -114,8 +114,7 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
             </View>
             <ButtonGroup labels={["Continue", "Change Location"]}
                 variant="mixed"
-                onPress={[() => handleContinue(), () => openLocationSheet(),
-                () => openLocationSheet()]}
+                onPress={[() => handleContinue(), () => openLocationSheet()]}
             />
             <AddLocationBottomSheet
                 ref={sheetRef}
