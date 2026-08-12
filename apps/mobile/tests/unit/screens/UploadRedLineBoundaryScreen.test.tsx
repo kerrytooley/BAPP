@@ -2,7 +2,7 @@ jest.mock('@react-navigation/native', () =>
     require('../../helpers/reactNavigationMock'),
 );
 
-jest.mock('expo-file-system', () => ({
+jest.mock('expo-file-system/legacy', () => ({
     readAsStringAsync: jest.fn(),
     EncodingType: { Base64: 'base64' },
 }));
@@ -20,7 +20,7 @@ jest.mock('@components/DocumentUpload', () => {
     };
 });
 
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { UploadRedLineBoundaryScreen } from '@screens/Admin/UploadRedLineBoundaryScreen';
 import { createMockService, renderWithService } from '../../helpers/testUtils';

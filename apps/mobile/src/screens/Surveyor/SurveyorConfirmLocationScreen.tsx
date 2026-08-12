@@ -81,6 +81,26 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
         sheetRef.current?.dismiss();
     }
 
+    const ensureLocationId = async (): Promise<string> => {
+        if (locationId) return locationId;
+        // No red line boundary for this site: create a placeholder location
+        // (no boundary coordinates) so photos can still be attached to it.
+        const location = await service.addLocation(surveyId, {});
+        await service.updateSurveyor(surveyorId, { locationId: location.id });
+        setSurveyor((prev) => (prev ? { ...prev, locationId: location.id } : prev));
+        setLocationId(location.id);
+        return location.id;
+    };
+
+    const handleContinue = async () => {
+        try {
+            const id = await ensureLocationId();
+            navigation.navigate("CapturePhotoScreen", { surveyId, locationId: id, surveyorId, photoType: 'FRONT_VIEW' });
+        } catch (e) {
+            console.error("Unable to continue to photo capture", e);
+        }
+    };
+
     return (
         <View style={screen.justifyScreen}>
             <View style={{ width: "100%" }} >
@@ -94,7 +114,7 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
             </View>
             <ButtonGroup labels={["Continue", "Change Location"]}
                 variant="mixed"
-                onPress={[() => navigation.navigate("SelectSpeciesScreen", { surveyId, locationId, surveyorId }), () => openLocationSheet()]}
+                onPress={[() => handleContinue(), () => openLocationSheet()]}
             />
             <AddLocationBottomSheet
                 ref={sheetRef}

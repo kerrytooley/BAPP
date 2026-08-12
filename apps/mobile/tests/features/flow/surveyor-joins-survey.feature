@@ -20,5 +20,6 @@ Feature: Surveyor joins a survey end to end
     And confirms the surveyor details
     And enters the start weather conditions
     And confirms their location on the map
+    And captures the front and equipment setup photos
     And records a "Noctule" observation
     Then the observation is saved against the survey

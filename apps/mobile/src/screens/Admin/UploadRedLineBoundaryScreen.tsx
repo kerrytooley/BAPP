@@ -8,8 +8,7 @@ import { View, StyleSheet } from "react-native"
 import { useSurveyService } from "@services/surveyServiceContext";
 import { Title } from "@components/Titles";
 import { DocumentUpload } from "@components/DocumentUpload";
-import * as FileSystem from "expo-file-system";
-import { base64ToBytes } from "@utils/base64";
+import { createImageBody } from "@utils/image";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
@@ -22,12 +21,9 @@ export function UploadRedLineBoundaryScreen(): React.JSX.Element {
     const handleContinue = async () => {
         try {
             // Continue is only enabled once an image has been selected.
-            const uri = imageUri as string;
-            const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-            const bytes = base64ToBytes(base64);
-            const fileName = uri.split("/").pop() as string;
-            await service.setBoundaryImage(surveyId, fileName, bytes);
-            console.log('Red line boundary uploaded:', fileName);
+            const imageBody = await createImageBody(imageUri as string);
+            await service.setBoundaryImage(surveyId, imageBody.fileName, imageBody.bytes);
+            console.log('Red line boundary uploaded:', imageBody.fileName);
             navigation.navigate('AddSurveyorScreen', { surveyId })
         } catch (e) {
             console.log("Error uploading red line boundary: ", e)

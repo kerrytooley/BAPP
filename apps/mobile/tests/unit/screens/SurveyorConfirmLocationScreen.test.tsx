@@ -74,11 +74,14 @@ describe('SurveyorConfirmLocationScreen', () => {
         );
 
         fireEvent.press(screen.getByText('Continue'));
-        expect(mockNavigate).toHaveBeenCalledWith('SelectSpeciesScreen', {
-            surveyId: 'survey-1',
-            locationId: 'location-9',
-            surveyorId: 'surveyor-1',
-        });
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CapturePhotoScreen', {
+                surveyId: 'survey-1',
+                locationId: 'location-9',
+                surveyorId: 'surveyor-1',
+                photoType: 'FRONT_VIEW',
+            }),
+        );
     });
 
     it('adds a location for a surveyor without one and links it', async () => {
@@ -105,11 +108,14 @@ describe('SurveyorConfirmLocationScreen', () => {
         });
 
         fireEvent.press(screen.getByText('Continue'));
-        expect(mockNavigate).toHaveBeenCalledWith('SelectSpeciesScreen', {
-            surveyId: 'survey-1',
-            locationId: 'location-1',
-            surveyorId: 'surveyor-1',
-        });
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CapturePhotoScreen', {
+                surveyId: 'survey-1',
+                locationId: 'location-1',
+                surveyorId: 'surveyor-1',
+                photoType: 'FRONT_VIEW',
+            }),
+        );
     });
 
     it('adds a location when the surveyor is not found and links it via the route', async () => {
@@ -131,11 +137,14 @@ describe('SurveyorConfirmLocationScreen', () => {
         );
 
         fireEvent.press(screen.getByText('Continue'));
-        expect(mockNavigate).toHaveBeenCalledWith('SelectSpeciesScreen', {
-            surveyId: 'survey-1',
-            locationId: 'location-1',
-            surveyorId: 'surveyor-1',
-        });
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CapturePhotoScreen', {
+                surveyId: 'survey-1',
+                locationId: 'location-1',
+                surveyorId: 'surveyor-1',
+                photoType: 'FRONT_VIEW',
+            }),
+        );
     });
 
     it('opens the location sheet when changing location', async () => {
@@ -188,6 +197,91 @@ describe('SurveyorConfirmLocationScreen', () => {
         expect(errorSpy).toHaveBeenCalledWith(
             'Error fetching boundary image',
             expect.any(Error),
+        );
+    });
+
+    it('creates a placeholder location and continues when none was set', async () => {
+        const service = createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(
+                buildContext({
+                    surveyors: [buildSurveyor({ id: 'surveyor-1', locationId: null })],
+                }),
+            ),
+            getBoundaryImage: jest.fn().mockResolvedValue(readyImage),
+            addLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'location-1' })),
+        });
+        renderWithService(<SurveyorConfirmLocationScreen />, service);
+
+        await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
+        fireEvent.press(screen.getByText('Continue'));
+
+        await waitFor(() =>
+            expect(service.addLocation).toHaveBeenCalledWith('survey-1', {}),
+        );
+        expect(service.updateSurveyor).toHaveBeenCalledWith('surveyor-1', {
+            locationId: 'location-1',
+        });
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CapturePhotoScreen', {
+                surveyId: 'survey-1',
+                locationId: 'location-1',
+                surveyorId: 'surveyor-1',
+                photoType: 'FRONT_VIEW',
+            }),
+        );
+    });
+
+    it('creates a placeholder location even when the surveyor is not loaded', async () => {
+        const service = createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(
+                buildContext({ surveyors: [] }),
+            ),
+            getBoundaryImage: jest.fn().mockResolvedValue(readyImage),
+            addLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'location-2' })),
+        });
+        renderWithService(<SurveyorConfirmLocationScreen />, service);
+
+        await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
+        fireEvent.press(screen.getByText('Continue'));
+
+        await waitFor(() =>
+            expect(service.addLocation).toHaveBeenCalledWith('survey-1', {}),
+        );
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CapturePhotoScreen', {
+                surveyId: 'survey-1',
+                locationId: 'location-2',
+                surveyorId: 'surveyor-1',
+                photoType: 'FRONT_VIEW',
+            }),
+        );
+    });
+
+    it('logs an error and does not navigate when continuing fails', async () => {
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+        const service = createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(
+                buildContext({
+                    surveyors: [buildSurveyor({ id: 'surveyor-1', locationId: null })],
+                }),
+            ),
+            getBoundaryImage: jest.fn().mockResolvedValue(readyImage),
+            addLocation: jest.fn().mockRejectedValue(new Error('add failed')),
+        });
+        renderWithService(<SurveyorConfirmLocationScreen />, service);
+
+        await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
+        fireEvent.press(screen.getByText('Continue'));
+
+        await waitFor(() =>
+            expect(errorSpy).toHaveBeenCalledWith(
+                'Unable to continue to photo capture',
+                expect.any(Error),
+            ),
+        );
+        expect(mockNavigate).not.toHaveBeenCalledWith(
+            'CapturePhotoScreen',
+            expect.anything(),
         );
     });
 });

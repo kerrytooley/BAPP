@@ -3,17 +3,18 @@ jest.mock('@utils/image', () => ({
 }));
 
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-native';
-import { Image, Pressable } from 'react-native';
+import { Image } from 'react-native';
 import { PressablePinLayer } from '@components/PressablePinLayer';
 import { getAspectRatio } from '@utils/image';
+import { PressableType } from '../../helpers/rnComponents';
 
 const measure = (width = 100, height = 100) =>
-    fireEvent(screen.UNSAFE_getByType(Pressable), 'layout', {
+    fireEvent(screen.UNSAFE_getByType(PressableType), 'layout', {
         nativeEvent: { layout: { width, height } },
     });
 
 const tap = (locationX: number, locationY: number) =>
-    fireEvent(screen.UNSAFE_getByType(Pressable), 'press', {
+    fireEvent(screen.UNSAFE_getByType(PressableType), 'press', {
         nativeEvent: { locationX, locationY },
     });
 

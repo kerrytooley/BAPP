@@ -3,6 +3,34 @@ import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { createRealService, renderApp } from '../../helpers/flowApp';
 import type { SurveyService } from '@bapp/domain';
 
+jest.mock('expo-image-picker', () => ({
+  requestCameraPermissionsAsync: jest.fn(() =>
+    Promise.resolve({ granted: true }),
+  ),
+  launchCameraAsync: jest.fn(() =>
+    Promise.resolve({
+      canceled: false,
+      assets: [{ uri: 'file://photo.jpg' }],
+    }),
+  ),
+  requestMediaLibraryPermissionsAsync: jest.fn(() =>
+    Promise.resolve({ granted: true }),
+  ),
+  launchImageLibraryAsync: jest.fn(() =>
+    Promise.resolve({
+      canceled: false,
+      assets: [{ uri: 'file://photo.jpg' }],
+    }),
+  ),
+}));
+
+jest.mock('@utils/image', () => ({
+  getAspectRatio: jest.fn(() => Promise.resolve(1.5)),
+  createImageBody: jest.fn(() =>
+    Promise.resolve({ fileName: 'photo.jpg', bytes: new Uint8Array([1, 2, 3]) }),
+  ),
+}));
+
 const feature = loadFeature('./tests/features/flow/surveyor-joins-survey.feature');
 
 // Native-stack keeps previously-visited screens mounted, so a label like
@@ -128,6 +156,29 @@ defineFeature(feature, (test) => {
 
     and('confirms their location on the map', async () => {
       pressLast('Continue');
+      await waitForScreen('Front View of Property');
+    });
+
+    and('captures the front and equipment setup photos', async () => {
+      // Front view: take the photo, then save to advance to the equipment step.
+      pressLast('Take Photo');
+      await waitFor(() =>
+        expect(screen.getByText('Save photo and continue')).toBeOnTheScreen(),
+      );
+      pressLast('Save photo and continue');
+      await waitForScreen('Equipment Setup');
+
+      // Equipment view: take the photo, then save to complete setup.
+      pressLast('Take Photo');
+      await waitFor(() =>
+        expect(
+          screen.getAllByText('Save photo and continue').at(-1),
+        ).toBeOnTheScreen(),
+      );
+      pressLast('Save photo and continue');
+      await waitForScreen('Survey Setup Complete!');
+
+      pressLast('Next');
       await waitForScreen('Add New Bat Type');
     });
 
