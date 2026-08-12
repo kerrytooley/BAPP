@@ -100,7 +100,7 @@ export function CapturePhotoScreen(): React.JSX.Element {
         console.log('saveImage called with uri:', imageUri);
         try {
             const imageBody = await createImageBody(imageUri as string);
-            const updatedLocation = await service.setLocationsImage(locationId, imageBody.fileName, imageBody.bytes, photoType);
+            const updatedLocation = await service.setLocationImage(locationId, imageBody.fileName, imageBody.bytes, photoType);
             console.log('Image saved for ', pageTitles?.title, updatedLocation)
 
             if (photoType === 'FRONT_VIEW') {
@@ -122,7 +122,9 @@ export function CapturePhotoScreen(): React.JSX.Element {
             </View>
             <View style={[screen.content, { gap: 48 }]} >
                 <View style={[styles.imageLayer, { aspectRatio: aspectRatio ?? 1.5 }]} >
-                    <Image source={imageUri ? { uri: imageUri } : pageTitles?.exampleImage} style={styles.image} resizeMode="cover" />
+                    {(imageUri || pageTitles) &&
+                        <Image source={imageUri ? { uri: imageUri } : pageTitles?.exampleImage} style={styles.image} resizeMode="cover" />
+                    }
                 </View>
                 <View style={styles.rotatePrompt}>
                     <Text style={[textStyles.subtitle, { color: colours.placeholderText }]}>Rotate your device</Text>

@@ -143,7 +143,7 @@ export class SurveyService {
   /**
  * Upload (or replace) the location's equipment image.
  */
-  async setLocationsImage(
+  async setLocationImage(
     locationId: string,
     fileName: string,
     data: ArrayBuffer | Uint8Array,
@@ -153,6 +153,7 @@ export class SurveyService {
 
     const isEquipment = imageType === 'EQUIPMENT';
     const existing = await this.locationRepository.findById(locationId);
+    if (!existing) throw new Error(`Entity ${locationId} not found`);
     const previous = isEquipment ? existing?.equipmentImage : existing?.frontViewImage;
     const fileStub = isEquipment ? 'equipment' : 'frontView';
 

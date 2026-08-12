@@ -43,6 +43,8 @@ module.exports = function withFmtConstevalPatch(config) {
           contents = contents.replace(anchor, anchor + FMT_PATCH_RUBY);
           fs.writeFileSync(podfilePath, contents);
         }
+      } else {
+        console.warn('[withFmtConstevalPatch] Could not find Podfile post_install hook; fmt patch not applied.');
       }
 
       return cfg;

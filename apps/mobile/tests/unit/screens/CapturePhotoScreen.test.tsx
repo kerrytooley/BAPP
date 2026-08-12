@@ -101,7 +101,7 @@ describe('CapturePhotoScreen', () => {
         fireEvent.press(screen.getByText('Save photo and continue'));
 
         await waitFor(() =>
-            expect(service.setLocationsImage).toHaveBeenCalledWith(
+            expect(service.setLocationImage).toHaveBeenCalledWith(
                 'location-1',
                 'photo.jpg',
                 expect.any(Uint8Array),
@@ -259,7 +259,7 @@ describe('CapturePhotoScreen', () => {
                 expect.any(Error),
             ),
         );
-        expect(service.setLocationsImage).not.toHaveBeenCalled();
+        expect(service.setLocationImage).not.toHaveBeenCalled();
         expect(mockPush).not.toHaveBeenCalled();
         expect(mockNavigate).not.toHaveBeenCalled();
     });
