@@ -1,5 +1,5 @@
 import type { MediaRepository, UploadOptions, UploadResult } from '@bapp/domain';
-import { isPdf, derivedImagePath } from '../media/boundary-media';
+import { needsNormalization, derivedImagePath } from '../media/boundary-media';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -101,11 +101,12 @@ export class InMemoryMediaRepository implements MediaRepository {
     // Uploads are atomic here; report completion once for progress-aware callers.
     options?.onProgress?.(1);
 
-    // Stand in for server-side rasterization: a PDF is normalized to a
-    // displayable PNG at a derived path. The in-memory fake does this
-    // synchronously and reports `ready`; a real async adapter would leave
-    // `renderRef: null`, `status: 'processing'` and resolve it via writeback.
-    if (isPdf(sourceRef, bytes)) {
+    // Stand in for rasterization/transcoding: a normalization-needing source
+    // (PDF or HEIC) is normalized to a displayable PNG at a derived path. The
+    // in-memory fake does this synchronously and reports `ready`; a real adapter
+    // either rasterizes on-device (client/hybrid) or leaves `renderRef: null`,
+    // `status: 'processing'` for a server writeback.
+    if (needsNormalization(sourceRef, bytes)) {
       const renderRef = derivedImagePath(sourceRef);
       this.store.set(renderRef, placeholderPng());
       return { sourceRef, renderRef, status: 'ready' };

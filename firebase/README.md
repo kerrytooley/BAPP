@@ -97,6 +97,38 @@ native toolchain:
   index overrides (`id`, and `locationId` on observations). The emulator does not
   enforce indexes, but production would need these.
 
+## Media normalization & rasterization (PDF / HEIC)
+
+Non-directly-renderable sources — **PDF** boundaries and **HEIC** photos — must
+be normalized to a display-ready raster (`<Image>` can't draw a PDF, and HEIC is
+unreliable on Android). Detection lives in `media/boundary-media.ts`
+(`needsNormalization` = `isPdf` || `isHeic`); everything else (PNG/JPEG/WebP/GIF)
+passes through as identity.
+
+**Rasterization location is a client/hybrid decision** (per
+`docs/DESIGN-boundary-media-and-flight-paths.md`, lines 414-430): a server-only
+Cloud Function means a freshly-picked PDF/HEIC is **not drawable offline** on the
+originating device until it round-trips. To honour offline-first, the Firebase
+adapter takes an optional injected **`Rasterizer`** (`media/boundary-media.ts`):
+
+- **With a rasterizer** (`new FirebaseMediaRepository(rasterizer)`): a
+  normalization-needing source is rasterized **on-device**, the render is seeded
+  into the offline cache (so `getDownloadUrl(renderRef)` hits offline), uploaded
+  in the background as the canonical copy, and `upload()` returns
+  `status: 'ready'` — drawable offline immediately.
+- **Without one** (the current default, incl. local/emulator — no native lib):
+  falls back to **server-deferred** rasterization (`renderRef: null`,
+  `status: 'processing'`), and **offline drawing of PDF/HEIC is unavailable** in
+  this mode. A Cloud Function would rasterize after the source lands and write
+  `renderRef` + `ready` back onto the doc (none runs against the bare emulator).
+
+**Remaining device-time work:** implement a concrete `Rasterizer` (a native PDF
+renderer + HEIC transcoder) and inject it where the app composes repositories.
+It must render **page 0** and **fail clearly on multi-page PDFs** (page count
+isn't reliably detectable from magic bytes, so it is not pre-checked — the
+rasterizer is the right place). Raster photos already work offline with no
+rasterizer.
+
 ## Verification handoff (what still needs a real simulator/emulator)
 
 None of the following could be exercised here; all need a booted device with the
@@ -110,9 +142,11 @@ emulators running:
   (**highest-risk** — RNFB's native upload path for in-memory bytes vs. a file
   path should be confirmed), `getDownloadURL` cache-or-download to a `file://`
   URI via `expo-file-system/legacy`, holistic `delete`, and `clearCache`.
-- The PDF `status: 'processing'` path has **no** rasterizing Cloud Function
-  against the bare emulator, so `renderRef` stays `null` locally until such a
-  function exists.
+- PDF/HEIC normalization: with no injected `Rasterizer` (the default), the
+  server-deferred path returns `status: 'processing'` / `renderRef: null` and has
+  **no** rasterizing Cloud Function against the bare emulator, so `renderRef`
+  stays `null` locally. The on-device (client/hybrid) path needs a concrete
+  `Rasterizer` — see "Media normalization & rasterization" above.
 
 Recommended: drive it through the WebdriverIO/Appium `e2e/` suite (or a manual
 dev-client session) with the app pointed at the emulators.

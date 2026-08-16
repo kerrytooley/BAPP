@@ -11,7 +11,7 @@ import {
 // `/legacy` entry point.
 import * as FileSystem from 'expo-file-system/legacy';
 import { getFirebaseStorage } from '../config/firebase-app';
-import { isPdf, derivedImagePath } from './boundary-media';
+import { needsNormalization, derivedImagePath, type Rasterizer } from './boundary-media';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -74,6 +74,16 @@ function parentDir(path: string): string {
 }
 
 export class FirebaseMediaRepository implements MediaRepository {
+  /**
+   * @param rasterizer Optional on-device rasterizer (client/hybrid). When
+   *   provided, PDF/HEIC sources are rasterized locally so the originating
+   *   device can draw them offline immediately. When omitted (e.g. local /
+   *   emulator with no native lib), such sources fall back to server-deferred
+   *   rasterization (`renderRef: null`, `status: 'processing'`) and offline
+   *   drawing of PDF/HEIC is unavailable — see firebase/README.md.
+   */
+  constructor(private readonly rasterizer?: Rasterizer) {}
+
   async upload(
     path: string,
     data: ArrayBuffer | Uint8Array,
@@ -89,52 +99,82 @@ export class FirebaseMediaRepository implements MediaRepository {
     // offline. `getDownloadUrl(sourceRef)` will hit this cache. This is what lets
     // a surveyor in the field add media and keep operating on it before (or
     // without) any upload.
-    const cachePath = cachePathFor(sourceRef);
-    await FileSystem.makeDirectoryAsync(parentDir(cachePath), { intermediates: true });
-    await FileSystem.writeAsStringAsync(cachePath, bytesToBase64(bytes), {
-      encoding: FileSystem.EncodingType.Base64,
-    });
+    await this.seedCache(sourceRef, bytes);
 
-    // Start the resumable upload but DO NOT await its completion. Offline it
-    // cannot finish; awaiting here would hang `setBoundaryImage`/`setLocationImage`
-    // and block the surveyor. Resolving reflects "source recorded and locally
+    // Start the resumable upload but DO NOT await its completion (see
+    // startBackgroundUpload). Resolving reflects "source recorded and locally
     // usable", not "bytes reached Storage" — the doc's eventually-consistent
-    // write contract. The upload runs/resumes in the background and flushes when
-    // connectivity returns.
-    // NOTE (device-time hardening): since the bytes are now on disk at
-    // `cachePath`, uploading via RNFB's `putFile(ref, cachePath)` is more robust
-    // than a byte buffer; left as `uploadBytesResumable` for now because the
-    // input choice can only be validated on a real device — see firebase/README.
-    const task = uploadBytesResumable(
-      storageRef(getFirebaseStorage(), sourceRef),
-      bytes,
-      { contentType },
-    );
-    if (options?.onProgress) {
-      task.on('state_changed', (snapshot: FirebaseStorageTypes.TaskSnapshot) => {
-        if (snapshot.totalBytes > 0) {
-          options.onProgress!(snapshot.bytesTransferred / snapshot.totalBytes);
-        }
-      });
-    }
-    // Swallow background failures: a dropped/failed upload must not surface as a
-    // rejected `upload()` — the source is already recorded and locally drawable,
-    // and RNFB resumes the task. (A launch-time sweep of unsent media is the
-    // durability backstop across app kills — see firebase/README.)
-    task.then(undefined, () => undefined);
+    // write contract.
+    this.startBackgroundUpload(sourceRef, bytes, contentType, options?.onProgress);
 
-    // A PDF (or other non-renderable source) is rasterized asynchronously by a
-    // Cloud Function, which writes `renderRef` + `status: 'ready'` back onto the
-    // parent doc. Resolving here means only that the source is recorded — so
-    // return `processing` with no render yet. (No function runs against the bare
-    // emulator, so the render stays pending in local dev — see firebase/README.)
-    if (isPdf(sourceRef, bytes)) {
+    if (needsNormalization(sourceRef, bytes)) {
+      if (this.rasterizer) {
+        // CLIENT/HYBRID rasterization (offline-first): produce the display-ready
+        // raster on the originating device NOW, seed it into the cache so
+        // getDownloadUrl(renderRef) hits offline, and upload it in the background
+        // as the canonical copy other devices download. The origin device never
+        // waits on the network or a server function to draw a PDF/HEIC.
+        const render = await this.rasterizer.rasterize(bytes, contentType);
+        const renderRef = derivedImagePath(sourceRef);
+        await this.seedCache(renderRef, render.bytes);
+        this.startBackgroundUpload(renderRef, render.bytes, render.contentType);
+        return { sourceRef, renderRef, status: 'ready' };
+      }
+      // SERVER-DEFERRED fallback (no on-device rasterizer): a Cloud Function
+      // rasterizes after the source lands and writes `renderRef` + `ready` back
+      // onto the parent doc, which propagates via subscription. Offline PDF/HEIC
+      // drawing is NOT available in this mode (no function runs against the bare
+      // emulator either) — see firebase/README.md.
       return { sourceRef, renderRef: null, status: 'processing' };
     }
+
     // Already a renderable raster: source is its own render, and the originating
     // device draws it straight from the cache we just seeded — `ready` is honest
     // even offline (the `processing` status is a signal for OTHER devices).
     return { sourceRef, renderRef: sourceRef, status: 'ready' };
+  }
+
+  /** Write bytes into the on-device cache at the ref's mirrored path (offline-first). */
+  private async seedCache(reference: string, bytes: Uint8Array): Promise<void> {
+    const cachePath = cachePathFor(reference);
+    await FileSystem.makeDirectoryAsync(parentDir(cachePath), { intermediates: true });
+    await FileSystem.writeAsStringAsync(cachePath, bytesToBase64(bytes), {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+  }
+
+  /**
+   * Fire a resumable upload without awaiting it. Offline it cannot finish;
+   * awaiting would hang the caller and block the surveyor. It runs/resumes in
+   * the background and flushes when connectivity returns; failures are swallowed
+   * (the source is already recorded and locally drawable, and RNFB resumes the
+   * task — a launch-time sweep of unsent media is the durability backstop across
+   * app kills, see firebase/README).
+   *
+   * NOTE (device-time hardening): the bytes are also on disk in the cache, so
+   * uploading via RNFB's `putFile(ref, cachePath)` is more robust than a byte
+   * buffer; left as `uploadBytesResumable` because the input choice can only be
+   * validated on a real device.
+   */
+  private startBackgroundUpload(
+    reference: string,
+    bytes: Uint8Array,
+    contentType: string,
+    onProgress?: (fraction: number) => void,
+  ): void {
+    const task = uploadBytesResumable(
+      storageRef(getFirebaseStorage(), reference),
+      bytes,
+      { contentType },
+    );
+    if (onProgress) {
+      task.on('state_changed', (snapshot: FirebaseStorageTypes.TaskSnapshot) => {
+        if (snapshot.totalBytes > 0) {
+          onProgress(snapshot.bytesTransferred / snapshot.totalBytes);
+        }
+      });
+    }
+    task.then(undefined, () => undefined);
   }
 
   async getDownloadUrl(reference: string): Promise<string> {
