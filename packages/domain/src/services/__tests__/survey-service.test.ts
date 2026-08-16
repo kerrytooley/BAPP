@@ -4,6 +4,7 @@ import { NoOpValidator } from '../../validation';
 import { ValidationError } from '../../validation-error';
 import type { SurveyContext } from '../../survey-context';
 import type { SurveyChange, SurveyValidator } from '../../validation';
+import type { MediaRepository, UploadResult } from '../../repositories/media-repository';
 import {
   InMemorySurveyRepository,
   InMemoryLocationRepository,
@@ -23,6 +24,39 @@ function createService(validator?: SurveyValidator) {
     validator ?? new NoOpValidator(),
   );
   return { service, surveyRepo, locationRepo, surveyorRepo, observationRepo, mediaRepo };
+}
+
+/**
+ * A stub media repo whose uploads always resolve `processing` (renderRef null) —
+ * modelling the server-deferred rasterization path (a PDF/HEIC uploaded without
+ * an on-device rasterizer). Records every `delete` so tests can assert whether GC
+ * of a superseded media group was triggered.
+ */
+class ProcessingMediaRepository implements MediaRepository {
+  readonly deleted: string[] = [];
+  async upload(path: string): Promise<UploadResult> {
+    return { sourceRef: path, renderRef: null, status: 'processing' };
+  }
+  async getDownloadUrl(reference: string): Promise<string> {
+    return `stub://${reference}`;
+  }
+  async delete(reference: string): Promise<void> {
+    this.deleted.push(reference);
+  }
+  async clearCache(): Promise<void> {}
+}
+
+function createServiceWithProcessingMedia() {
+  const locationRepo = new InMemoryLocationRepository();
+  const surveyorRepo = new InMemorySurveyorRepository();
+  const observationRepo = new InMemoryObservationRepository();
+  const mediaRepo = new ProcessingMediaRepository();
+  const surveyRepo = new InMemorySurveyRepository(locationRepo, surveyorRepo, observationRepo);
+  const service = new SurveyService(
+    surveyRepo, locationRepo, surveyorRepo, observationRepo, mediaRepo,
+    new NoOpValidator(),
+  );
+  return { service, mediaRepo };
 }
 
 describe('SurveyService', () => {
@@ -210,6 +244,19 @@ describe('SurveyService', () => {
       await expect(mediaRepo.getDownloadUrl(ref)).resolves.toMatch(/^data:image\/png;base64,/);
     });
 
+    it('does not GC the previous boundary while the replacement is still processing', async () => {
+      // Invariant: the live boundary is never deleted until its replacement
+      // reaches `ready`. A server-deferred (PDF/HEIC) replacement resolves
+      // `processing`, so the previous must stay live as the fallback.
+      const { service, mediaRepo } = createServiceWithProcessingMedia();
+      const survey = await service.createSurvey();
+
+      await service.setBoundaryImage(survey.id, 'first.pdf', bytes);
+      await service.setBoundaryImage(survey.id, 'second.pdf', bytes);
+
+      expect(mediaRepo.deleted).toEqual([]);
+    });
+
     it('points a PDF boundary render at the derived .png, keeping the source', async () => {
       const { service, mediaRepo } = createService();
       const survey = await service.createSurvey();
@@ -307,6 +354,19 @@ describe('SurveyService', () => {
       await service.setLocationImage(loc.id, 'gear.png', bytes, 'equipment');
 
       await expect(mediaRepo.getDownloadUrl(ref)).resolves.toMatch(/^data:image\/png;base64,/);
+    });
+
+    it('does not GC the previous equipment media while the replacement is still processing', async () => {
+      // Same invariant as the boundary: a `processing` replacement must not
+      // delete the still-live previous image.
+      const { service, mediaRepo } = createServiceWithProcessingMedia();
+      const survey = await service.createSurvey();
+      const loc = await service.addLocation(survey.id, { name: 'North Gate' });
+
+      await service.setLocationImage(loc.id, 'first.pdf', bytes, 'EQUIPMENT');
+      await service.setLocationImage(loc.id, 'second.pdf', bytes, 'EQUIPMENT');
+
+      expect(mediaRepo.deleted).toEqual([]);
     });
 
     it('does not touch the equipment image when replacing the front view', async () => {

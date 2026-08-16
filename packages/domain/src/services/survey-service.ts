@@ -139,9 +139,13 @@ export class SurveyService {
     };
     const updated = await this.updateSurvey(surveyId, { boundary });
 
-    // GC the superseded media group only after the new state is durably
-    // recorded. Best-effort and out-of-band — never fail the write path.
-    if (previous && previous.sourceRef !== boundary.sourceRef) {
+    // GC the superseded media group only once the REPLACEMENT is fully rendered
+    // (`ready`). While the new upload is `processing`/`failed`, the previous
+    // boundary stays live — a slow/failed/not-yet-rendered replacement must never
+    // blank the existing image. A superseded-but-not-yet-`ready` group is instead
+    // reclaimed later by the survey-completion sweep, keeping GC decoupled from
+    // this write path. Best-effort and out-of-band — never fail the write path.
+    if (previous && previous.sourceRef !== boundary.sourceRef && boundary.status === 'ready') {
       try {
         await this.mediaRepository.delete(previous.sourceRef);
       } catch {
@@ -185,9 +189,13 @@ export class SurveyService {
       ? await this.updateLocation(locationId, { equipmentImage: image })
       : await this.updateLocation(locationId, { frontViewImage: image });
 
-    // GC the superseded media group only after the new state is durably
-    // recorded. Best-effort and out-of-band — never fail the write path.
-    if (previous && previous.sourceRef !== image.sourceRef) {
+    // GC the superseded media group only once the REPLACEMENT is fully rendered
+    // (`ready`). While the new upload is `processing`/`failed`, the previous image
+    // stays live — a slow/failed/not-yet-rendered replacement must never blank the
+    // existing image. A superseded-but-not-yet-`ready` group is instead reclaimed
+    // later by the survey-completion sweep, keeping GC decoupled from this write
+    // path. Best-effort and out-of-band — never fail the write path.
+    if (previous && previous.sourceRef !== image.sourceRef && image.status === 'ready') {
       try {
         await this.mediaRepository.delete(previous.sourceRef);
       } catch {
