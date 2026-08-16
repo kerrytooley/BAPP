@@ -1,9 +1,10 @@
-import type {
-  Location,
-  CreateLocationInput,
-  UpdateLocationInput,
-  LocationRepository,
-  Unsubscribe,
+import {
+  applyLocationDefaults,
+  type Location,
+  type CreateLocationInput,
+  type UpdateLocationInput,
+  type LocationRepository,
+  type Unsubscribe,
 } from '@bapp/domain';
 
 let nextId = 1;
@@ -37,14 +38,11 @@ export class InMemoryLocationRepository implements LocationRepository {
 
   async create(input: CreateLocationInput): Promise<Location> {
     const now = new Date();
+    // Business defaults live in the domain normalizer; this backend owns only
+    // id + timestamps + persistence.
     const location: Location = {
       id: String(nextId++),
-      surveyId: input.surveyId,
-      name: input.name ?? null,
-      boundaryPosition: input.boundaryPosition ?? null,
-      frontViewImage: input.frontViewImage ?? null,
-      equipmentImage: input.equipmentImage ?? null,
-      data: input.data ?? {},
+      ...applyLocationDefaults(input),
       createdAt: now,
       updatedAt: now,
     };

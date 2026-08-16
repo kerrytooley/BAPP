@@ -33,3 +33,21 @@ export type UpdateLocationInput = Partial<{
   equipmentImage: MediaAsset | null;
   data: Record<string, unknown>;
 }>;
+
+/** A fully-defaulted location minus the fields each backend owns (id, timestamps). */
+export type NewLocationFields = Omit<Location, 'id' | 'createdAt' | 'updatedAt'>;
+
+/**
+ * Apply business-field defaults to a create input, producing a complete location
+ * shape (minus id/timestamps) shared by every repository backend.
+ */
+export function applyLocationDefaults(input: CreateLocationInput): NewLocationFields {
+  return {
+    surveyId: input.surveyId,
+    name: input.name ?? null,
+    boundaryPosition: input.boundaryPosition ?? null,
+    frontViewImage: input.frontViewImage ?? null,
+    equipmentImage: input.equipmentImage ?? null,
+    data: input.data ?? {},
+  };
+}

@@ -28,3 +28,21 @@ export type UpdateSurveyorInput = Partial<{
   status: SurveyorStatus;
   data: Record<string, unknown>;
 }>;
+
+/** A fully-defaulted surveyor minus the fields each backend owns (id, timestamps). */
+export type NewSurveyorFields = Omit<Surveyor, 'id' | 'createdAt' | 'updatedAt'>;
+
+/**
+ * Apply business-field defaults to a create input, producing a complete surveyor
+ * shape (minus id/timestamps) shared by every repository backend.
+ */
+export function applySurveyorDefaults(input: CreateSurveyorInput): NewSurveyorFields {
+  return {
+    surveyId: input.surveyId,
+    locationId: input.locationId ?? null,
+    name: input.name ?? null,
+    isLead: input.isLead ?? false,
+    status: input.status ?? 'pending',
+    data: input.data ?? {},
+  };
+}

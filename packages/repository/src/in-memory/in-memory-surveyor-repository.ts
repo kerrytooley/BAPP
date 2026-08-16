@@ -1,9 +1,10 @@
-import type {
-  Surveyor,
-  CreateSurveyorInput,
-  UpdateSurveyorInput,
-  SurveyorRepository,
-  Unsubscribe,
+import {
+  applySurveyorDefaults,
+  type Surveyor,
+  type CreateSurveyorInput,
+  type UpdateSurveyorInput,
+  type SurveyorRepository,
+  type Unsubscribe,
 } from '@bapp/domain';
 
 let nextId = 1;
@@ -36,14 +37,11 @@ export class InMemorySurveyorRepository implements SurveyorRepository {
 
   async create(input: CreateSurveyorInput): Promise<Surveyor> {
     const now = new Date();
+    // Business defaults live in the domain normalizer; this backend owns only
+    // id + timestamps + persistence.
     const surveyor: Surveyor = {
       id: String(nextId++),
-      surveyId: input.surveyId,
-      locationId: input.locationId ?? null,
-      name: input.name ?? null,
-      isLead: input.isLead ?? false,
-      status: input.status ?? 'pending',
-      data: input.data ?? {},
+      ...applySurveyorDefaults(input),
       createdAt: now,
       updatedAt: now,
     };

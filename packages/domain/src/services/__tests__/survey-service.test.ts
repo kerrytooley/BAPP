@@ -56,6 +56,15 @@ describe('SurveyService', () => {
       expect(ctx.observations).toEqual([]);
     });
 
+    it('accepts admin code with surrounding whitespace and mixed case', async () => {
+      const { service } = createService();
+      const survey = await service.createSurvey();
+      const codeWithWhitespaceAndCase = `  ${survey.adminCode.toUpperCase()}  `;
+
+      const ctx = await service.resumeSurvey(codeWithWhitespaceAndCase);
+      expect(ctx.survey.id).toBe(survey.id);
+    });
+
     it('throws for unknown admin code', async () => {
       const { service } = createService();
       await expect(service.resumeSurvey('badcode')).rejects.toThrow();
