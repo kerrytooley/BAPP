@@ -5,10 +5,13 @@ const moduleNameMapper = {
     // SVG imports (react-native-svg-transformer) -> lightweight mock component.
     // Must come before the @assets alias so `*.svg` requests are intercepted.
     '\.svg$': '<rootDir>/tests/jest/svgMock.tsx',
-    // Firebase is only initialized at runtime; unit tests use in-memory repos or
-    // mocked services, so stub the Firebase SDK to avoid loading its ESM build.
-    '^firebase/(app|firestore|auth|storage)$': '<rootDir>/tests/jest/firebaseMock.ts',
+    // Firebase (@react-native-firebase) is a native module only initialized at
+    // runtime on device; the suites use in-memory repos or mocked services, so
+    // stub it to avoid loading native code. The app's Firebase repos live behind
+    // the '@bapp/repository/firebase' subpath (kept out of the main barrel).
+    '^@react-native-firebase/(app|firestore|auth|storage)$': '<rootDir>/tests/jest/firebaseMock.ts',
     '^@bapp/domain$': '<rootDir>/../../packages/domain/src/index.ts',
+    '^@bapp/repository/firebase$': '<rootDir>/../../packages/repository/src/firebase.ts',
     '^@bapp/repository$': '<rootDir>/../../packages/repository/src/index.ts',
     '^@bapp/export$': '<rootDir>/../../packages/export/src/index.ts',
     '^@components/(.*)$': '<rootDir>/src/components/$1',

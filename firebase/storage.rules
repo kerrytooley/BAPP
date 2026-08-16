@@ -1,0 +1,10 @@
+rules_version = '2';
+// v1 (loose): any authenticated caller can read/write any object. Tighten in v2
+// alongside the Firestore member/admin models.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
