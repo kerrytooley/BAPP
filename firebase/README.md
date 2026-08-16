@@ -150,3 +150,37 @@ emulators running:
 
 Recommended: drive it through the WebdriverIO/Appium `e2e/` suite (or a manual
 dev-client session) with the app pointed at the emulators.
+
+## Deferred follow-ups (tracked)
+
+Intentionally **not** done in the local-emulator adapter — action later:
+
+1. **Location media isn't survey-scoped.** Location photos are stored at
+   `locations/{locationId}/…` (from `SurveyService.setLocationImage`), **not**
+   under `surveys/{surveyId}/…`. So a `surveyId`-scoped `clearCache(surveyId)`,
+   and any survey-scoped GC / GDPR completion sweep, will **miss** them — only a
+   full `clearCache()` (no arg) clears them. Fix: either re-scope location media
+   under `surveys/{surveyId}/locations/{locationId}/…` (aligns storage path +
+   offline cache + sweep by survey), or have the sweep resolve a survey's
+   locations and clear their paths too.
+
+2. **`status: 'uploading'` + live upload progress.** The adapter emits only
+   `processing`/`ready`, never `uploading`. Writing `uploading` up front — plus
+   the doc-sourced, throttled progress checkpoints (design
+   `DESIGN-boundary-media-and-flight-paths.md`, Option 2, lines 343-364) — needs
+   a `sourceRef` *before* the upload resolves, i.e. a two-phase /
+   provisional-`sourceRef` upload shape (today `upload()` derives `sourceRef`
+   internally and returns it). Deferred until that shape exists; the
+   `UploadOptions.onProgress` seam is already in place.
+
+3. **Survey-completion GC + Storage sweep (now load-bearing).** The
+   replace-before-`ready` fix in `setBoundaryImage`/`setLocationImage` defers
+   reclamation of a superseded-but-still-`processing` media group to this sweep,
+   and the arch doc needs it for GDPR Storage cleanup (Firestore TTL does not
+   delete Storage objects). It **does not exist yet** — until it does, a PDF/HEIC
+   replacement whose new render never reaches `ready` leaves the old group
+   un-GC'd.
+
+See also, above: the concrete native `Rasterizer` (with multi-page-PDF
+fail-clear) and a launch-time sweep that re-enqueues unsent uploads across app
+kills.
