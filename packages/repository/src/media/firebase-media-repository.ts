@@ -13,6 +13,28 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { getFirebaseStorage } from '../config/firebase-app';
 import { isPdf, derivedImagePath } from './boundary-media';
 
+const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+/**
+ * Encode bytes to base64 without `Buffer`/`btoa` (neither is guaranteed in
+ * Hermes). Used to write picked media into the on-device cache via
+ * `expo-file-system`, which takes a base64 string for binary writes.
+ */
+function bytesToBase64(bytes: Uint8Array): string {
+  let result = '';
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b0 = bytes[i];
+    const b1 = i + 1 < bytes.length ? bytes[i + 1] : 0;
+    const b2 = i + 2 < bytes.length ? bytes[i + 2] : 0;
+
+    result += BASE64_CHARS[b0 >> 2];
+    result += BASE64_CHARS[((b0 & 0x03) << 4) | (b1 >> 4)];
+    result += i + 1 < bytes.length ? BASE64_CHARS[((b1 & 0x0f) << 2) | (b2 >> 6)] : '=';
+    result += i + 2 < bytes.length ? BASE64_CHARS[b2 & 0x3f] : '=';
+  }
+  return result;
+}
+
 const MIME_TYPES: Record<string, string> = {
   png: 'image/png',
   jpg: 'image/jpeg',
@@ -61,6 +83,28 @@ export class FirebaseMediaRepository implements MediaRepository {
     const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
     const contentType = options?.contentType ?? mimeTypeFor(sourceRef);
 
+    // Offline-first: persist the picked bytes to the local cache FIRST, keyed by
+    // the storage ref, so the originating device can render this media from a
+    // `file://` URI immediately — with no network round-trip and while fully
+    // offline. `getDownloadUrl(sourceRef)` will hit this cache. This is what lets
+    // a surveyor in the field add media and keep operating on it before (or
+    // without) any upload.
+    const cachePath = cachePathFor(sourceRef);
+    await FileSystem.makeDirectoryAsync(parentDir(cachePath), { intermediates: true });
+    await FileSystem.writeAsStringAsync(cachePath, bytesToBase64(bytes), {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    // Start the resumable upload but DO NOT await its completion. Offline it
+    // cannot finish; awaiting here would hang `setBoundaryImage`/`setLocationImage`
+    // and block the surveyor. Resolving reflects "source recorded and locally
+    // usable", not "bytes reached Storage" — the doc's eventually-consistent
+    // write contract. The upload runs/resumes in the background and flushes when
+    // connectivity returns.
+    // NOTE (device-time hardening): since the bytes are now on disk at
+    // `cachePath`, uploading via RNFB's `putFile(ref, cachePath)` is more robust
+    // than a byte buffer; left as `uploadBytesResumable` for now because the
+    // input choice can only be validated on a real device — see firebase/README.
     const task = uploadBytesResumable(
       storageRef(getFirebaseStorage(), sourceRef),
       bytes,
@@ -73,17 +117,23 @@ export class FirebaseMediaRepository implements MediaRepository {
         }
       });
     }
-    await task;
+    // Swallow background failures: a dropped/failed upload must not surface as a
+    // rejected `upload()` — the source is already recorded and locally drawable,
+    // and RNFB resumes the task. (A launch-time sweep of unsent media is the
+    // durability backstop across app kills — see firebase/README.)
+    task.then(undefined, () => undefined);
 
     // A PDF (or other non-renderable source) is rasterized asynchronously by a
     // Cloud Function, which writes `renderRef` + `status: 'ready'` back onto the
-    // parent doc. Resolving here means only that the source is stored — so
+    // parent doc. Resolving here means only that the source is recorded — so
     // return `processing` with no render yet. (No function runs against the bare
     // emulator, so the render stays pending in local dev — see firebase/README.)
     if (isPdf(sourceRef, bytes)) {
       return { sourceRef, renderRef: null, status: 'processing' };
     }
-    // Already a renderable raster: source is its own render.
+    // Already a renderable raster: source is its own render, and the originating
+    // device draws it straight from the cache we just seeded — `ready` is honest
+    // even offline (the `processing` status is a signal for OTHER devices).
     return { sourceRef, renderRef: sourceRef, status: 'ready' };
   }
 
