@@ -47,7 +47,6 @@ const styles = StyleSheet.create({
     card: {
         backgroundColor: colours.cardbackground,
         borderRadius: 16,
-        minHeight: 100,
         alignContent: "center",
         justifyContent: "center",
         borderStyle: "solid",

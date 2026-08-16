@@ -11,7 +11,7 @@ export const BatGrid = ({ bats, onPress }: BatGridProps) => {
         <View style={styles.grid}>
             {bats.map(bat => (
                 <View key={bat.id} style={styles.cell}>
-                    <BatItem bat={bat} onPress={() => onPress(bat.id)} />
+                    <BatItem bat={bat} onPress={() => onPress(bat.species)} />
                 </View>
             ))
             }

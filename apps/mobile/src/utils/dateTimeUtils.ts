@@ -15,3 +15,14 @@ export const formatTime = (value?: Date | null) =>
             hour12: false,
         }).format(value)
         : 'Time not found';
+
+
+export function formatCountdown(
+    hours: number,
+    minutes: number,
+    seconds: number
+) {
+    return [hours, minutes, seconds]
+        .map(value => String(value).padStart(2, '0'))
+        .join(':');
+}

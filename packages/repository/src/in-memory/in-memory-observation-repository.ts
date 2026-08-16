@@ -9,7 +9,43 @@ import type {
 let nextId = 1;
 
 export class InMemoryObservationRepository implements ObservationRepository {
-  private store = new Map<string, Observation>();
+  private store = new Map<string, Observation>().set("obv",
+    {
+      id: 'obv',
+      surveyId: 'bift',
+      locationId: 'locationLead',
+      surveyorId: 'lead"',
+      species: 'Soprano Pipistrelle',
+      firstSeenAt: new Date,
+      lastSeenAt: new Date(Date.now() + 30000),
+      seenCount: 2,
+      heardCount: 1,
+      frequency: '48',
+      notes: 'I saw a bat and it was nice, pretty batty',
+      flightPaths: [],
+      data: {},
+      createdAt: new Date,
+      updatedAt: new Date(Date.now() + 30000)
+    }
+  ).set("obv2",
+    {
+      id: 'obv2',
+      surveyId: 'bift',
+      locationId: 'locationLead',
+      surveyorId: 'lead"',
+      species: 'Daubentons',
+      firstSeenAt: new Date,
+      lastSeenAt: new Date(Date.now() + 30000),
+      seenCount: 1,
+      heardCount: 1,
+      frequency: '54',
+      notes: 'I saw a bat and it was nice, pretty batty',
+      flightPaths: [],
+      data: {},
+      createdAt: new Date,
+      updatedAt: new Date(Date.now() + 30000)
+    }
+  );
   private listeners = new Map<string, Set<(observations: Observation[]) => void>>();
 
   async create(input: CreateObservationInput): Promise<Observation> {
@@ -24,6 +60,7 @@ export class InMemoryObservationRepository implements ObservationRepository {
       lastSeenAt: input.lastSeenAt ?? null,
       seenCount: input.seenCount ?? 0,
       heardCount: input.heardCount ?? 0,
+      frequency: input.frequency ?? null,
       notes: input.notes ?? null,
       flightPaths: input.flightPaths ?? [],
       data: input.data ?? {},

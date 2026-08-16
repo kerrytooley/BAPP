@@ -63,7 +63,7 @@ export const DocumentUpload = ({ onChange, value }: DocumentUploadProps) => {
                 </View>
                 : <View style={styles.placeholder}>
                     <UploadIcon width={24} />
-                    <Text style={styles.placeholderText}>Tap to upload</Text>
+                    <Text style={textStyles.placeholderText}>Tap to upload</Text>
                 </View>}
         </TouchableOpacity >
     );
@@ -88,9 +88,5 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         gap: 16
-    },
-    placeholderText: {
-        ...textStyles.inputText,
-        color: colours.light
     }
 });

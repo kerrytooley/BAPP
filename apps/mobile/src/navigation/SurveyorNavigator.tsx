@@ -8,6 +8,8 @@ import { WeatherConditionsScreen } from "@screens/Surveyor/WeatherConditionsScre
 import { SelectSpeciesPage } from "@screens/Surveyor/SelectSpeciesScreen";
 import { CapturePhotoScreen } from "@screens/Surveyor/CapturePhotoScreen";
 import { SetupCompleteScreen } from "@screens/Surveyor/SetupCompleteScreen";
+import { SurveyScreen } from "@screens/Surveyor/SurveyScreen";
+import { AddObservationScreen } from "@screens/Surveyor/AddObservationScreen";
 
 export type SurveyorStackParamList = {
     InputCodeScreen: undefined,
@@ -18,7 +20,9 @@ export type SurveyorStackParamList = {
     WeatherConditionsScreen: { surveyId: string, surveyorId: string }
     CapturePhotoScreen: { surveyId: string, locationId: string, surveyorId: string, photoType: 'EQUIPMENT' | 'FRONT_VIEW' }
     SetupCompleteScreen: { surveyId: string, locationId: string, surveyorId: string }
+    SurveyScreen: { surveyId: string, locationId: string, surveyorId: string }
     SelectSpeciesScreen: { surveyId: string, locationId: string, surveyorId: string }
+    AddObservationScreen: { surveyId: string, observationId: string, surveyorId: string, locationId: string }
 };
 
 const Stack = createNativeStackNavigator<SurveyorStackParamList>();
@@ -34,7 +38,9 @@ export function SurveyorNavigator() {
             <Stack.Screen name="WeatherConditionsScreen" component={WeatherConditionsScreen} />
             <Stack.Screen name="CapturePhotoScreen" component={CapturePhotoScreen} />
             <Stack.Screen name="SetupCompleteScreen" component={SetupCompleteScreen} />
+            <Stack.Screen name="SurveyScreen" component={SurveyScreen} />
             <Stack.Screen name="SelectSpeciesScreen" component={SelectSpeciesPage} />
+            <Stack.Screen name="AddObservationScreen" component={AddObservationScreen} />
         </Stack.Navigator>
     )
 }

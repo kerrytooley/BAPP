@@ -28,6 +28,8 @@ export interface Observation {
   lastSeenAt: Date | null;
   seenCount: number;
   heardCount: number;
+  frequency: string | null;
+  direction: string | null;
   notes: string | null;
   flightPaths: FlightPath[];
   data: Record<string, unknown>;
@@ -44,6 +46,8 @@ export type CreateObservationInput = {
   lastSeenAt?: Date | null;
   seenCount?: number;
   heardCount?: number;
+  frequency?: string;
+  direction?: string;
   notes?: string | null;
   flightPaths?: FlightPath[];
   data?: Record<string, unknown>;
@@ -55,6 +59,8 @@ export type UpdateObservationInput = Partial<{
   lastSeenAt: Date | null;
   seenCount: number;
   heardCount: number;
+  frequency: string;
+  direction: string;
   notes: string | null;
   flightPaths: FlightPath[];
   data: Record<string, unknown>;
