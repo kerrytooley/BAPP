@@ -8,6 +8,9 @@ export * from './models/observation';
 // Survey context
 export * from './survey-context';
 
+// Join codes
+export * from './codes';
+
 // Validation
 export * from './validation';
 export * from './validation-error';

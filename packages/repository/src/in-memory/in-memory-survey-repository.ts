@@ -1,13 +1,14 @@
-import type {
-  Survey,
-  CreateSurveyInput,
-  UpdateSurveyInput,
-  SurveyRepository,
-  SurveyContext,
-  Unsubscribe,
-  LocationRepository,
-  SurveyorRepository,
-  ObservationRepository,
+import {
+  applySurveyDefaults,
+  type Survey,
+  type CreateSurveyInput,
+  type UpdateSurveyInput,
+  type SurveyRepository,
+  type SurveyContext,
+  type Unsubscribe,
+  type LocationRepository,
+  type SurveyorRepository,
+  type ObservationRepository,
 } from '@bapp/domain';
 
 let nextId = 1;
@@ -15,7 +16,7 @@ let nextId = 1;
 export class InMemorySurveyRepository implements SurveyRepository {
   private store = new Map<string, Survey>().set('bift', {
     id: 'bift',
-    adminCode: 'ABCDEF',
+    adminCode: 'abcdef',
     surveyorCode: '123456',
     name: 'BERS Survey 1',
     postcode: 'HW17 4TR',
@@ -40,20 +41,11 @@ export class InMemorySurveyRepository implements SurveyRepository {
 
   async create(input: CreateSurveyInput): Promise<Survey> {
     const now = new Date();
+    // Business defaults (incl. code pass-through) live in the domain normalizer;
+    // this backend owns only id + timestamps + persistence.
     const survey: Survey = {
       id: String(nextId++),
-      adminCode: Math.random().toString(36).slice(2, 8),
-      surveyorCode: Math.random().toString(36).slice(2, 8),
-      name: input.name ?? null,
-      postcode: input.postcode ?? null,
-      date: input.date ?? null,
-      sunsetTime: input.sunsetTime ?? null,
-      startTime: input.startTime ?? null,
-      endTime: input.endTime ?? null,
-      boundary: input.boundary ?? null,
-      status: input.status ?? 'draft',
-      weather: input.weather ?? {},
-      data: input.data ?? {},
+      ...applySurveyDefaults(input),
       createdAt: now,
       updatedAt: now,
     };

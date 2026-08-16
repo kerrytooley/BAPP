@@ -1,9 +1,10 @@
-import type {
-  Observation,
-  CreateObservationInput,
-  UpdateObservationInput,
-  ObservationRepository,
-  Unsubscribe,
+import {
+  applyObservationDefaults,
+  type Observation,
+  type CreateObservationInput,
+  type UpdateObservationInput,
+  type ObservationRepository,
+  type Unsubscribe,
 } from '@bapp/domain';
 
 let nextId = 1;
@@ -14,19 +15,11 @@ export class InMemoryObservationRepository implements ObservationRepository {
 
   async create(input: CreateObservationInput): Promise<Observation> {
     const now = new Date();
+    // Business defaults live in the domain normalizer; this backend owns only
+    // id + timestamps + persistence.
     const observation: Observation = {
       id: String(nextId++),
-      surveyId: input.surveyId,
-      locationId: input.locationId,
-      surveyorId: input.surveyorId,
-      species: input.species ?? null,
-      firstSeenAt: input.firstSeenAt ?? null,
-      lastSeenAt: input.lastSeenAt ?? null,
-      seenCount: input.seenCount ?? 0,
-      heardCount: input.heardCount ?? 0,
-      notes: input.notes ?? null,
-      flightPaths: input.flightPaths ?? [],
-      data: input.data ?? {},
+      ...applyObservationDefaults(input),
       createdAt: now,
       updatedAt: now,
     };

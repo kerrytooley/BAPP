@@ -11,6 +11,7 @@ import type { ObservationRepository } from '../repositories/observation-reposito
 import type { MediaRepository } from '../repositories/media-repository';
 import type { SurveyValidator, SurveyChange } from '../validation';
 import { ValidationError } from '../validation-error';
+import { generateSurveyCode, normalizeSurveyCode } from '../codes';
 
 /**
  * Status-bearing result of resolving a boundary image. Lets the UI show the
@@ -36,20 +37,31 @@ export class SurveyService {
   // --- Entry points ---
 
   async createSurvey(): Promise<Survey> {
+    // Codes are domain policy: generated, normalized, and made unique here — not
+    // by any repository backend. Both admin and surveyor codes must be unique.
+    const adminCode = await this.generateUniqueCode(
+      (code) => this.surveyRepository.findByAdminCode(code),
+    );
+    const surveyorCode = await this.generateUniqueCode(
+      (code) => this.surveyRepository.findBySurveyorCode(code),
+    );
     return this.surveyRepository.create({
+      adminCode,
+      surveyorCode,
       status: 'draft',
     });
   }
 
   async resumeSurvey(adminCode: string): Promise<SurveyContext> {
-    const survey = await this.surveyRepository.findByAdminCode(adminCode);
+    // Codes are matched case-insensitively; generated codes are always lowercase.
+    const survey = await this.surveyRepository.findByAdminCode(normalizeSurveyCode(adminCode));
     if (!survey) throw new Error('Survey not found for admin code');
     return this.surveyRepository.getSurveyContext(survey.id);
   }
 
   async joinSurvey(surveyorCode: string): Promise<SurveyContext> {
     // Codes are matched case-insensitively; generated codes are always lowercase.
-    const survey = await this.surveyRepository.findBySurveyorCode(surveyorCode.trim().toLowerCase());
+    const survey = await this.surveyRepository.findBySurveyorCode(normalizeSurveyCode(surveyorCode));
     if (!survey) throw new Error('Survey not found for surveyor code');
     return this.surveyRepository.getSurveyContext(survey.id);
   }
@@ -311,6 +323,20 @@ export class SurveyService {
     applyToContext(context);
     this.validator.validate(context, change);
     return context;
+  }
+
+  /**
+   * Generate a join code that no existing survey already uses, regenerating on
+   * collision. `lookup` returns the survey holding a given code (or null).
+   */
+  private async generateUniqueCode(
+    lookup: (code: string) => Promise<Survey | null>,
+  ): Promise<string> {
+    let code = generateSurveyCode();
+    while (await lookup(code)) {
+      code = generateSurveyCode();
+    }
+    return code;
   }
 
   private async findSurveyId(
