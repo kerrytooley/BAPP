@@ -68,3 +68,26 @@ export type UpdateObservationInput = Partial<{
   flightPaths: FlightPath[];
   data: Record<string, unknown>;
 }>;
+
+/** A fully-defaulted observation minus the fields each backend owns (id, timestamps). */
+export type NewObservationFields = Omit<Observation, 'id' | 'createdAt' | 'updatedAt'>;
+
+/**
+ * Apply business-field defaults to a create input, producing a complete
+ * observation shape (minus id/timestamps) shared by every repository backend.
+ */
+export function applyObservationDefaults(input: CreateObservationInput): NewObservationFields {
+  return {
+    surveyId: input.surveyId,
+    locationId: input.locationId,
+    surveyorId: input.surveyorId,
+    species: input.species ?? null,
+    firstSeenAt: input.firstSeenAt ?? null,
+    lastSeenAt: input.lastSeenAt ?? null,
+    seenCount: input.seenCount ?? 0,
+    heardCount: input.heardCount ?? 0,
+    notes: input.notes ?? null,
+    flightPaths: input.flightPaths ?? [],
+    data: input.data ?? {},
+  };
+}
