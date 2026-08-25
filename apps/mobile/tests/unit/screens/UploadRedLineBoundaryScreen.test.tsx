@@ -70,6 +70,27 @@ describe('UploadRedLineBoundaryScreen', () => {
         });
     });
 
+    it('ignores a second continue press while the first upload is in flight', async () => {
+        let resolveUpload: () => void = () => { };
+        const setBoundaryImage = jest.fn().mockImplementation(
+            () => new Promise<void>((resolve) => {
+                resolveUpload = resolve;
+            }),
+        );
+        const service = createMockService({ setBoundaryImage });
+        renderWithService(<UploadRedLineBoundaryScreen />, service);
+        fireEvent.press(screen.getByText('pick-document'));
+        fireEvent.press(screen.getByText('Continue'));
+        fireEvent.press(screen.getByText('Continue'));
+        await waitFor(() => expect(setBoundaryImage).toHaveBeenCalledTimes(1));
+        resolveUpload();
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('AddSurveyorScreen', {
+                surveyId: 'survey-1',
+            }),
+        );
+    });
+
     it('does not navigate when the upload fails', async () => {
         const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
         const service = createMockService({

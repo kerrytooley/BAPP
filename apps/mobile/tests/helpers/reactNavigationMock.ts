@@ -1,10 +1,9 @@
 export const mockNavigate = jest.fn();
 export const mockGoBack = jest.fn();
 export const mockPush = jest.fn();
-export const mockAddListener = jest.fn((_event: string, callback: () => void) => {
-    callback();
-    return jest.fn();
-});
+export const mockAddListener = jest.fn(
+    (_event: string, _callback: () => void): (() => void) => jest.fn(),
+);
 
 const routeState: { params: Record<string, unknown> } = { params: {} };
 
@@ -26,5 +25,6 @@ export const resetNavigationMock = () => {
     mockGoBack.mockReset();
     mockPush.mockReset();
     mockAddListener.mockReset();
+    mockAddListener.mockImplementation(() => jest.fn());
     routeState.params = {};
 };

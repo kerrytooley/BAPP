@@ -74,7 +74,6 @@ export function SurveyScreen(): React.JSX.Element {
                 `Heard count updated to ${updatedObservation.heardCount}. Last seen ${updatedObservation.lastSeenAt ? formatTime(updatedObservation.lastSeenAt) : ""}`.trim(),
                 observation,
             );
-            console.log("Succesfully added heard count: ", updatedObservation.id, updatedObservation.heardCount);
         } catch (e) {
             console.error("Error updating heard count: ", observation.id, e)
         }
@@ -88,7 +87,6 @@ export function SurveyScreen(): React.JSX.Element {
                 `Seen count updated to ${updatedObservation.seenCount}. Last seen ${updatedObservation.lastSeenAt ? formatTime(updatedObservation.lastSeenAt) : ""}`.trim(),
                 observation,
             );
-            console.log("Succesfully added seen count: ", updatedObservation.id, updatedObservation.seenCount);
         } catch (e) {
             console.error("Error updating seen count: ", observation.id, e)
         }

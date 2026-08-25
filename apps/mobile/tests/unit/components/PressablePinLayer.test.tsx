@@ -3,13 +3,18 @@ jest.mock('@utils/image', () => ({
 }));
 
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-native';
-import { Image } from 'react-native';
+import { Image, View } from 'react-native';
 import { PressablePinLayer } from '@components/PressablePinLayer';
 import { getAspectRatio } from '@utils/image';
 import { PressableType } from '../../helpers/rnComponents';
 
 const measure = (width = 100, height = 100) =>
     fireEvent(screen.UNSAFE_getByType(PressableType), 'layout', {
+        nativeEvent: { layout: { width, height } },
+    });
+
+const measureContainer = (width: number, height: number) =>
+    fireEvent(screen.UNSAFE_getAllByType(View)[0], 'layout', {
         nativeEvent: { layout: { width, height } },
     });
 
@@ -103,6 +108,30 @@ describe('PressablePinLayer', () => {
             <PressablePinLayer imageUri="" value={null} onChange={jest.fn()} />,
         );
         expect(getAspectRatio).not.toHaveBeenCalled();
+    });
+
+    it('fits the image by width when it is not taller than the available area', async () => {
+        (getAspectRatio as jest.Mock).mockResolvedValueOnce(1);
+        render(
+            <PressablePinLayer imageUri="file://boundary.png" value={null} onChange={jest.fn()} />,
+        );
+        await act(async () => { });
+        measureContainer(100, 200);
+        expect(screen.UNSAFE_getByType(PressableType).props.style).toEqual(
+            expect.arrayContaining([expect.objectContaining({ width: 100, height: 100 })]),
+        );
+    });
+
+    it('fits the image by height when it is taller than the available area', async () => {
+        (getAspectRatio as jest.Mock).mockResolvedValueOnce(1);
+        render(
+            <PressablePinLayer imageUri="file://boundary.png" value={null} onChange={jest.fn()} />,
+        );
+        await act(async () => { });
+        measureContainer(200, 100);
+        expect(screen.UNSAFE_getByType(PressableType).props.style).toEqual(
+            expect.arrayContaining([expect.objectContaining({ width: 100, height: 100 })]),
+        );
     });
 
     it('ignores a resolved aspect ratio after unmount', async () => {

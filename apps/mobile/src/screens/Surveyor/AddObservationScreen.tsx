@@ -67,19 +67,19 @@ export function AddObservationScreen(): React.JSX.Element {
                 const { observations } = await service.getSurveyContext(surveyId);
                 const currentObservation = observations.find((observation) => observation.id === observationId);
 
-                currentObservation && setObservation(currentObservation);
-                currentObservation?.firstSeenAt && setObservationTime(currentObservation.firstSeenAt);
                 if (currentObservation) {
+                    setObservation(currentObservation);
+                    if (currentObservation.firstSeenAt) setObservationTime(currentObservation.firstSeenAt);
                     // Default last seen to first seen when it hasn't been recorded yet.
                     setLastSeenTime(currentObservation.lastSeenAt ?? currentObservation.firstSeenAt ?? new Date());
+                    setSeenCount(currentObservation.seenCount);
+                    setHeardCount(currentObservation.heardCount);
+                    if (currentObservation.frequency) setFrequency(currentObservation.frequency);
+                    if (currentObservation.direction) setDirection(currentObservation.direction);
+                    if (currentObservation.notes) setNotes(currentObservation.notes);
+                    setEmergence(currentObservation.emergence);
+                    setFlightPaths(currentObservation.flightPaths);
                 }
-                currentObservation && setSeenCount(currentObservation.seenCount);
-                currentObservation && setHeardCount(currentObservation.heardCount);
-                currentObservation?.frequency && setFrequency(currentObservation.frequency);
-                currentObservation?.direction && setDirection(currentObservation.direction);
-                currentObservation?.notes && setNotes(currentObservation.notes);
-                currentObservation && setEmergence(currentObservation.emergence);
-                currentObservation && setFlightPaths(currentObservation.flightPaths);
 
                 const boundaryImageResult = await service.getBoundaryImage(surveyId);
                 if (boundaryImageResult.status === "ready") {
@@ -127,8 +127,14 @@ export function AddObservationScreen(): React.JSX.Element {
     const activePaths = activeSurface
         ? flightPaths.filter((path) => path.surface === activeSurface)
         : [];
+    const hasBoundaryPath = flightPaths.some((path) => path.surface === "boundary");
+    const hasFrontViewPath = flightPaths.some((path) => path.surface === "frontView");
+
+    const isSubmitting = useRef(false);
 
     const updateObservation = async () => {
+        if (isSubmitting.current) return;
+        isSubmitting.current = true;
         try {
             const observationInput = {
                 seenCount: seenCount,
@@ -146,16 +152,22 @@ export function AddObservationScreen(): React.JSX.Element {
             navigation.navigate('SurveyScreen', { surveyId, locationId, surveyorId })
         } catch (e) {
             console.error("Error updating observation: ", observationId, e);
+        } finally {
+            isSubmitting.current = false;
         }
     }
 
     const deleteObservation = async () => {
+        if (isSubmitting.current) return;
+        isSubmitting.current = true;
         try {
             const deletedObservation = await service.removeObservation(observationId);
             console.log("Successfully deleted observation: ", observationId, deletedObservation);
             navigation.navigate('SurveyScreen', { surveyId, locationId, surveyorId })
         } catch (e) {
             console.log("Error deleting observation: ", observationId, e);
+        } finally {
+            isSubmitting.current = false;
         }
     }
 
@@ -233,7 +245,7 @@ export function AddObservationScreen(): React.JSX.Element {
                                 <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.imageTextOverlay]}>
                                     <PlusIcon width={24} />
                                     <Text style={[styles.previewText]}>
-                                        Add overhead flight path
+                                        {`${hasBoundaryPath ? "Edit" : "Add"} overhead flight path`}
                                     </Text>
                                 </View>
                             </TouchableOpacity>
@@ -244,7 +256,7 @@ export function AddObservationScreen(): React.JSX.Element {
                                 <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.imageTextOverlay]}>
                                     <PlusIcon width={24} />
                                     <Text style={[styles.previewText]}>
-                                        Add front-view flight path
+                                        {`${hasFrontViewPath ? "Edit" : "Add"} front-view flight path`}
                                     </Text>
                                 </View>
                             </TouchableOpacity>

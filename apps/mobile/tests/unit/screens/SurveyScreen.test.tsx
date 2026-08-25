@@ -7,6 +7,7 @@ import { SurveyScreen } from '@screens/Surveyor/SurveyScreen';
 import { createMockService, renderWithService } from '../../helpers/testUtils';
 import { buildContext, buildObservation } from '../../helpers/factories';
 import {
+    mockAddListener,
     mockNavigate,
     mockPush,
     resetNavigationMock,
@@ -239,5 +240,24 @@ describe('SurveyScreen', () => {
             ),
         );
         errorSpy.mockRestore();
+    });
+
+    it('reloads the observations when the screen regains focus', async () => {
+        const first = buildObservation({ id: 'obs-1', species: 'Noctule', seenCount: 2 });
+        const refreshed = buildObservation({ id: 'obs-2', species: 'Serotine', seenCount: 7 });
+        let context = buildContext({ observations: [first] });
+        const getSurveyContext = jest.fn((_surveyId: string) => Promise.resolve(context));
+        const service = createMockService({ getSurveyContext });
+        (service as unknown as { updateObservation: jest.Mock }).updateObservation = jest.fn();
+
+        renderWithService(<SurveyScreen />, service);
+        await waitFor(() => expect(screen.getByText('S (2)')).toBeOnTheScreen());
+
+        context = buildContext({ observations: [refreshed] });
+        const focusCallback = mockAddListener.mock.calls.find(([event]) => event === 'focus')?.[1];
+        expect(focusCallback).toBeDefined();
+        focusCallback?.();
+
+        await waitFor(() => expect(screen.getByText('S (7)')).toBeOnTheScreen());
     });
 });

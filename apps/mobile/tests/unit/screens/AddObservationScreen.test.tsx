@@ -133,6 +133,30 @@ describe('AddObservationScreen', () => {
         });
     });
 
+    it('ignores a second save press while the first update is in flight', async () => {
+        let resolveUpdate: (value: unknown) => void = () => { };
+        const updateObservation = jest.fn(
+            () => new Promise((resolve) => {
+                resolveUpdate = resolve;
+            }),
+        );
+        renderWithService(<AddObservationScreen />, buildService({ updateObservation }));
+        await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
+
+        fireEvent.press(screen.getByText('Save Observation'));
+        fireEvent.press(screen.getByText('Save Observation'));
+
+        await waitFor(() => expect(updateObservation).toHaveBeenCalledTimes(1));
+        resolveUpdate(observation);
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('SurveyScreen', {
+                surveyId: 'survey-1',
+                locationId: 'location-1',
+                surveyorId: 'surveyor-1',
+            }),
+        );
+    });
+
     it('deletes the observation and navigates back', async () => {
         const removeObservation = jest.fn().mockResolvedValue(observation);
         renderWithService(<AddObservationScreen />, buildService({ removeObservation }));
@@ -155,6 +179,30 @@ describe('AddObservationScreen', () => {
         expect(screen.getByText('3')).toBeOnTheScreen();
     });
 
+    it('ignores a second delete press while the first delete is in flight', async () => {
+        let resolveDelete: (value: unknown) => void = () => { };
+        const removeObservation = jest.fn(
+            () => new Promise((resolve) => {
+                resolveDelete = resolve;
+            }),
+        );
+        renderWithService(<AddObservationScreen />, buildService({ removeObservation }));
+        await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
+
+        fireEvent.press(screen.getByText('Delete Observation'));
+        fireEvent.press(screen.getByText('Delete Observation'));
+
+        await waitFor(() => expect(removeObservation).toHaveBeenCalledTimes(1));
+        resolveDelete(observation);
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('SurveyScreen', {
+                surveyId: 'survey-1',
+                locationId: 'location-1',
+                surveyorId: 'surveyor-1',
+            }),
+        );
+    });
+
     it('increments the heard count', async () => {
         renderWithService(<AddObservationScreen />, buildService());
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
@@ -164,19 +212,19 @@ describe('AddObservationScreen', () => {
 
     it('opens the flight path sheet and commits a boundary path', async () => {
         renderWithService(<AddObservationScreen />, buildService());
-        await waitFor(() => expect(screen.getByText('Add overhead flight path')).toBeOnTheScreen());
-        fireEvent.press(screen.getByText('Add overhead flight path'));
+        await waitFor(() => expect(screen.getByText('Edit overhead flight path')).toBeOnTheScreen());
+        fireEvent.press(screen.getByText('Edit overhead flight path'));
         await waitFor(() => expect(screen.getByText('flight-path-sheet')).toBeOnTheScreen());
         fireEvent.press(screen.getByLabelText('commit-boundary'));
     });
 
     it('re-presents the sheet when the same surface is opened again', async () => {
         renderWithService(<AddObservationScreen />, buildService());
-        await waitFor(() => expect(screen.getByText('Add overhead flight path')).toBeOnTheScreen());
-        fireEvent.press(screen.getByText('Add overhead flight path'));
+        await waitFor(() => expect(screen.getByText('Edit overhead flight path')).toBeOnTheScreen());
+        fireEvent.press(screen.getByText('Edit overhead flight path'));
         await waitFor(() => expect(screen.getByText('flight-path-sheet')).toBeOnTheScreen());
         // Second press hits the "already mounted" branch and presents directly.
-        fireEvent.press(screen.getByText('Add overhead flight path'));
+        fireEvent.press(screen.getByText('Edit overhead flight path'));
         expect(screen.getByText('flight-path-sheet')).toBeOnTheScreen();
     });
 
@@ -185,6 +233,24 @@ describe('AddObservationScreen', () => {
         await waitFor(() => expect(screen.getByText('Add front-view flight path')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Add front-view flight path'));
         await waitFor(() => expect(screen.getByLabelText('commit-frontView')).toBeOnTheScreen());
+    });
+
+    it('shows the edit and add labels based on existing flight paths per surface', async () => {
+        const frontViewObservation = buildObservation({
+            id: 'obs-1',
+            species: 'Noctule',
+            flightPaths: [
+                { id: 'fp-2', surface: 'frontView', points: [{ x: 0, y: 0 }], data: {} },
+            ],
+        });
+        const service = buildService({
+            getSurveyContext: jest
+                .fn()
+                .mockResolvedValue(buildContext({ observations: [frontViewObservation] })),
+        });
+        renderWithService(<AddObservationScreen />, service);
+        await waitFor(() => expect(screen.getByText('Add overhead flight path')).toBeOnTheScreen());
+        expect(screen.getByText('Edit front-view flight path')).toBeOnTheScreen();
     });
 
     it('does not render flight path previews when images are not ready', async () => {

@@ -3,7 +3,7 @@ import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { screen } from "@theme/screen"
-import React, { useState } from "react"
+import React, { useRef, useState } from "react"
 import { View, StyleSheet } from "react-native"
 import { useSurveyService } from "@services/surveyServiceContext";
 import { Title } from "@components/Titles";
@@ -17,8 +17,11 @@ export function UploadRedLineBoundaryScreen(): React.JSX.Element {
     const { surveyId } = useRoute<RouteProp<AdminStackParamList, 'UploadRedLineBoundaryScreen'>>().params;
     const navigation = useNavigation<Nav>();
     const [imageUri, setImageUri] = useState<string | undefined>();
+    const isSubmitting = useRef(false);
 
     const handleContinue = async () => {
+        if (isSubmitting.current) return;
+        isSubmitting.current = true;
         try {
             // Continue is only enabled once an image has been selected.
             const imageBody = await createImageBody(imageUri as string);
@@ -27,6 +30,8 @@ export function UploadRedLineBoundaryScreen(): React.JSX.Element {
             navigation.navigate('AddSurveyorScreen', { surveyId })
         } catch (e) {
             console.log("Error uploading red line boundary: ", e)
+        } finally {
+            isSubmitting.current = false;
         }
     };
 

@@ -69,8 +69,6 @@ export const DatePickerInput = ({
 const styles = StyleSheet.create({
     field: {
         width: '100%',
-        minWidth: 360,
-
         alignItems: 'flex-start',
     },
     inputTitle: {
