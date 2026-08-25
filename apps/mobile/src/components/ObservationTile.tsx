@@ -25,13 +25,13 @@ export const ObservationTile = ({ observation, onAddSeen, onAddHeard, onEdit }: 
             <Text style={styles.text}>{formatTime(observation.firstSeenAt)}</Text>
             <View style={styles.buttonGroup}>
                 <Text style={styles.text}>S ({observation.seenCount})</Text>
-                <TouchableOpacity onPress={() => onAddSeen()}>
+                <TouchableOpacity accessibilityLabel="Add seen count" onPress={() => onAddSeen()}>
                     <PlusButton width={24} />
                 </TouchableOpacity>
             </View>
             <View style={styles.buttonGroup}>
                 <Text style={styles.text}>H ({observation.heardCount})</Text>
-                <TouchableOpacity onPress={() => onAddHeard()}>
+                <TouchableOpacity accessibilityLabel="Add heard count" onPress={() => onAddHeard()}>
                     <PlusButton width={24} />
                 </TouchableOpacity>
             </View>

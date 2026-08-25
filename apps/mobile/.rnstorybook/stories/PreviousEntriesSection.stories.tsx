@@ -25,6 +25,9 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
     args: {
-        observations: []
+        observations: [],
+        onAddHeard: () => {},
+        onAddSeen: () => {},
+        onEdit: () => {}
     }
 }

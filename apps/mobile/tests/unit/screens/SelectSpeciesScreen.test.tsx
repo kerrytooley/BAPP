@@ -36,7 +36,7 @@ describe('SelectSpeciesScreen', () => {
                     surveyId: 'survey-1',
                     locationId: 'location-1',
                     surveyorId: 'surveyor-1',
-                    species: 'alcathoe',
+                    species: 'Alcathoe',
                 }),
             ),
         );
@@ -50,5 +50,21 @@ describe('SelectSpeciesScreen', () => {
                 expect.objectContaining({ species: 'Unknown' }),
             ),
         );
+    });
+
+    it('logs an error when creating the observation fails', async () => {
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+        addObservation.mockRejectedValueOnce(new Error('create failed'));
+        renderWithService(<SelectSpeciesPage />, serviceWithObservations());
+        fireEvent.press(screen.getByText('Unknown'));
+        await waitFor(() =>
+            expect(errorSpy).toHaveBeenCalledWith(
+                'Error creating observation on surveyor: ',
+                'surveyor-1',
+                'Unknown',
+                expect.any(Error),
+            ),
+        );
+        errorSpy.mockRestore();
     });
 });

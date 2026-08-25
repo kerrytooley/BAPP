@@ -4,18 +4,18 @@ import { colours } from "@theme/colours";
 import Expand from "@assets/icons/expand.svg";
 
 export interface DocumentPreviewProps {
-    value: string | undefined | null
+    imageUri: string | undefined | null,
 }
 
-export const DocumentPreview = ({ value }: DocumentPreviewProps) => {
+export const DocumentPreview = ({ imageUri }: DocumentPreviewProps) => {
     const [isFullScreen, setIsFullScreen] = useState(false);
 
     return (
         <View style={styles.container}>
-            {value &&
+            {imageUri &&
                 <>
                     <TouchableOpacity activeOpacity={0.8} onPress={() => setIsFullScreen(true)}>
-                        <Image source={{ uri: value }} style={styles.preview} resizeMode="cover" />
+                        <Image source={{ uri: imageUri }} style={styles.preview} resizeMode="cover" />
                         <View style={styles.expandBadge}>
                             <Expand width={16} height={16} stroke={colours.light} />
                         </View>
@@ -27,7 +27,7 @@ export const DocumentPreview = ({ value }: DocumentPreviewProps) => {
                         onRequestClose={() => setIsFullScreen(false)}
                     >
                         <Pressable style={styles.fullScreenBackdrop} onPress={() => setIsFullScreen(false)}>
-                            <Image source={{ uri: value }} style={styles.fullScreenImage} resizeMode="contain" />
+                            <Image source={{ uri: imageUri }} style={styles.fullScreenImage} resizeMode="contain" />
                         </Pressable>
                     </Modal>
                 </>

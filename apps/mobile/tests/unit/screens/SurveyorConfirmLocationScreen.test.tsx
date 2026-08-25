@@ -79,7 +79,7 @@ describe('SurveyorConfirmLocationScreen', () => {
                 surveyId: 'survey-1',
                 locationId: 'location-9',
                 surveyorId: 'surveyor-1',
-                photoType: 'FRONT_VIEW',
+                photoType: 'frontView',
             }),
         );
     });
@@ -113,7 +113,7 @@ describe('SurveyorConfirmLocationScreen', () => {
                 surveyId: 'survey-1',
                 locationId: 'location-1',
                 surveyorId: 'surveyor-1',
-                photoType: 'FRONT_VIEW',
+                photoType: 'frontView',
             }),
         );
     });
@@ -142,7 +142,7 @@ describe('SurveyorConfirmLocationScreen', () => {
                 surveyId: 'survey-1',
                 locationId: 'location-1',
                 surveyorId: 'surveyor-1',
-                photoType: 'FRONT_VIEW',
+                photoType: 'frontView',
             }),
         );
     });
@@ -226,7 +226,7 @@ describe('SurveyorConfirmLocationScreen', () => {
                 surveyId: 'survey-1',
                 locationId: 'location-1',
                 surveyorId: 'surveyor-1',
-                photoType: 'FRONT_VIEW',
+                photoType: 'frontView',
             }),
         );
     });
@@ -252,7 +252,7 @@ describe('SurveyorConfirmLocationScreen', () => {
                 surveyId: 'survey-1',
                 locationId: 'location-2',
                 surveyorId: 'surveyor-1',
-                photoType: 'FRONT_VIEW',
+                photoType: 'frontView',
             }),
         );
     });

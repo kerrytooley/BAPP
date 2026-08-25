@@ -31,6 +31,7 @@ export interface Observation {
   frequency: string | null;
   direction: string | null;
   notes: string | null;
+  emergence: boolean;
   flightPaths: FlightPath[];
   data: Record<string, unknown>;
   createdAt: Date;
@@ -49,6 +50,7 @@ export type CreateObservationInput = {
   frequency?: string;
   direction?: string;
   notes?: string | null;
+  emergence?: boolean;
   flightPaths?: FlightPath[];
   data?: Record<string, unknown>;
 };
@@ -62,6 +64,7 @@ export type UpdateObservationInput = Partial<{
   frequency: string;
   direction: string;
   notes: string | null;
+  emergence: boolean;
   flightPaths: FlightPath[];
   data: Record<string, unknown>;
 }>;

@@ -9,6 +9,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { Observation, Survey } from "@bapp/domain";
+import { Toast } from "@components/Toast";
 
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
@@ -20,6 +21,34 @@ export function SurveyScreen(): React.JSX.Element {
 
     const [observations, setObservations] = useState<Observation[]>([]);
     const [survey, setSurvey] = useState<Survey>();
+    const [toast, setToast] = useState<{ message: string; undo: () => void }>();
+
+    const applyObservation = (updated: Observation) => {
+        setObservations((prev) =>
+            prev.map((o) => (o.id === updated.id ? updated : o)));
+    };
+
+    const showToast = (message: string, previous: Observation) => {
+        setToast({
+            message,
+            undo: async () => {
+                setToast(undefined);
+                try {
+                    const reverted = await service.updateObservation(previous.id, {
+                        seenCount: previous.seenCount,
+                        heardCount: previous.heardCount,
+                        lastSeenAt: previous.lastSeenAt,
+                    });
+                    applyObservation(reverted);
+                } catch (e) {
+                    console.error("Error undoing count update: ", previous.id, e);
+                }
+            },
+        });
+    };
+
+    const formatTime = (date: Date) =>
+        date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
     useEffect(() => {
         const loadContext = async () => {
@@ -38,12 +67,12 @@ export function SurveyScreen(): React.JSX.Element {
 
     const addHeard = async (observation: Observation) => {
         try {
-            const updatedObservation = await service.updateObservation(observation.id, { heardCount: observation.heardCount + 1 });
-            setObservations((prev) =>
-                prev.map((oldObservation) =>
-                (oldObservation.id === updatedObservation.id ?
-                    updatedObservation
-                    : oldObservation)))
+            const updatedObservation = await service.updateObservation(observation.id, { heardCount: observation.heardCount + 1, lastSeenAt: new Date() });
+            applyObservation(updatedObservation);
+            showToast(
+                `Heard count updated to ${updatedObservation.heardCount}. Last seen ${updatedObservation.lastSeenAt ? formatTime(updatedObservation.lastSeenAt) : ""}`.trim(),
+                observation,
+            );
             console.log("Succesfully added heard count: ", updatedObservation.id, updatedObservation.heardCount);
         } catch (e) {
             console.error("Error updating heard count: ", observation.id, e)
@@ -52,12 +81,12 @@ export function SurveyScreen(): React.JSX.Element {
 
     const addSeen = async (observation: Observation) => {
         try {
-            const updatedObservation = await service.updateObservation(observation.id, { seenCount: observation.seenCount + 1 })
-            setObservations((prev) =>
-                prev.map((oldObservation) =>
-                (oldObservation.id === updatedObservation.id ?
-                    updatedObservation
-                    : oldObservation)))
+            const updatedObservation = await service.updateObservation(observation.id, { seenCount: observation.seenCount + 1, lastSeenAt: new Date() })
+            applyObservation(updatedObservation);
+            showToast(
+                `Seen count updated to ${updatedObservation.seenCount}. Last seen ${updatedObservation.lastSeenAt ? formatTime(updatedObservation.lastSeenAt) : ""}`.trim(),
+                observation,
+            );
             console.log("Succesfully added seen count: ", updatedObservation.id, updatedObservation.seenCount);
         } catch (e) {
             console.error("Error updating seen count: ", observation.id, e)
@@ -83,6 +112,12 @@ export function SurveyScreen(): React.JSX.Element {
                     onAddSeen={(observation) => addSeen(observation)}
                     onEdit={(observationId) => navigation.navigate("AddObservationScreen", { surveyId, locationId, surveyorId, observationId })} />
             </View>
+            <Toast
+                visible={!!toast}
+                message={toast?.message ?? ""}
+                onUndo={() => toast?.undo()}
+                onDone={() => setToast(undefined)}
+            />
         </View>
     );
 }

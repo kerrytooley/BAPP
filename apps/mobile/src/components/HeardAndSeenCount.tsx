@@ -1,7 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { Card } from "./Card"
 import { colours } from "@theme/colours"
-import { fonts, textStyles } from "@theme/fonts"
+import { textStyles } from "@theme/fonts"
 import PlusIcon from "@assets/icons/plusButton.svg"
 import MinusIcon from "@assets/icons/minusButton.svg"
 
@@ -35,11 +35,11 @@ export const HeardAndSeenCount = ({ heardCount, seenCount, onChangeHeard, onChan
             <View style={styles.displayRow} >
                 <Text style={styles.text}>Heard</Text>
                 <View style={styles.countPill}>
-                    <TouchableOpacity onPress={() => setHeardCount(heardCount, false)}>
+                    <TouchableOpacity accessibilityLabel="Decrease heard count" onPress={() => setHeardCount(heardCount, false)}>
                         <MinusIcon width={20} />
                     </TouchableOpacity>
                     <Text style={styles.countText}>{heardCount}</Text>
-                    <TouchableOpacity onPress={() => setHeardCount(heardCount, true)}>
+                    <TouchableOpacity accessibilityLabel="Increase heard count" onPress={() => setHeardCount(heardCount, true)}>
                         <PlusIcon width={20} />
                     </TouchableOpacity>
                 </View>
@@ -49,11 +49,11 @@ export const HeardAndSeenCount = ({ heardCount, seenCount, onChangeHeard, onChan
                 <Text style={styles.text}>Seen</Text>
 
                 <View style={styles.countPill}>
-                    <TouchableOpacity onPress={() => setSeenCount(seenCount, false)}>
+                    <TouchableOpacity accessibilityLabel="Decrease seen count" onPress={() => setSeenCount(seenCount, false)}>
                         <MinusIcon width={20} />
                     </TouchableOpacity>
                     <Text style={styles.countText}>{seenCount}</Text>
-                    <TouchableOpacity onPress={() => setSeenCount(seenCount, true)}>
+                    <TouchableOpacity accessibilityLabel="Increase seen count" onPress={() => setSeenCount(seenCount, true)}>
                         <PlusIcon width={20} />
                     </TouchableOpacity>
                 </View>

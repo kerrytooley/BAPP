@@ -27,3 +27,5 @@ export interface MediaAsset {
   status: MediaAssetStatus;
   error?: string | null;
 }
+
+export type MediaType = 'equipment' | 'frontView' | 'boundary'

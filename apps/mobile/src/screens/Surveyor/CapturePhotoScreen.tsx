@@ -32,7 +32,7 @@ export function CapturePhotoScreen(): React.JSX.Element {
 
     useEffect(() => {
         const getPageType = () => {
-            if (photoType === 'EQUIPMENT') {
+            if (photoType === 'equipment') {
                 setPageTitles({
                     title: 'Equipment Setup',
                     subtitle: 'Take a landscape photo of your equipment setup at your survey location.',
@@ -103,8 +103,8 @@ export function CapturePhotoScreen(): React.JSX.Element {
             const updatedLocation = await service.setLocationImage(locationId, imageBody.fileName, imageBody.bytes, photoType);
             console.log('Image saved for ', pageTitles?.title, updatedLocation)
 
-            if (photoType === 'FRONT_VIEW') {
-                navigation.push('CapturePhotoScreen', { surveyId, locationId, surveyorId, photoType: 'EQUIPMENT' })
+            if (photoType === 'frontView') {
+                navigation.push('CapturePhotoScreen', { surveyId, locationId, surveyorId, photoType: 'equipment' })
             } else {
                 navigation.navigate('SetupCompleteScreen', { surveyId, locationId, surveyorId });
             }

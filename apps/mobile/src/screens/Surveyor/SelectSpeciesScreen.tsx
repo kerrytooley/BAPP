@@ -20,12 +20,14 @@ export function SelectSpeciesPage(): React.JSX.Element {
 
     const handlePress = async (species: string) => {
         try {
+            const now = new Date();
             const newObservation = await service.addObservation({
                 surveyId: surveyId,
                 locationId: locationId,
                 surveyorId: surveyorId,
                 species: species,
-                firstSeenAt: new Date
+                firstSeenAt: now,
+                lastSeenAt: now
             } as CreateObservationInput);
             console.log('Observation added: ', newObservation);
             const observationId = newObservation?.id;

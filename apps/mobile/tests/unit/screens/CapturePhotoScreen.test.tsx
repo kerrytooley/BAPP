@@ -37,7 +37,7 @@ const baseParams = {
     surveyId: 'survey-1',
     surveyorId: 'surveyor-1',
     locationId: 'location-1',
-    photoType: 'FRONT_VIEW' as const,
+    photoType: 'frontView' as const,
 };
 
 beforeEach(() => {
@@ -79,7 +79,7 @@ describe('CapturePhotoScreen', () => {
     });
 
     it('renders the equipment prompt when the photo type is EQUIPMENT', () => {
-        setRouteParams({ ...baseParams, photoType: 'EQUIPMENT' });
+        setRouteParams({ ...baseParams, photoType: 'equipment' });
         const service = createMockService();
         renderWithService(<CapturePhotoScreen />, service);
 
@@ -105,7 +105,7 @@ describe('CapturePhotoScreen', () => {
                 'location-1',
                 'photo.jpg',
                 expect.any(Uint8Array),
-                'FRONT_VIEW',
+                'frontView',
             ),
         );
         expect(mockCreateImageBody).toHaveBeenCalledWith('file://camera.jpg');
@@ -113,12 +113,12 @@ describe('CapturePhotoScreen', () => {
             surveyId: 'survey-1',
             locationId: 'location-1',
             surveyorId: 'surveyor-1',
-            photoType: 'EQUIPMENT',
+            photoType: 'equipment',
         });
     });
 
     it('navigates to the setup-complete screen after saving the equipment photo', async () => {
-        setRouteParams({ ...baseParams, photoType: 'EQUIPMENT' });
+        setRouteParams({ ...baseParams, photoType: 'equipment' });
         const service = createMockService();
         renderWithService(<CapturePhotoScreen />, service);
 

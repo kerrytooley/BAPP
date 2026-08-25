@@ -8,11 +8,12 @@ import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/dat
 
 interface TimeOfObservationProp {
     observationTime: Date,
-    onChange: (value: Date) => void
+    onChange: (value: Date) => void,
+    label?: string
 }
 
-export function TimeOfObservation({ observationTime, onChange }: TimeOfObservationProp) {
-    const [isOpen, setIsOpen] = useState<Boolean>(false);
+export function TimeOfObservation({ observationTime, onChange, label = "Time" }: TimeOfObservationProp) {
+    const [isOpen, setIsOpen] = useState<boolean>(false);
 
     const handleChange = (event: DateTimePickerEvent, selected?: Date) => {
         setTimeout(() => {
@@ -22,7 +23,7 @@ export function TimeOfObservation({ observationTime, onChange }: TimeOfObservati
     };
 
     return (
-        <Card cardLabel="Time" >
+        <Card cardLabel={label} >
             <View style={styles.displayRow}>
                 <Text style={styles.text}>{formatTime(observationTime)}</Text>
                 <TouchableOpacity onPress={() => setIsOpen(!isOpen)}>
