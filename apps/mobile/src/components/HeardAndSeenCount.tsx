@@ -15,20 +15,12 @@ interface CountProps {
 export const HeardAndSeenCount = ({ heardCount, seenCount, onChangeHeard, onChangeSeen }: CountProps) => {
 
     const setHeardCount = (heard: number, isAdd: boolean) => {
-        if (isAdd) {
-            onChangeHeard(heard + 1)
-        } else {
-            onChangeHeard(heard - 1)
-        }
-    }
+        onChangeHeard(isAdd ? heard + 1 : Math.max(heard - 1, 0));
+    };
 
     const setSeenCount = (seen: number, isAdd: boolean) => {
-        if (isAdd) {
-            onChangeSeen(seen + 1)
-        } else {
-            onChangeSeen(seen - 1)
-        }
-    }
+        onChangeSeen(isAdd ? seen + 1 : Math.max(seen - 1, 0));
+    };
 
     return (
         <Card contentStyle={styles.card} cardLabel="Count">

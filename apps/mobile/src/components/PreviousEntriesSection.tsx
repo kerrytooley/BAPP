@@ -14,8 +14,7 @@ interface PreviousEntriesInterface {
 
 export const PreviousEntriesSection = ({ observations, onAddHeard, onAddSeen, onEdit }: PreviousEntriesInterface) => {
 
-    const inverseObservations = observations.toReversed()
-
+    const inverseObservations = [...observations].reverse();
     return (
         <View style={styles.container}>
             <Text style={styles.header}>Previous entries:</Text>
