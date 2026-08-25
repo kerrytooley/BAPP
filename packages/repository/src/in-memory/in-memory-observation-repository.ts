@@ -35,7 +35,7 @@ export class InMemoryObservationRepository implements ObservationRepository {
       id: 'obv2',
       surveyId: 'bift',
       locationId: 'locationLead',
-      surveyorId: 'lead"',
+      surveyorId: 'lead',
       species: 'Daubentons',
       firstSeenAt: new Date,
       lastSeenAt: new Date(Date.now() + 30000),

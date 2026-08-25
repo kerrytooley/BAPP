@@ -89,6 +89,7 @@ export function applyObservationDefaults(input: CreateObservationInput): NewObse
     notes: input.notes ?? null,
     frequency: input.frequency ?? null,
     direction: input.direction ?? null,
+    emergence: input.emergence ?? false,
     flightPaths: input.flightPaths ?? [],
     data: input.data ?? {},
   };
