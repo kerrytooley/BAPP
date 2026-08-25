@@ -47,8 +47,8 @@ export type CreateObservationInput = {
   lastSeenAt?: Date | null;
   seenCount?: number;
   heardCount?: number;
-  frequency?: string;
-  direction?: string;
+  frequency?: string | null;
+  direction?: string | null;
   notes?: string | null;
   emergence?: boolean;
   flightPaths?: FlightPath[];
@@ -61,8 +61,8 @@ export type UpdateObservationInput = Partial<{
   lastSeenAt: Date | null;
   seenCount: number;
   heardCount: number;
-  frequency: string;
-  direction: string;
+  frequency: string | null;
+  direction: string | null;
   notes: string | null;
   emergence: boolean;
   flightPaths: FlightPath[];
@@ -87,6 +87,8 @@ export function applyObservationDefaults(input: CreateObservationInput): NewObse
     seenCount: input.seenCount ?? 0,
     heardCount: input.heardCount ?? 0,
     notes: input.notes ?? null,
+    frequency: input.frequency ?? null,
+    direction: input.direction ?? null,
     flightPaths: input.flightPaths ?? [],
     data: input.data ?? {},
   };
