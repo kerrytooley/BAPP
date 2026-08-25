@@ -1,5 +1,5 @@
 import type { Survey, UpdateSurveyInput } from '../models/survey';
-import type { MediaAsset, MediaType } from '../models/media';
+import type { LocationImageType, MediaAsset } from '../models/media';
 import type { Location, CreateLocationInput, UpdateLocationInput } from '../models/location';
 import type { Surveyor, CreateSurveyorInput, UpdateSurveyorInput } from '../models/surveyor';
 import type { Observation, CreateObservationInput, UpdateObservationInput } from '../models/observation';
@@ -159,7 +159,7 @@ export class SurveyService {
     locationId: string,
     fileName: string,
     data: ArrayBuffer | Uint8Array,
-    imageType: MediaType,
+    imageType: LocationImageType,
     onProgress?: (fraction: number) => void,
   ): Promise<Location> {
 
@@ -216,7 +216,7 @@ export class SurveyService {
     return { status: 'ready', url };
   }
 
-  async getLocationImage(locationId: string, imageType: MediaType): Promise<ImageResult> {
+  async getLocationImage(locationId: string, imageType: LocationImageType): Promise<ImageResult> {
     const location = await this.locationRepository.findById(locationId);
     const image = imageType === 'frontView' ? location?.frontViewImage : location?.equipmentImage;
     if (!image) return { status: 'none' };

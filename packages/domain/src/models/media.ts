@@ -28,4 +28,5 @@ export interface MediaAsset {
   error?: string | null;
 }
 
-export type MediaType = 'equipment' | 'frontView' | 'boundary'
+export type MediaType = 'equipment' | 'frontView' | 'boundary';
+export type LocationImageType = 'equipment' | 'frontView';

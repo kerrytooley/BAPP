@@ -10,7 +10,7 @@ import { CapturePhotoScreen } from "@screens/Surveyor/CapturePhotoScreen";
 import { SetupCompleteScreen } from "@screens/Surveyor/SetupCompleteScreen";
 import { SurveyScreen } from "@screens/Surveyor/SurveyScreen";
 import { AddObservationScreen } from "@screens/Surveyor/AddObservationScreen";
-import { MediaType } from "@bapp/domain";
+import { type LocationImageType } from "@bapp/domain";
 
 export type SurveyorStackParamList = {
     InputCodeScreen: undefined,
@@ -19,7 +19,7 @@ export type SurveyorStackParamList = {
     ConfirmSurveyorDetailsScreen: { surveyId: string, surveyorId: string }
     SurveyorConfirmLocationScreen: { surveyId: string, surveyorId: string }
     WeatherConditionsScreen: { surveyId: string, surveyorId: string }
-    CapturePhotoScreen: { surveyId: string, locationId: string, surveyorId: string, photoType: MediaType }
+    CapturePhotoScreen: { surveyId: string, locationId: string, surveyorId: string, photoType: LocationImageType }
     SetupCompleteScreen: { surveyId: string, locationId: string, surveyorId: string }
     SurveyScreen: { surveyId: string, locationId: string, surveyorId: string }
     SelectSpeciesScreen: { surveyId: string, locationId: string, surveyorId: string }
