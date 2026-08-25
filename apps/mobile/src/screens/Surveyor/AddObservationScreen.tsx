@@ -140,8 +140,7 @@ export function AddObservationScreen(): React.JSX.Element {
                 notes: notes ?? null,
                 emergence: emergence,
                 flightPaths,
-                data: undefined
-            } as UpdateObservationInput;
+            } satisfies UpdateObservationInput;
             const updatedObservation = await service.updateObservation(observationId, observationInput);
             console.log("Successfully updated observation: ", observationId, updatedObservation);
             navigation.navigate('SurveyScreen', { surveyId, locationId, surveyorId })
