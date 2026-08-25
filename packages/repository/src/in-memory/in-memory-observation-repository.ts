@@ -13,7 +13,10 @@ export class InMemoryObservationRepository implements ObservationRepository {
   private store = new Map<string, Observation>().set("obv",
     {
       id: 'obv',
+      surveyId: 'bift',
+      locationId: 'locationLead',
       surveyorId: 'lead',
+      species: null,
       firstSeenAt: new Date,
       lastSeenAt: new Date(Date.now() + 30000),
       seenCount: 2,

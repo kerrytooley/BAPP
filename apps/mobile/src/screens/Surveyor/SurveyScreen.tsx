@@ -55,15 +55,16 @@ export function SurveyScreen(): React.JSX.Element {
             try {
                 const context = await service.getSurveyContext(surveyId);
                 const surveyorObservations = context.observations.filter((observation) => observation.surveyorId === surveyorId);
-                surveyorObservations && setObservations(surveyorObservations);
-                const survey = context.survey;
-                survey && setSurvey(survey);
+                setObservations(surveyorObservations);
+                setSurvey(context.survey);
             } catch (e) {
-                console.error("Error loading survey context", e)
+                console.error("Error loading survey context", e);
             }
         };
-        loadContext();
-    }, [surveyId, surveyorId])
+        void loadContext();
+        const unsubscribe = navigation.addListener("focus", () => { void loadContext(); });
+        return unsubscribe;
+    }, [navigation, service, surveyId, surveyorId]);
 
     const addHeard = async (observation: Observation) => {
         try {
