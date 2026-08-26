@@ -22,7 +22,7 @@ export function SetupCompleteScreen(): React.JSX.Element {
             <View style={screen.content} >
                 <Title title="Survey Setup Complete!" />
             </View>
-            <Button label="Next" onPress={() => navigation.navigate("SelectSpeciesScreen", { surveyId, locationId, surveyorId })} />
+            <Button label="Next" onPress={() => navigation.navigate("SurveyScreen", { surveyId, locationId, surveyorId })} />
         </View>
     )
 }

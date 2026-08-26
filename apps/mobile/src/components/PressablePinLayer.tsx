@@ -17,6 +17,7 @@ const PIN_HEIGHT = 24;
 
 export const PressablePinLayer = ({ imageUri, value, onChange }: PressablePinLayerProps) => {
     const [layout, setLayout] = useState({ width: 0, height: 0 });
+    const [available, setAvailable] = useState({ width: 0, height: 0 });
     const [aspectRatio, setAspectRatio] = useState<number>(0.5);
 
     useEffect(() => {
@@ -37,6 +38,24 @@ export const PressablePinLayer = ({ imageUri, value, onChange }: PressablePinLay
         setLayout({ width, height })
     }
 
+    const onContainerLayout = (event: LayoutChangeEvent) => {
+        const { width, height } = event.nativeEvent.layout
+        setAvailable({ width, height })
+    }
+
+    // Fit the image inside the available area while preserving its aspect ratio,
+    // so tall (portrait) images shrink to fit rather than overflowing.
+    const fitted = (() => {
+        if (!available.width || !available.height) {
+            return { width: available.width || undefined, aspectRatio };
+        }
+        const heightFromWidth = available.width / aspectRatio;
+        if (heightFromWidth <= available.height) {
+            return { width: available.width, height: heightFromWidth };
+        }
+        return { width: available.height * aspectRatio, height: available.height };
+    })();
+
     const handlePress = (event: GestureResponderEvent) => {
         if (layout.width === 0 || layout.height === 0) return
         const { locationX, locationY } = event.nativeEvent
@@ -46,8 +65,9 @@ export const PressablePinLayer = ({ imageUri, value, onChange }: PressablePinLay
     }
 
     return (
-        <Pressable onLayout={onLayout} onPress={handlePress} style={[styles.layer, { aspectRatio }]}>
-            <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
+        <View style={styles.fill} onLayout={onContainerLayout}>
+            <Pressable onLayout={onLayout} onPress={handlePress} style={[styles.layer, fitted]}>
+                <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
 
             {value && layout.width > 0 && (
                 <View
@@ -63,13 +83,19 @@ export const PressablePinLayer = ({ imageUri, value, onChange }: PressablePinLay
                     <MapPin width={PIN_WIDTH} height={PIN_HEIGHT} stroke={colours.red} strokeWidth={2} />
                 </View>
             )}
-        </Pressable>
+            </Pressable>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    layer: {
+    fill: {
+        flex: 1,
         width: "100%",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    layer: {
         borderRadius: 16,
         overflow: "hidden"
     },

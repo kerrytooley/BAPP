@@ -14,7 +14,7 @@ export class InMemorySurveyorRepository implements SurveyorRepository {
     'lead', {
     id: 'lead',
     surveyId: 'bift',
-    locationId: null,
+    locationId: 'locationLead',
     name: 'Karen',
     isLead: true,
     status: 'pending',

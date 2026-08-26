@@ -95,7 +95,7 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
     const handleContinue = async () => {
         try {
             const id = await ensureLocationId();
-            navigation.navigate("CapturePhotoScreen", { surveyId, locationId: id, surveyorId, photoType: 'FRONT_VIEW' });
+            navigation.navigate("CapturePhotoScreen", { surveyId, locationId: id, surveyorId, photoType: 'frontView' });
         } catch (e) {
             console.error("Unable to continue to photo capture", e);
         }

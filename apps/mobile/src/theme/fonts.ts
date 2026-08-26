@@ -48,6 +48,14 @@ export const textStyles = {
         letterSpacing: 4,
         textAlign: "center"
     },
+    countdown: {
+        fontFamily: fonts.family.semiBold,
+        fontSize: fonts.size.lg,
+        fontWeight: '800',
+        letterSpacing: 4,
+        textAlign: "center",
+        color: colours.light,
+    },
     unit: {
         fontFamily: fonts.family.semiBold,
         fontSize: fonts.size.md,
@@ -72,5 +80,13 @@ export const textStyles = {
         fontFamily: fonts.family.body,
         color: colours.light,
         textAlign: "center"
+    },
+    placeholderText: {
+        fontFamily: fonts.family.body,
+        fontSize: fonts.size.md,
+        fontWeight: '400',
+        letterSpacing: 0,
+        textAlign: 'left',
+        color: colours.placeholderText
     }
 } as const;

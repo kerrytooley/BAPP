@@ -29,10 +29,16 @@ export const LocationEditor = ({ boundaryImageUri, position, setPosition }: Loca
 
 const styles = StyleSheet.create({
     imageContainer: {
+        flex: 1,
+        minHeight: 0,
         width: "100%",
+        alignItems: "center",
+        justifyContent: "center",
         borderRadius: 16,
     },
     imageBlock: {
+        flex: 1,
+        minHeight: 0,
         width: "100%",
         gap: 8,
     },

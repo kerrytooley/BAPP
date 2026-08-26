@@ -1,4 +1,4 @@
-import { formatDate, formatTime } from '@utils/dateTimeUtils';
+import { formatDate, formatTime, formatCountdown } from '@utils/dateTimeUtils';
 
 describe('formatDate', () => {
     it('formats a date as DD/MM/YYYY (en-GB)', () => {
@@ -37,5 +37,15 @@ describe('formatTime', () => {
 
     it('returns a fallback when value is null', () => {
         expect(formatTime(null)).toBe('Time not found');
+    });
+});
+
+describe('formatCountdown', () => {
+    it('zero-pads hours, minutes and seconds', () => {
+        expect(formatCountdown(1, 2, 3)).toBe('01:02:03');
+    });
+
+    it('keeps double-digit values intact', () => {
+        expect(formatCountdown(12, 34, 56)).toBe('12:34:56');
     });
 });

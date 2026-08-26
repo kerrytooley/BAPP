@@ -6,7 +6,7 @@ import MapPin from "@assets/icons/mapPin.svg"
 import { colours } from "@theme/colours"
 import { getAspectRatio } from "@utils/image"
 
-interface StaticPinLayerProps {
+export interface StaticPinLayerProps {
     imageUri: string
     value: BoundaryPosition | null | undefined
 }

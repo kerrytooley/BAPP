@@ -3,6 +3,7 @@ import type {
     Surveyor,
     Location,
     SurveyContext,
+    Observation,
 } from '@bapp/domain';
 
 const now = new Date(2026, 6, 13, 12, 0, 0);
@@ -63,5 +64,28 @@ export const buildContext = (
     locations: [],
     surveyors: [],
     observations: [],
+    ...overrides,
+});
+
+export const buildObservation = (
+    overrides: Partial<Observation> = {},
+): Observation => ({
+    id: 'obs-1',
+    surveyId: 'survey-1',
+    locationId: 'location-1',
+    surveyorId: 'surveyor-1',
+    species: 'Noctule',
+    firstSeenAt: new Date(2026, 6, 13, 20, 30),
+    lastSeenAt: new Date(2026, 6, 13, 20, 45),
+    seenCount: 2,
+    heardCount: 1,
+    frequency: '45',
+    direction: 'N->S',
+    notes: 'a nice bat',
+    emergence: false,
+    flightPaths: [],
+    data: {},
+    createdAt: now,
+    updatedAt: now,
     ...overrides,
 });

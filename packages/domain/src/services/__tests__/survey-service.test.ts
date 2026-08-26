@@ -233,7 +233,7 @@ describe('SurveyService', () => {
       const survey = await service.createSurvey();
       const loc = await service.addLocation(survey.id, { name: 'North Gate' });
 
-      const updated = await service.setLocationImage(loc.id, 'gear.png', bytes, 'EQUIPMENT');
+      const updated = await service.setLocationImage(loc.id, 'gear.png', bytes, 'equipment');
 
       expect(updated.equipmentImage).toEqual({
         sourceRef: `locations/${loc.id}/equipment/gear.png`,
@@ -249,7 +249,7 @@ describe('SurveyService', () => {
       const survey = await service.createSurvey();
       const loc = await service.addLocation(survey.id, { name: 'North Gate' });
 
-      const updated = await service.setLocationImage(loc.id, 'front.png', bytes, 'FRONT_VIEW');
+      const updated = await service.setLocationImage(loc.id, 'front.png', bytes, 'frontView');
 
       expect(updated.frontViewImage).toEqual({
         sourceRef: `locations/${loc.id}/frontView/front.png`,
@@ -265,7 +265,7 @@ describe('SurveyService', () => {
       const survey = await service.createSurvey();
       const loc = await service.addLocation(survey.id, { name: 'North Gate' });
 
-      await service.setLocationImage(loc.id, 'gear.png', bytes, 'EQUIPMENT');
+      await service.setLocationImage(loc.id, 'gear.png', bytes, 'equipment');
 
       const persisted = await locationRepo.findById(loc.id);
       expect(persisted?.equipmentImage?.sourceRef).toBe(`locations/${loc.id}/equipment/gear.png`);
@@ -277,7 +277,7 @@ describe('SurveyService', () => {
       const loc = await service.addLocation(survey.id, { name: 'North Gate' });
       const fractions: number[] = [];
 
-      await service.setLocationImage(loc.id, 'gear.png', bytes, 'EQUIPMENT', (f) => fractions.push(f));
+      await service.setLocationImage(loc.id, 'gear.png', bytes, 'equipment', (f) => fractions.push(f));
 
       expect(fractions).toContain(1);
     });
@@ -287,10 +287,10 @@ describe('SurveyService', () => {
       const survey = await service.createSurvey();
       const loc = await service.addLocation(survey.id, { name: 'North Gate' });
 
-      await service.setLocationImage(loc.id, 'first.png', bytes, 'EQUIPMENT');
+      await service.setLocationImage(loc.id, 'first.png', bytes, 'equipment');
       const firstRef = `locations/${loc.id}/equipment/first.png`;
 
-      await service.setLocationImage(loc.id, 'second.png', bytes, 'EQUIPMENT');
+      await service.setLocationImage(loc.id, 'second.png', bytes, 'equipment');
 
       await expect(mediaRepo.getDownloadUrl(firstRef)).rejects.toThrow();
       const updated = await locationRepo.findById(loc.id);
@@ -302,9 +302,9 @@ describe('SurveyService', () => {
       const survey = await service.createSurvey();
       const loc = await service.addLocation(survey.id, { name: 'North Gate' });
 
-      await service.setLocationImage(loc.id, 'gear.png', bytes, 'EQUIPMENT');
+      await service.setLocationImage(loc.id, 'gear.png', bytes, 'equipment');
       const ref = `locations/${loc.id}/equipment/gear.png`;
-      await service.setLocationImage(loc.id, 'gear.png', bytes, 'EQUIPMENT');
+      await service.setLocationImage(loc.id, 'gear.png', bytes, 'equipment');
 
       await expect(mediaRepo.getDownloadUrl(ref)).resolves.toMatch(/^data:image\/png;base64,/);
     });
@@ -314,9 +314,9 @@ describe('SurveyService', () => {
       const survey = await service.createSurvey();
       const loc = await service.addLocation(survey.id, { name: 'North Gate' });
 
-      await service.setLocationImage(loc.id, 'gear.png', bytes, 'EQUIPMENT');
+      await service.setLocationImage(loc.id, 'gear.png', bytes, 'equipment');
       const equipmentRef = `locations/${loc.id}/equipment/gear.png`;
-      await service.setLocationImage(loc.id, 'front.png', bytes, 'FRONT_VIEW');
+      await service.setLocationImage(loc.id, 'front.png', bytes, 'frontView');
 
       await expect(mediaRepo.getDownloadUrl(equipmentRef)).resolves.toMatch(/^data:image\/png;base64,/);
       const updated = await locationRepo.findById(loc.id);

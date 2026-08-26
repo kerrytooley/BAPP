@@ -3,8 +3,8 @@ import { BatGrid } from '@components/BatGrid';
 import { Bat } from '@components/BatItem';
 
 const bats: Bat[] = [
-    { id: 'noctule', species: 'Noctule', image: { uri: 'file://noctule.png' } },
-    { id: 'serotine', species: 'Serotine', image: { uri: 'file://serotine.png' } },
+    { id: 'noctule', species: 'Noctule', abr: 'Noc', image: { uri: 'file://noctule.png' } },
+    { id: 'serotine', species: 'Serotine', abr: 'Ser', image: { uri: 'file://serotine.png' } },
 ];
 
 describe('BatGrid', () => {
@@ -14,10 +14,10 @@ describe('BatGrid', () => {
         expect(screen.getByText('Serotine')).toBeOnTheScreen();
     });
 
-    it('forwards the bat id when an item is pressed', () => {
+    it('forwards the bat species when an item is pressed', () => {
         const onPress = jest.fn();
         render(<BatGrid bats={bats} onPress={onPress} />);
         fireEvent.press(screen.getByLabelText('Serotine'));
-        expect(onPress).toHaveBeenCalledWith('serotine');
+        expect(onPress).toHaveBeenCalledWith('Serotine');
     });
 });
