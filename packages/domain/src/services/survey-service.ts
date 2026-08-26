@@ -1,5 +1,5 @@
 import type { Survey, UpdateSurveyInput } from '../models/survey';
-import type { MediaAsset } from '../models/media';
+import type { LocationImageType, MediaAsset } from '../models/media';
 import type { Location, CreateLocationInput, UpdateLocationInput } from '../models/location';
 import type { Surveyor, CreateSurveyorInput, UpdateSurveyorInput } from '../models/surveyor';
 import type { Observation, CreateObservationInput, UpdateObservationInput } from '../models/observation';
@@ -14,11 +14,11 @@ import { ValidationError } from '../validation-error';
 import { generateSurveyCode, normalizeSurveyCode } from '../codes';
 
 /**
- * Status-bearing result of resolving a boundary image. Lets the UI show the
+ * Status-bearing result of resolving an image. Lets the UI show the
  * right state (nothing / spinner / retry / the image) instead of treating a
  * not-yet-rendered image as an error.
  */
-export type BoundaryImageResult =
+export type ImageResult =
   | { status: 'none' }
   | { status: 'processing' }
   | { status: 'failed'; error: string | null }
@@ -159,11 +159,11 @@ export class SurveyService {
     locationId: string,
     fileName: string,
     data: ArrayBuffer | Uint8Array,
-    imageType: 'EQUIPMENT' | 'FRONT_VIEW',
+    imageType: LocationImageType,
     onProgress?: (fraction: number) => void,
   ): Promise<Location> {
 
-    const isEquipment = imageType === 'EQUIPMENT';
+    const isEquipment = imageType === 'equipment';
     const existing = await this.locationRepository.findById(locationId);
     if (!existing) throw new Error(`Entity ${locationId} not found`);
     const previous = isEquipment ? existing?.equipmentImage : existing?.frontViewImage;
@@ -203,7 +203,7 @@ export class SurveyService {
    * Callers can distinguish "not set", "still processing", "failed", and
    * "ready" (with a locally-available URL) and render each state appropriately.
    */
-  async getBoundaryImage(surveyId: string): Promise<BoundaryImageResult> {
+  async getBoundaryImage(surveyId: string): Promise<ImageResult> {
     const { boundary } = await this.getSurvey(surveyId);
     if (!boundary) return { status: 'none' };
     if (boundary.status === 'failed') {
@@ -215,6 +215,21 @@ export class SurveyService {
     const url = await this.mediaRepository.getDownloadUrl(boundary.renderRef);
     return { status: 'ready', url };
   }
+
+  async getLocationImage(locationId: string, imageType: LocationImageType): Promise<ImageResult> {
+    const location = await this.locationRepository.findById(locationId);
+    const image = imageType === 'frontView' ? location?.frontViewImage : location?.equipmentImage;
+    if (!image) return { status: 'none' };
+    if (image.status === 'failed') {
+      return { status: 'failed', error: image.error ?? null };
+    }
+    if (image.status !== 'ready' || !image.renderRef) {
+      return { status: 'processing' };
+    }
+    const url = await this.mediaRepository.getDownloadUrl(image.renderRef);
+    return { status: 'ready', url };
+  }
+
 
   // --- Locations ---
 

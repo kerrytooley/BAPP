@@ -120,6 +120,9 @@ describe('applyObservationDefaults', () => {
       seenCount: 0,
       heardCount: 0,
       notes: null,
+      frequency: null,
+      direction: null,
+      emergence: false,
       flightPaths: [],
       data: {},
     });

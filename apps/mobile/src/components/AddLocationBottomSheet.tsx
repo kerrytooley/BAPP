@@ -6,6 +6,7 @@ import { colours } from "@theme/colours"
 import { BoundaryPosition } from "@bapp/domain"
 import { Button } from "./Button"
 import { LocationEditor } from "./LocationEditor"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 export interface AddLocationProps {
     // A resolved, locally-renderable image URI (not a storage reference).
@@ -19,6 +20,7 @@ export const AddLocationBottomSheet = forwardRef<BottomSheetModal, AddLocationPr
     ({ boundaryImageUri, isEditing = false, initialPosition = null, onChange }, ref) => {
 
         const [position, setPosition] = useState<BoundaryPosition | null>(null);
+        const insets = useSafeAreaInsets();
 
 
         const renderBackdrop = (props: BottomSheetBackdropProps) => (
@@ -34,14 +36,15 @@ export const AddLocationBottomSheet = forwardRef<BottomSheetModal, AddLocationPr
                 ref={ref}
                 onChange={(index) => { if (index >= 0) setPosition(initialPosition) }}
                 onDismiss={() => setPosition(null)}
-                snapPoints={["75%"]}
+                snapPoints={["100%"]}
+                topInset={insets.top}
                 enablePanDownToClose
                 enableDynamicSizing={false}
                 backdropComponent={renderBackdrop}
                 handleIndicatorStyle={styles.handle}
                 backgroundStyle={styles.sheetBackground}
             >
-                <BottomSheetView style={styles.content}>
+                <BottomSheetView style={[styles.content, { paddingBottom: 16 + insets.bottom }]}>
                     <Title title={isEditing ? "Edit Surveyor Location" : "Add Surveyor Location"} subtitle="Tap on the image to drop a pin" />
                     <LocationEditor boundaryImageUri={boundaryImageUri}
                         position={position}

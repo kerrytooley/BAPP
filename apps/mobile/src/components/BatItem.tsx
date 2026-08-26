@@ -7,7 +7,8 @@ import { LinearGradient } from "expo-linear-gradient";
 export interface Bat {
     id: string,
     image: ImageSourcePropType,
-    species: string;
+    species: string,
+    abr: string
 }
 
 export interface BatItemProps {

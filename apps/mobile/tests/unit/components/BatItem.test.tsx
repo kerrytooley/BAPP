@@ -4,6 +4,7 @@ import { BatItem, Bat } from '@components/BatItem';
 const bat: Bat = {
     id: 'noctule',
     species: 'Noctule',
+    abr: 'Noc',
     image: { uri: 'file://noctule.png' },
 };
 

@@ -179,6 +179,8 @@ defineFeature(feature, (test) => {
       await waitForScreen('Survey Setup Complete!');
 
       pressLast('Next');
+      await waitForScreen('Add new bat observation');
+      fireEvent.press(screen.getByText('Add new bat observation'));
       await waitForScreen('Add New Bat Type');
     });
 
@@ -190,7 +192,7 @@ defineFeature(feature, (test) => {
       await waitFor(async () => {
         const context = await service.getSurveyContext(surveyId);
         expect(context.observations).toHaveLength(1);
-        expect(context.observations[0].species).toBe('noctule');
+        expect(context.observations[0].species).toBe('Noctule');
       });
     });
   });

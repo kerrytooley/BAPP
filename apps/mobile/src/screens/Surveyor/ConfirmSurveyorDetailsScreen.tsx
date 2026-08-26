@@ -87,7 +87,7 @@ export function ConfirmSurveyorDetailsScreen(): React.JSX.Element {
                             }
                         ]} />
                     <Text style={styles.summaryTitle}>Red Line Boundary</Text>
-                    <DocumentPreview value={boundaryImage} />
+                    <DocumentPreview imageUri={boundaryImage} />
 
                 </ScrollView>}
             <View style={{ gap: 8 }} >

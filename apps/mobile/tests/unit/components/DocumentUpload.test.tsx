@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react-nativ
 import { Image, TouchableOpacity } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import { getAspectRatio } from '@utils/image';
 import { DocumentUpload } from '@components/DocumentUpload';
 
 const mockShowActionSheet = jest.fn();
@@ -14,6 +15,9 @@ jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
 jest.mock('expo-image-picker', () => ({
     requestMediaLibraryPermissionsAsync: jest.fn(),
     launchImageLibraryAsync: jest.fn(),
+}));
+jest.mock('@utils/image', () => ({
+    getAspectRatio: jest.fn(() => Promise.resolve(1.5)),
 }));
 
 const getDocumentAsync = DocumentPicker.getDocumentAsync as jest.Mock;
@@ -117,5 +121,29 @@ describe('DocumentUpload', () => {
         expect(requestPerms).not.toHaveBeenCalled();
         expect(getDocumentAsync).not.toHaveBeenCalled();
         expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('logs an error when the preview aspect ratio cannot be read', async () => {
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+        (getAspectRatio as jest.Mock).mockRejectedValueOnce(new Error('no size'));
+        render(<DocumentUpload onChange={jest.fn()} value="file://img.png" />);
+        await waitFor(() =>
+            expect(errorSpy).toHaveBeenCalledWith(
+                'Error getting preview aspect ratio',
+                expect.any(Error),
+            ),
+        );
+        errorSpy.mockRestore();
+    });
+
+    it('ignores a late aspect ratio result after unmount', async () => {
+        let resolveRatio: (ratio: number) => void = () => { };
+        (getAspectRatio as jest.Mock).mockImplementationOnce(
+            () => new Promise<number>((resolve) => { resolveRatio = resolve; }),
+        );
+        const { unmount } = render(<DocumentUpload onChange={jest.fn()} value="file://img.png" />);
+        unmount();
+        resolveRatio(2);
+        await Promise.resolve();
     });
 });

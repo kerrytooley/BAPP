@@ -17,11 +17,20 @@ require('react-native-gesture-handler/jestSetup');
 // library-provided mock so its children render synchronously in tests.
 jest.mock('@gorhom/bottom-sheet', () => require('@gorhom/bottom-sheet/mock'));
 
+// Provide stable safe-area insets without needing a SafeAreaProvider wrapper.
+jest.mock('react-native-safe-area-context', () => {
+  const actual = jest.requireActual('react-native-safe-area-context');
+  return {
+    ...actual,
+    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+  };
+});
+
 // Quieten noisy act(...) / animation warnings that are irrelevant to assertions.
 const originalWarn = console.warn;
 const originalError = console.error;
 beforeAll(() => {
-  jest.spyOn(console, 'log').mockImplementation(() => {});
+  jest.spyOn(console, 'log').mockImplementation(() => { });
   jest.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
     const message = String(args[0] ?? '');
     if (message.includes('useNativeDriver') || message.includes('componentWillReceiveProps')) {

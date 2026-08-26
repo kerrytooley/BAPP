@@ -97,7 +97,7 @@ export function ReviewSurveyDetailsScreen(): React.JSX.Element {
                         getSurveyorArray()
                     } />
                 <Text style={styles.summaryTitle}>Red Line Boundary</Text>
-                <DocumentPreview value={boundaryImage} />
+                <DocumentPreview imageUri={boundaryImage} />
             </ScrollView>
             <ButtonGroup variant="mixed" labels={[
                 "Complete Survey Setup",

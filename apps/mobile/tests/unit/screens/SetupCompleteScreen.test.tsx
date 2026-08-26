@@ -25,10 +25,10 @@ describe('SetupCompleteScreen', () => {
         expect(screen.getByText('Survey Setup Complete!')).toBeOnTheScreen();
     });
 
-    it('navigates to the species screen when pressing next', () => {
+    it('navigates to the survey screen when pressing next', () => {
         render(<SetupCompleteScreen />);
         fireEvent.press(screen.getByText('Next'));
-        expect(mockNavigate).toHaveBeenCalledWith('SelectSpeciesScreen', {
+        expect(mockNavigate).toHaveBeenCalledWith('SurveyScreen', {
             surveyId: 'survey-1',
             locationId: 'location-1',
             surveyorId: 'surveyor-1',

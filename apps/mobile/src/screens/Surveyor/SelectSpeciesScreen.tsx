@@ -19,14 +19,22 @@ export function SelectSpeciesPage(): React.JSX.Element {
     const service = useSurveyService();
 
     const handlePress = async (species: string) => {
-        const newObservation = await service.addObservation({
-            surveyId: surveyId,
-            locationId: locationId,
-            surveyorId: surveyorId,
-            species: species,
-            firstSeenAt: new Date
-        } as CreateObservationInput);
-        console.log('Observation added: ', newObservation);
+        try {
+            const now = new Date();
+            const newObservation = await service.addObservation({
+                surveyId: surveyId,
+                locationId: locationId,
+                surveyorId: surveyorId,
+                species: species,
+                firstSeenAt: now,
+                lastSeenAt: now
+            } as CreateObservationInput);
+            console.log('Observation added: ', newObservation);
+            const observationId = newObservation?.id;
+            navigation.push("AddObservationScreen", { surveyId, observationId, surveyorId, locationId })
+        } catch (e) {
+            console.error("Error creating observation on surveyor: ", surveyorId, species, e);
+        }
     }
 
     return (
