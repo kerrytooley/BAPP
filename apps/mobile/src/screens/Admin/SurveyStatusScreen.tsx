@@ -4,11 +4,11 @@ import { Title } from "@components/Titles";
 import { RootStackParamList } from "@navigators/index";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { CompositeNavigationProp, RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { CompositeNavigationProp, RouteProp, useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import { screen } from "@theme/screen";
 import { colours } from "@theme/colours";
 import { textStyles } from "@theme/fonts";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { exportSurvey } from "@services/export/exportSurvey";
@@ -40,18 +40,25 @@ export function SurveyStatusScreen(): React.JSX.Element {
     const [surveyors, setSurveyors] = useState<Surveyor[]>();
     const [exporting, setExporting] = useState(false);
 
-    useEffect(() => {
-        const loadContext = async () => {
-            try {
-                const { survey, surveyors } = await service.getSurveyContext(surveyId);
-                setSurvey(survey);
-                setSurveyors(surveyors);
-            } catch (e) {
-                console.error("failed to load survey status", e);
-            }
-        };
-        loadContext();
-    }, [service, surveyId]);
+    useFocusEffect(
+        useCallback(() => {
+            let active = true;
+            const loadContext = async () => {
+                try {
+                    const { survey, surveyors } = await service.getSurveyContext(surveyId);
+                    if (!active) return;
+                    setSurvey(survey);
+                    setSurveyors(surveyors);
+                } catch (e) {
+                    console.error("failed to load survey status", e);
+                }
+            };
+            loadContext();
+            return () => {
+                active = false;
+            };
+        }, [service, surveyId])
+    );
 
     const handleExport = async () => {
         setExporting(true);
