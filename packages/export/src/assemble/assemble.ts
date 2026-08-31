@@ -4,7 +4,7 @@ import { buildReportHtml, type ResolvedImage } from '../html/build-html';
 import { buildReportWorkbook } from '../xlsx/build-xlsx';
 import type { MediaResolver, Packager, PackFile } from './ports';
 
-export const REPORT_HTML = 'report.html';
+export const REPORT_HTML = 'flight-paths.html';
 export const REPORT_XLSX = 'survey-data.xlsx';
 export const MEDIA_DIR = 'media';
 

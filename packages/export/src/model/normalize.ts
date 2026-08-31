@@ -130,11 +130,11 @@ function imageRef(asset: Location['frontViewImage']): string | null {
   return asset.renderRef ?? asset.sourceRef ?? null;
 }
 
-/** Flight-path label shown in the report checklist: first-seen time + species. */
+/** Flight-path label shown in the report checklist: observation id + first-seen time + species. */
 function flightPathLabel(obs: Observation): string {
   const species = obs.species ?? 'Unknown species';
   const time = formatTime(obs.firstSeenAt);
-  return time ? `${time} ${species}` : species;
+  return [obs.id, time, species].filter(Boolean).join(' - ');
 }
 
 /** UTC HH:MM, matching the spreadsheet's time formatting. */

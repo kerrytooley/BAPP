@@ -7,14 +7,19 @@ import React, { useEffect, useState } from "react"
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { ScrollView, StyleSheet, Text, View, Alert, Modal, ActivityIndicator } from "react-native";
 import { useSurveyService } from "../../services/surveyServiceContext";
-import { exportSurvey } from "../../services/export/exportSurvey";
 import { Observation, Survey, Surveyor } from "@bapp/domain";
+import { RootStackParamList } from "@navigators/index";
+import { CompositeNavigationProp } from "@react-navigation/native";
 import { ObservationSummary } from "@components/ObservationSummary";
 import { Card } from "@components/Card";
 import { textStyles } from "@theme/fonts";
 import { colours } from "@theme/colours";
+import { formatDate } from "@utils/dateTimeUtils";
 
-type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
+type Nav = CompositeNavigationProp<
+    NativeStackNavigationProp<SurveyorStackParamList>,
+    NativeStackNavigationProp<RootStackParamList>
+>;
 
 export function SurveySummaryScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
@@ -22,7 +27,7 @@ export function SurveySummaryScreen(): React.JSX.Element {
     const [survey, setSurvey] = useState<Survey>();
     const [surveyor, setSurveyor] = useState<Surveyor>();
     const service = useSurveyService();
-    const [exporting, setExporting] = useState(false);
+    const [saving, setSaving] = useState(false);
     const { surveyId, surveyorId } = useRoute<RouteProp<SurveyorStackParamList, 'SetupCompleteScreen'>>().params;
 
     useEffect(() => {
@@ -36,20 +41,24 @@ export function SurveySummaryScreen(): React.JSX.Element {
         loadContext();
     }, [surveyId, service])
 
-    const handleExport = async () => {
-        setExporting(true);
-        // Let the loading overlay paint before we kick off the CPU-heavy export,
-        // which otherwise blocks the JS thread and delays the first render.
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    const handleComplete = async () => {
+        setSaving(true);
         try {
-            const { shared } = await exportSurvey(service, surveyId);
-            if (!shared) {
-                Alert.alert("Export ready", "Sharing isn't available on this device.");
+            await service.completeSurveyor(surveyorId);
+            try {
+                await service.completeSurvey(surveyId);
+            } catch {
+                // Expected fail if not all surveyors completed. 
             }
+            Alert.alert(
+                "Results sent",
+                "Your results have been saved and sent to the lead surveyor.",
+                [{ text: "Done", onPress: () => navigation.navigate("Welcome") }],
+            );
         } catch {
-            Alert.alert("Export failed", "Could not build the survey export. Please try again.");
+            Alert.alert("Save failed", "Could not save your results. Please try again.");
         } finally {
-            setExporting(false);
+            setSaving(false);
         }
     };
 
@@ -57,7 +66,7 @@ export function SurveySummaryScreen(): React.JSX.Element {
         <View style={screen.justifyScreen} >
             <View style={{ width: '100%' }} >
                 <BackButton navigation={navigation} />
-                <Title title="Survey Summary" subtitle={"Summary for surveyor: " + surveyorId} />
+                <Title title="Survey Summary" subtitle={"Summary for surveyor: " + surveyor?.name} />
             </View>
             <ScrollView style={[screen.scroll]} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
                 <Card cardLabel="Survey Title">
@@ -67,7 +76,7 @@ export function SurveySummaryScreen(): React.JSX.Element {
                     <Text style={styles.text}>{surveyor?.name}</Text>
                 </Card>
                 <Card cardLabel="Date and Time">
-                    <Text style={styles.text}>{surveyor?.name}</Text>
+                    <Text style={styles.text}>{formatDate(survey?.date)}</Text>
                 </Card>
                 <Text style={styles.header}>Bat Observations:</Text>
                 {
@@ -75,13 +84,13 @@ export function SurveySummaryScreen(): React.JSX.Element {
                     observations.map((observation) => <ObservationSummary key={observation.id} {...observation} />)
                 }
             </ScrollView>
-            <Button label={exporting ? "Exporting…" : "Export & Share"} disabled={exporting} onPress={handleExport} />
-            <Modal visible={exporting} transparent animationType="fade">
+            <Button label={saving ? "Saving…" : "Complete and Save Survey"} disabled={saving} onPress={handleComplete} />
+            <Modal visible={saving} transparent animationType="fade">
                 <View style={styles.overlay}>
                     <View style={styles.overlayCard}>
                         <ActivityIndicator size="large" color={colours.light} />
-                        <Text style={styles.overlayText}>Generating export…</Text>
-                        <Text style={styles.overlaySubtext}>This can take a moment for large surveys.</Text>
+                        <Text style={styles.overlayText}>Saving your results…</Text>
+                        <Text style={styles.overlaySubtext}>Sending your results to the lead surveyor.</Text>
                     </View>
                 </View>
             </Modal>

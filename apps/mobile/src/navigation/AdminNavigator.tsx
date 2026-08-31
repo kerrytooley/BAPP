@@ -7,16 +7,22 @@ import { AddSurveyorScreen } from "@screens/Admin/AddSurveyorScreen";
 import { ReviewSurveyDetailsScreen } from "@screens/Admin/ReviewSurveyDetailsScreen";
 import { SurveySavedScreen } from "@screens/Admin/SurveySavedScreen";
 import { ShareCodeScreen } from "@screens/Admin/ShareCodeScreen";
+import { AdminCodeScreen } from "@screens/Admin/AdminCodeScreen";
+import { SurveyStatusScreen } from "@screens/Admin/SurveyStatusScreen";
+import { SaveAdminCodeScreen } from "@screens/Admin/SaveAdminCodeScreen";
 
 export type AdminStackParamList = {
     BeginOrContinueSurveyScreen: undefined;
     EmailScreen: { surveyId: string };
+    SaveAdminCodeScreen: { surveyId: string };
     CreateSurvey: { surveyId: string };
     UploadRedLineBoundaryScreen: { surveyId: string };
     AddSurveyorScreen: { surveyId: string };
     ReviewSurveyDetailsScreen: { surveyId: string };
     SurveySavedScreen: undefined;
-    ShareCodeScreen: { surveyId: string }
+    ShareCodeScreen: { surveyId: string };
+    AdminCodeScreen: undefined;
+    SurveyStatusScreen: { surveyId: string };
 };
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();
@@ -26,12 +32,15 @@ export function AdminNavigator() {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="BeginOrContinueSurveyScreen" component={BeginOrContinueSurveyScreen} />
             <Stack.Screen name="EmailScreen" component={EmailScreen} />
+            <Stack.Screen name="SaveAdminCodeScreen" component={SaveAdminCodeScreen} />
             <Stack.Screen name="CreateSurvey" component={CreateSurvey} />
             <Stack.Screen name="UploadRedLineBoundaryScreen" component={UploadRedLineBoundaryScreen} />
             <Stack.Screen name="AddSurveyorScreen" component={AddSurveyorScreen} />
             <Stack.Screen name="ReviewSurveyDetailsScreen" component={ReviewSurveyDetailsScreen} />
             <Stack.Screen name="SurveySavedScreen" component={SurveySavedScreen} />
             <Stack.Screen name="ShareCodeScreen" component={ShareCodeScreen} />
+            <Stack.Screen name="AdminCodeScreen" component={AdminCodeScreen} />
+            <Stack.Screen name="SurveyStatusScreen" component={SurveyStatusScreen} />
         </Stack.Navigator>
     )
 }

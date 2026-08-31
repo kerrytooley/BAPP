@@ -24,7 +24,7 @@ const ResolverMock = ExpoMediaResolver as unknown as jest.Mock;
 function makeService(name: string | null): ExportSurveyService {
     return {
         getSurveyContext: jest.fn().mockResolvedValue(
-            buildContext({ survey: buildSurvey({ name }) }),
+            buildContext({ survey: buildSurvey({ name, postcode: null, date: null }) }),
         ),
         getMediaUrl: jest.fn().mockResolvedValue('file:///cache/x.png'),
     };
@@ -43,8 +43,8 @@ describe('exportSurvey', () => {
 
         expect(service.getSurveyContext).toHaveBeenCalledWith('survey-1');
         expect(assembleMock).toHaveBeenCalledTimes(1);
-        expect(shareMock).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]), 'dusk-count-export.zip');
-        expect(result).toEqual({ fileName: 'dusk-count-export.zip', shared: true });
+        expect(shareMock).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]), 'dusk-count-results.zip');
+        expect(result).toEqual({ fileName: 'dusk-count-results.zip', shared: true });
     });
 
     it('wires a media resolver backed by the service getMediaUrl', async () => {
@@ -58,17 +58,34 @@ describe('exportSurvey', () => {
 
     it('falls back to "survey" when the name is null', async () => {
         const result = await exportSurvey(makeService(null), 'survey-1');
-        expect(result.fileName).toBe('survey-export.zip');
+        expect(result.fileName).toBe('survey-results.zip');
     });
 
     it('slugifies names with punctuation and trims separators', async () => {
         const result = await exportSurvey(makeService('  Barn: North/South!!  '), 'survey-1');
-        expect(result.fileName).toBe('barn-north-south-export.zip');
+        expect(result.fileName).toBe('barn-north-south-results.zip');
     });
 
     it('falls back to "survey" when the name has no slug-able characters', async () => {
         const result = await exportSurvey(makeService('!!!'), 'survey-1');
-        expect(result.fileName).toBe('survey-export.zip');
+        expect(result.fileName).toBe('survey-results.zip');
+    });
+
+    it('includes slugified postcode and date when present', async () => {
+        const service: ExportSurveyService = {
+            getSurveyContext: jest.fn().mockResolvedValue(
+                buildContext({
+                    survey: buildSurvey({
+                        name: 'Dusk count',
+                        postcode: 'SW1A 1AA',
+                        date: new Date(Date.UTC(2026, 6, 13)),
+                    }),
+                }),
+            ),
+            getMediaUrl: jest.fn().mockResolvedValue('file:///cache/x.png'),
+        };
+        const result = await exportSurvey(service, 'survey-1');
+        expect(result.fileName).toBe('dusk-count-sw1a-1aa-2026-07-13-results.zip');
     });
 
     it('propagates the shared=false result', async () => {

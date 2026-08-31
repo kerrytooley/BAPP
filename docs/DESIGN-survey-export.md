@@ -76,12 +76,12 @@ presentation-ready shape so the builders don't depend on domain-model churn.
 
 ```
 report.zip
-├─ report.html      ← the interactive flight-path pack (self-contained)
-├─ survey-data.xlsx ← data sheets, deep-linking into report.html
-└─ media/           ← high-res base images (safety net; see below)
+├─ flight-paths.html ← the interactive flight-path pack (self-contained)
+├─ survey-data.xlsx   ← data sheets, deep-linking into flight-paths.html
+└─ media/             ← high-res base images (safety net; see below)
 ```
 
-**`report.html`** — a single self-contained file. It carries an embedded JSON
+**`flight-paths.html`** — a single self-contained file. It carries an embedded JSON
 data blob (the report data incl. raw normalized flight-path vectors) and, per
 figure: the base image, an SVG overlay (`viewBox="0 0 1 1"`, so normalized points
 need no scaling), a **checklist of observations** (`data-obs="{id}"`) whose
@@ -92,7 +92,7 @@ figure and pre-check observations (the XLSX deep-link landing). **One checklist
 per surface** (boundary and frontView live in different coordinate spaces).
 
 **`survey-data.xlsx`** (SheetJS) — Overview / Surveyor-`{id}` / Chronological
-sheets. Media columns are **deep-links** `report.html?fig=…&obs=…`. Use `?`, not
+sheets. Media columns are **deep-links** `flight-paths.html?fig=…&obs=…`. Use `?`, not
 `#` (Excel mangles `#`).
 
 ### Images
@@ -100,7 +100,7 @@ sheets. Media columns are **deep-links** `report.html?fig=…&obs=…`. Use `?`,
 - The **only** rasters are the **base images** (red-line boundary + each
   location's front-view/equipment). **Flight paths are vectors** (tiny JSON) and
   are **never** rasterized per-path. No thumbnails, no downscaled derivatives.
-- Base images are **inlined base64 in `report.html` (primary)** — required so the
+- Base images are **inlined base64 in `flight-paths.html` (primary)** — required so the
   canvas flatten works offline from `file://` without tainting.
 - The same high-res files are **also kept loose in `media/` (safety net)**; each
   `<img>` falls back to the `media/` path via `onerror`. Fallback **viewing**
@@ -111,7 +111,7 @@ sheets. Media columns are **deep-links** `report.html?fig=…&obs=…`. Use `?`,
 ## Deep-linking
 
 The join key is **`observationId`** everywhere (rows, checkboxes, colors). XLSX
-→ HTML via `report.html?fig={figureId}&obs={id[,id...]}`.
+→ HTML via `flight-paths.html?fig={figureId}&obs={id[,id...]}`.
 
 ---
 
@@ -130,7 +130,7 @@ The join key is **`observationId`** everywhere (rows, checkboxes, colors). XLSX
 1. `ReportModel` + normalizer (pure; unit-tested: colors, figureIds, grouping).
 2. HTML builder + template — open the emitted file to verify the checklist /
    stacking / flatten-to-PNG / deep-link.
-3. XLSX builder — open in a spreadsheet; deep-links into `report.html`.
+3. XLSX builder — open in a spreadsheet; deep-links into `flight-paths.html`.
 4. Assembler + `JsZipPackager` — produce the real zip; unzip + diff in a test.
 5. RN adapters + `SurveySummaryScreen` button + `ShareSheetDelivery` — emulator
    end-to-end (tap → share sheet → open zip on a computer).

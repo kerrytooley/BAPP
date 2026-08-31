@@ -127,7 +127,7 @@ describe('assembleSurveyExport', () => {
     const xlsxBytes = await archive.file(REPORT_XLSX)!.async('uint8array');
     const wb = XLSX.read(xlsxBytes, { type: 'array' });
     expect(wb.SheetNames).toContain('Chronological');
-    const cell = wb.Sheets['Chronological']['D2'];
+    const cell = wb.Sheets['Chronological']['E2'];
     expect(cell.l?.Target?.replace(/&amp;/g, '&')).toBe(`${REPORT_HTML}?fig=boundary&obs=obs_1`);
   });
 

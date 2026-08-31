@@ -15,7 +15,7 @@ export interface ResolvedImage {
 }
 
 /**
- * Build the single, self-contained interactive `report.html`.
+ * Build the single, self-contained interactive `flight-paths.html`.
  *
  * Pure and synchronous: all image bytes are resolved beforehand by the platform
  * adapter and handed in via `images` (keyed by `ReportFigure.imageRef`). The

@@ -122,6 +122,7 @@ describe('buildReportWorkbook', () => {
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets['Chronological']);
     expect(rows.map((r) => r.Species)).toEqual(['Noctule', 'Common Pipistrelle']);
     expect(rows[0]['First seen']).toBe('20:05');
+    expect(rows.map((r) => r['Observation ID'])).toEqual(['obs_1', 'obs_2']);
   });
 
   it('includes the extended observation fields on each sheet', () => {
@@ -151,20 +152,20 @@ describe('buildReportWorkbook', () => {
     expect(rows[0]['Flight paths']).toBe('View flight paths');
   });
 
-  it('deep-links each observation cell into report.html via ?fig=&obs=', () => {
+  it('deep-links each observation cell into flight-paths.html via ?fig=&obs=', () => {
     const wb = read(buildReportWorkbook(model()));
     const sheet = wb.Sheets['Chronological'];
-    // Species is column D; first data row is row 2 -> D2.
+    // Species is column E; first data row is row 2 -> E2.
     // The stored hyperlink XML-escapes '&' to '&amp;' (Excel decodes on open).
-    const cell = sheet['D2'];
-    expect(cell.l?.Target?.replace(/&amp;/g, '&')).toBe('report.html?fig=boundary&obs=obs_1');
-    const cell2 = sheet['D3'];
-    expect(cell2.l?.Target?.replace(/&amp;/g, '&')).toBe('report.html?fig=loc_loc_1&obs=obs_2');
+    const cell = sheet['E2'];
+    expect(cell.l?.Target?.replace(/&amp;/g, '&')).toBe('flight-paths.html?fig=boundary&obs=obs_1');
+    const cell2 = sheet['E3'];
+    expect(cell2.l?.Target?.replace(/&amp;/g, '&')).toBe('flight-paths.html?fig=loc_loc_1&obs=obs_2');
   });
 
   it('honours a custom reportHref', () => {
     const wb = read(buildReportWorkbook(model(), { reportHref: 'nested/report.html' }));
-    const cell = wb.Sheets['Chronological']['D2'];
+    const cell = wb.Sheets['Chronological']['E2'];
     expect(cell.l?.Target?.replace(/&amp;/g, '&')).toBe('nested/report.html?fig=boundary&obs=obs_1');
   });
 

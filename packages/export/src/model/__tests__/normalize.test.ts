@@ -233,7 +233,7 @@ describe('normalizeReport', () => {
     expect(backwardColors).toEqual(forwardColors);
   });
 
-  it('labels flight paths by first-seen time and species, falling back to "Unknown species"', () => {
+  it('labels flight paths by observation id, first-seen time and species, falling back to "Unknown species"', () => {
     const model = normalizeReport(
       context({
         observations: [
@@ -247,8 +247,8 @@ describe('normalizeReport', () => {
     );
 
     const labels = new Map(model.observations.map((o) => [o.id, o.label]));
-    expect(labels.get('obs_1')).toBe('00:00 Noctule');
-    expect(labels.get('obs_2')).toBe('21:00 Unknown species');
+    expect(labels.get('obs_1')).toBe('obs_1 - 00:00 - Noctule');
+    expect(labels.get('obs_2')).toBe('obs_2 - 21:00 - Unknown species');
   });
 
   it('shares one color across all paths of the same observation', () => {

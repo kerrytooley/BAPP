@@ -8,7 +8,7 @@ export interface BuildWorkbookOptions {
   /**
    * Href of the interactive report used for deep-links from spreadsheet cells.
    * Uses a `?query` (not `#hash`) so the HTML runtime can read it on load.
-   * Defaults to `report.html` (the sibling file inside the exported zip).
+   * Defaults to `flight-paths.html` (the sibling file inside the exported zip).
    */
   reportHref?: string;
 }
@@ -21,7 +21,7 @@ export interface BuildWorkbookOptions {
  * - `Surveyor …` — one sheet per surveyor with just their observations.
  * - `Chronological` — every observation in time order.
  *
- * Each observation row deep-links into `report.html` via `?fig=&obs=` so the
+ * Each observation row deep-links into `flight-paths.html` via `?fig=&obs=` so the
  * admin can jump from a spreadsheet row straight to the flight path on the
  * figure. The join key everywhere is the observation id.
  */
@@ -29,7 +29,7 @@ export function buildReportWorkbook(
   model: ReportModel,
   options: BuildWorkbookOptions = {},
 ): Uint8Array {
-  const reportHref = options.reportHref ?? 'report.html';
+  const reportHref = options.reportHref ?? 'flight-paths.html';
   const wb = XLSX.utils.book_new();
 
   const surveyorName = new Map(model.surveyors.map((s) => [s.id, s.name ?? s.id]));
@@ -105,7 +105,7 @@ function observationSheet(
   observations: ReportObservation[],
   ctx: ObservationSheetContext,
 ): XLSX.WorkSheet {
-  const header: Row = ['#', 'First seen', 'Last seen', 'Species'];
+  const header: Row = ['#', 'Observation ID', 'First seen', 'Last seen', 'Species'];
   if (ctx.includeSurveyor) header.push('Surveyor');
   header.push(
     'Location',
@@ -123,6 +123,7 @@ function observationSheet(
     const link = ctx.deepLink(obs);
     const row: Row = [
       index + 1,
+      obs.id,
       formatTime(obs.firstSeenAt),
       formatTime(obs.lastSeenAt),
       { v: obs.species ?? 'Unknown species', l: link },

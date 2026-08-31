@@ -8,8 +8,6 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { useSurveyService } from "@services/surveyServiceContext";
 
-//TODO: add code input for continue exisitng survey
-
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
 export function BeginOrContinueSurveyScreen(): React.JSX.Element {
@@ -36,7 +34,9 @@ export function BeginOrContinueSurveyScreen(): React.JSX.Element {
                                 })
                                 .catch(e => console.error('createSurvey failed:', e));
                         },
-                        () => { },
+                        () => {
+                            navigation.navigate('AdminCodeScreen');
+                        },
                     ]} />
             </View>
 
