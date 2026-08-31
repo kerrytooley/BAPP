@@ -109,6 +109,10 @@ export function runtime(): void {
       img.src = resolved.dataUri;
       img.onerror = () => { img.onerror = null; img.src = resolved.mediaPath; };
       img.alt = figure.title;
+    } else {
+      img.onerror = null;
+      img.removeAttribute('src');
+      img.alt = '';
     }
 
     figure.paths.forEach((path) => {
