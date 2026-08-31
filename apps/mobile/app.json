@@ -14,7 +14,10 @@
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       },
-      "package": "com.bapp.mobile"
+      "package": "com.bapp.mobile",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro"
@@ -28,6 +31,11 @@
         }
       ],
       "./plugins/withFmtConstevalPatch"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0581a969-0e72-4411-8da9-98e49598d4db"
+      }
+    }
   }
 }
