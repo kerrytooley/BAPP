@@ -65,7 +65,7 @@ export function runtime(): void {
   $('survey-title').textContent = model.survey.name || 'Survey report';
   const metaBits: string[] = [];
   if (model.survey.postcode) metaBits.push(model.survey.postcode);
-  if (model.survey.date) metaBits.push(new Date(model.survey.date).toLocaleDateString());
+  if (model.survey.date) metaBits.push(new Date(model.survey.date).toLocaleDateString(undefined, { timeZone: 'UTC' }));
   metaBits.push(model.survey.status);
   $('survey-meta').textContent = metaBits.join(' \u2022 ');
 
