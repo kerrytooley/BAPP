@@ -7,7 +7,7 @@ import React, { useEffect, useState } from "react"
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { ScrollView, StyleSheet, Text, View, Alert, Modal, ActivityIndicator } from "react-native";
 import { useSurveyService } from "../../services/surveyServiceContext";
-import { Observation, Survey, Surveyor } from "@bapp/domain";
+import { Observation, Survey, Surveyor, ValidationError } from "@bapp/domain";
 import { RootStackParamList } from "@navigators/index";
 import { CompositeNavigationProp } from "@react-navigation/native";
 import { ObservationSummary } from "@components/ObservationSummary";
@@ -47,8 +47,11 @@ export function SurveySummaryScreen(): React.JSX.Element {
             await service.completeSurveyor(surveyorId);
             try {
                 await service.completeSurvey(surveyId);
-            } catch {
-                // Expected fail if not all surveyors completed. 
+            } catch (error) {
+                // Expected fail if not all surveyors completed.
+                if (!(error instanceof ValidationError)) {
+                    throw error;
+                }
             }
             Alert.alert(
                 "Results sent",
