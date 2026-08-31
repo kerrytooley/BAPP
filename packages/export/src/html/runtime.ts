@@ -157,6 +157,7 @@ export function runtime(): void {
       const cb = doc.createElement('input');
       cb.type = 'checkbox';
       cb.checked = !hiddenPins.has(pin.locationId);
+      cb.setAttribute('aria-label', pin.label);
       cb.addEventListener('change', () => {
         if (cb.checked) hiddenPins.delete(pin.locationId); else hiddenPins.add(pin.locationId);
         renderFigure();
