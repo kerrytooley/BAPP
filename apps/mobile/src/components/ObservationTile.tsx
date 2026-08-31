@@ -3,7 +3,7 @@ import { colours } from "@theme/colours";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { bats } from "../data/bats";
 import { formatTime } from "@utils/dateTimeUtils";
-import PlusButton from "@assets/icons/plusButton.svg"
+import { PlusButton } from "@components/icons"
 import { fonts, textStyles } from "@theme/fonts";
 
 interface ObservationTileProps {

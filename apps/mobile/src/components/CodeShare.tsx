@@ -1,7 +1,7 @@
 import { colours } from "@theme/colours";
 import { fonts } from "@theme/fonts";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import Export from "@assets/icons/upload.svg"
+import { Upload as Export } from "@components/icons"
 import { Share } from "react-native";
 
 export interface CodeShareProps {

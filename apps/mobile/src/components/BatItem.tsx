@@ -1,9 +1,8 @@
 import { Image, ImageSourcePropType, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import ChevronRight from "@assets/icons/chevronRight.svg"
+import { ChevronRight, Info as InfoTooltip } from "@components/icons"
 import { textStyles } from "@theme/fonts";
 import { colours } from "@theme/colours";
 import { LinearGradient } from "expo-linear-gradient";
-import InfoTooltip from "@assets/icons/info.svg";
 import { useState } from "react";
 
 export interface Bat {

@@ -2,10 +2,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';
-import MapPin from '@assets/icons/mapPin.svg';
-import Plus from '@assets/icons/plus.svg';
-import RightArrow from '@assets/icons/rightArrow.svg';
-import ChevronRight from '@assets/icons/chevronRight.svg';
+import { MapPin, Plus, RightArrow, ChevronRight } from '@components/icons';
 
 export interface ButtonProps {
   variant?: 'dark' | 'light';

@@ -9,7 +9,7 @@ import React, { useEffect, useState } from "react";
 import { Image, ImageSourcePropType, StyleSheet, Text, View } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { textStyles } from "@theme/fonts";
-import Rotate from "@assets/icons/rotate.svg"
+import { Rotate } from "@components/icons"
 import { useSurveyService } from "@services/surveyServiceContext";
 import { createImageBody, getAspectRatio } from "@utils/image";
 

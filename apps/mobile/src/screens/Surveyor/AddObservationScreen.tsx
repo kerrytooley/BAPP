@@ -12,7 +12,7 @@ import { FlightPath, FlightPathSurface, Observation, UpdateObservationInput } fr
 import { useSurveyService } from "@services/surveyServiceContext";
 import { InputField } from "@components/InputField";
 import { Card } from "@components/Card";
-import PlusIcon from "@assets/icons/plusButton.svg"
+import { PlusButton as PlusIcon } from "@components/icons"
 import { textStyles } from "@theme/fonts";
 import { AddFlightPathBottomSheet } from "@components/AddFlightPathBottomSheet";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { colours } from '@theme/colours';
 import { textStyles } from '@theme/fonts';
-import Close from '@assets/icons/close.svg'
+import { Close } from '@components/icons'
 
 export interface CardProps {
     cardLabel: string;
