@@ -2,22 +2,17 @@ jest.mock('@react-navigation/native', () =>
     require('../../helpers/reactNavigationMock'),
 );
 
-jest.mock('@services/export/exportSurvey', () => ({
-    exportSurvey: jest.fn(),
-}));
-
 import { screen, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Alert } from 'react-native';
+import type { Surveyor } from '@bapp/domain';
 import { SurveySummaryScreen } from '@screens/Surveyor/SurveySummaryScreen';
-import { exportSurvey } from '@services/export/exportSurvey';
 import { createMockService, renderWithService } from '../../helpers/testUtils';
 import {
+    mockNavigate,
     resetNavigationMock,
     setRouteParams,
 } from '../../helpers/reactNavigationMock';
 import { buildContext, buildObservation, buildSurvey, buildSurveyor } from '../../helpers/factories';
-
-const exportMock = exportSurvey as jest.Mock;
 
 const service = createMockService({
     getSurveyContext: jest.fn().mockResolvedValue(
@@ -32,7 +27,8 @@ const service = createMockService({
 beforeEach(() => {
     resetNavigationMock();
     setRouteParams({ surveyId: 'survey-1', surveyorId: 'surveyor-1' });
-    exportMock.mockReset();
+    service.completeSurveyor.mockReset().mockResolvedValue(buildSurveyor({ status: 'done' }));
+    service.completeSurvey.mockReset().mockResolvedValue(buildSurvey({ status: 'completed' }));
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 });
 
@@ -42,80 +38,96 @@ describe('SurveySummaryScreen', () => {
         expect(await screen.findByText('Survey Summary')).toBeOnTheScreen();
     });
 
-    it('exports and shares the survey when pressing the export button', async () => {
-        exportMock.mockResolvedValue({ fileName: 'dusk-count-export.zip', shared: true });
+    it('completes the surveyor and survey then confirms results were sent', async () => {
         renderWithService(<SurveySummaryScreen />, service);
 
-        fireEvent.press(await screen.findByText('Export & Share'));
+        fireEvent.press(await screen.findByText('Complete and Save Survey'));
 
-        await waitFor(() => expect(exportMock).toHaveBeenCalledWith(service, 'survey-1'));
-        expect(Alert.alert).not.toHaveBeenCalled();
+        await waitFor(() =>
+            expect(service.completeSurveyor).toHaveBeenCalledWith('surveyor-1'),
+        );
+        expect(service.completeSurvey).toHaveBeenCalledWith('survey-1');
+        expect(Alert.alert).toHaveBeenCalledWith(
+            'Results sent',
+            'Your results have been saved and sent to the lead surveyor.',
+            expect.any(Array),
+        );
     });
 
-    it('alerts when sharing is unavailable', async () => {
-        exportMock.mockResolvedValue({ fileName: 'x.zip', shared: false });
+    it('navigates to Welcome when confirming the results dialog', async () => {
         renderWithService(<SurveySummaryScreen />, service);
 
-        fireEvent.press(await screen.findByText('Export & Share'));
+        fireEvent.press(await screen.findByText('Complete and Save Survey'));
+
+        await waitFor(() => expect(Alert.alert).toHaveBeenCalled());
+        const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
+        buttons[0].onPress();
+        expect(mockNavigate).toHaveBeenCalledWith('Welcome');
+    });
+
+    it('still confirms results when the survey cannot be completed yet', async () => {
+        service.completeSurvey.mockRejectedValue(new Error('not all surveyors done'));
+        renderWithService(<SurveySummaryScreen />, service);
+
+        fireEvent.press(await screen.findByText('Complete and Save Survey'));
 
         await waitFor(() =>
             expect(Alert.alert).toHaveBeenCalledWith(
-                'Export ready',
-                "Sharing isn't available on this device.",
+                'Results sent',
+                'Your results have been saved and sent to the lead surveyor.',
+                expect.any(Array),
             ),
         );
     });
 
-    it('alerts when the export fails', async () => {
-        exportMock.mockRejectedValue(new Error('boom'));
+    it('alerts when completing the surveyor fails', async () => {
+        service.completeSurveyor.mockRejectedValue(new Error('boom'));
         renderWithService(<SurveySummaryScreen />, service);
 
-        fireEvent.press(await screen.findByText('Export & Share'));
+        fireEvent.press(await screen.findByText('Complete and Save Survey'));
 
         await waitFor(() =>
             expect(Alert.alert).toHaveBeenCalledWith(
-                'Export failed',
-                'Could not build the survey export. Please try again.',
+                'Save failed',
+                'Could not save your results. Please try again.',
             ),
         );
     });
 
-    it('shows a loading overlay while the export is generating', async () => {
-        let resolveExport: (value: { fileName: string; shared: boolean }) => void = () => {};
-        exportMock.mockImplementation(
-            () => new Promise((resolve) => { resolveExport = resolve; }),
+    it('shows a loading overlay while the results are saving', async () => {
+        let resolveComplete: (value: Surveyor) => void = () => {};
+        service.completeSurveyor.mockImplementation(
+            () => new Promise((resolve) => { resolveComplete = resolve; }),
         );
         renderWithService(<SurveySummaryScreen />, service);
 
-        fireEvent.press(await screen.findByText('Export & Share'));
+        fireEvent.press(await screen.findByText('Complete and Save Survey'));
 
-        expect(await screen.findByText('Generating export…')).toBeOnTheScreen();
+        expect(await screen.findByText('Saving your results…')).toBeOnTheScreen();
 
         await act(async () => {
-            resolveExport({ fileName: 'x.zip', shared: true });
+            resolveComplete(buildSurveyor({ status: 'done' }));
         });
 
         await waitFor(() =>
-            expect(screen.queryByText('Generating export…')).toBeNull(),
+            expect(screen.queryByText('Saving your results…')).toBeNull(),
         );
     });
 
-    it('disables the export button while an export is already in progress', async () => {
-        let resolveExport: (value: { fileName: string; shared: boolean }) => void = () => {};
-        exportMock.mockImplementation(
-            () => new Promise((resolve) => { resolveExport = resolve; }),
+    it('disables the button while saving is already in progress', async () => {
+        let resolveComplete: (value: Surveyor) => void = () => {};
+        service.completeSurveyor.mockImplementation(
+            () => new Promise((resolve) => { resolveComplete = resolve; }),
         );
         renderWithService(<SurveySummaryScreen />, service);
 
-        fireEvent.press(await screen.findByText('Export & Share'));
-
-        // While pending, the button is disabled so further presses are no-ops.
-        fireEvent.press(await screen.findByText('Exporting…'));
+        fireEvent.press(await screen.findByText('Complete and Save Survey'));
+        fireEvent.press(await screen.findByText('Saving…'));
 
         await act(async () => {
-            resolveExport({ fileName: 'x.zip', shared: true });
+            resolveComplete(buildSurveyor({ status: 'done' }));
         });
 
-        expect(exportMock).toHaveBeenCalledTimes(1);
+        expect(service.completeSurveyor).toHaveBeenCalledTimes(1);
     });
 });

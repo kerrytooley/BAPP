@@ -257,6 +257,36 @@ describe('SurveyorConfirmLocationScreen', () => {
         );
     });
 
+    it('continues without changing status when the surveyor is not pending', async () => {
+        const service = createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(
+                buildContext({
+                    surveyors: [
+                        buildSurveyor({ id: 'surveyor-1', locationId: 'location-9', status: 'ready' }),
+                    ],
+                    locations: [buildLocation({ id: 'location-9' })],
+                }),
+            ),
+            getBoundaryImage: jest.fn().mockResolvedValue(readyImage),
+        });
+        renderWithService(<SurveyorConfirmLocationScreen />, service);
+
+        await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
+        fireEvent.press(screen.getByText('Continue'));
+
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CapturePhotoScreen', {
+                surveyId: 'survey-1',
+                locationId: 'location-9',
+                surveyorId: 'surveyor-1',
+                photoType: 'frontView',
+            }),
+        );
+        expect(service.updateSurveyor).not.toHaveBeenCalledWith('surveyor-1', {
+            status: 'ready',
+        });
+    });
+
     it('logs an error and does not navigate when continuing fails', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = createMockService({

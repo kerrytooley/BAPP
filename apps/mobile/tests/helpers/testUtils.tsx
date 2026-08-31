@@ -20,6 +20,10 @@ export type MockSurveyService = jest.Mocked<
         | 'addLocation'
         | 'updateLocation'
         | 'setLocationImage'
+        | 'completeSurveyor'
+        | 'completeSurvey'
+        | 'resumeSurvey'
+        | 'getSurvey'
     >
 >;
 
@@ -39,6 +43,10 @@ export const createMockService = (
     addLocation: jest.fn().mockResolvedValue(buildLocation()),
     updateLocation: jest.fn().mockResolvedValue(buildLocation()),
     setLocationImage: jest.fn().mockResolvedValue(buildLocation()),
+    completeSurveyor: jest.fn().mockResolvedValue(buildSurveyor({ status: 'done' })),
+    completeSurvey: jest.fn().mockResolvedValue(buildSurvey({ status: 'completed' })),
+    resumeSurvey: jest.fn().mockResolvedValue(buildContext()),
+    getSurvey: jest.fn().mockResolvedValue(buildSurvey()),
     ...overrides,
 });
 

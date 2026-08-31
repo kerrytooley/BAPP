@@ -95,11 +95,9 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
     const handleContinue = async () => {
         try {
             const id = await ensureLocationId();
-            // Mark the surveyor as actively surveying once their location is
-            // confirmed, so the admin status screen shows "In progress".
             if (surveyor?.status === 'pending') {
                 await service.updateSurveyor(surveyorId, { status: 'ready' });
-                setSurveyor((prev) => (prev ? { ...prev, status: 'ready' } : prev));
+                setSurveyor({ ...surveyor, status: 'ready' });
             }
             navigation.navigate("CapturePhotoScreen", { surveyId, locationId: id, surveyorId, photoType: 'frontView' });
         } catch (e) {

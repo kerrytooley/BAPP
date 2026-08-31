@@ -40,7 +40,7 @@ describe('EmailScreen', () => {
                 data: { existing: true, adminEmail: 'admin@example.com' },
             }),
         );
-        expect(mockNavigate).toHaveBeenCalledWith('CreateSurvey', {
+        expect(mockNavigate).toHaveBeenCalledWith('SaveAdminCodeScreen', {
             surveyId: 'survey-1',
         });
     });
