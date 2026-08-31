@@ -102,6 +102,7 @@ function observation(
     frequency: null,
     direction: null,
     notes: null,
+    emergence: false,
     flightPaths: [],
     data: {},
     createdAt: EPOCH,

@@ -33,7 +33,7 @@ export function AdminCodeScreen(): React.JSX.Element {
                         const { survey } = await service.resumeSurvey(code);
                         navigation.navigate('SurveyStatusScreen', { surveyId: survey.id });
                     } catch (e) {
-                        console.error(`Error resuming survey for admin code ${code}:`, e);
+                        console.error("Error resuming survey:", e);
                         Alert.alert("Survey not found", "No survey matches that admin code. Please check and try again.");
                     }
                 }}

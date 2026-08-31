@@ -137,7 +137,7 @@ function observationSheet(
       obs.heardCount,
       obs.frequency ?? '',
       obs.direction ?? '',
-      obs.emergence ? 'Yes' : '',
+      obs.emergence ? 'Yes' : 'No',
       obs.notes ?? '',
       link ? 'View flight paths' : '',
     );

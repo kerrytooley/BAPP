@@ -28,7 +28,7 @@ export function SurveySummaryScreen(): React.JSX.Element {
     const [surveyor, setSurveyor] = useState<Surveyor>();
     const service = useSurveyService();
     const [saving, setSaving] = useState(false);
-    const { surveyId, surveyorId } = useRoute<RouteProp<SurveyorStackParamList, 'SetupCompleteScreen'>>().params;
+    const { surveyId, surveyorId } = useRoute<RouteProp<SurveyorStackParamList, 'SurveySummaryScreen'>>().params;
 
     useEffect(() => {
         const loadContext = async () => {

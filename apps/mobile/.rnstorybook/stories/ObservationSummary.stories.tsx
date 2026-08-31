@@ -29,7 +29,7 @@ const observation: Observation = {
     surveyId: '1',
     locationId: '1',
     surveyorId: '1',
-    species: 'Common Pippistrelle',
+    species: 'Common Pipistrelle',
     firstSeenAt: new Date,
     lastSeenAt: new Date,
     seenCount: 2,

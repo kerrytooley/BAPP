@@ -50,7 +50,7 @@ function observation(id: string, overrides: Partial<Observation> = {}): Observat
   return {
     id, surveyId: 'svy_1', locationId: 'loc_1', surveyorId: 'sur_1', species: 'Noctule',
     firstSeenAt: EPOCH, lastSeenAt: null, seenCount: 1, heardCount: 0, frequency: null,
-    direction: null, notes: null,
+    direction: null, notes: null, emergence: false,
     flightPaths: [{ id: `fp_${id}`, surface: 'boundary', points: [{ x: 0.1, y: 0.2 }, { x: 0.4, y: 0.5 }] }],
     data: {}, createdAt: EPOCH, updatedAt: EPOCH, ...overrides,
   };

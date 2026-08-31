@@ -40,7 +40,7 @@ export function SaveAdminCodeScreen(): React.JSX.Element {
             <View style={styles.content}>
                 <CodeShare value={adminCode} codeType="admin" />
             </View>
-            <Button label="Continue" onPress={() => navigation.navigate("CreateSurvey", { surveyId })} />
+            <Button label="Continue" disabled={!adminCode} onPress={() => navigation.navigate("CreateSurvey", { surveyId })} />
         </View>
     );
 }

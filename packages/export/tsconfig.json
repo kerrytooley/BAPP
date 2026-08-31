@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "lib": ["ES2020", "DOM"],
     "module": "Node16",
     "moduleResolution": "node16",
     "outDir": "dist",
@@ -8,6 +9,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true
+  }
   },
   "include": ["src"],
   "exclude": ["src/**/__tests__"]
