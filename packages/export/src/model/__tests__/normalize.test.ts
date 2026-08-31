@@ -268,7 +268,7 @@ describe('normalizeReport', () => {
     expect(boundary.paths[0].color).toBe(boundary.paths[1].color);
   });
 
-  it('falls back to sourceRef when renderRef is null', () => {
+  it('omits figures without a ready renderRef', () => {
     const model = normalizeReport(
       context({
         survey: survey({
@@ -277,7 +277,7 @@ describe('normalizeReport', () => {
       }),
     );
 
-    expect(model.figures[0].imageRef).toBe('boundary/source.pdf');
+    expect(model.figures).toEqual([]);
   });
 
   it('emits an equipment figure (no paths) per location with an equipment image', () => {

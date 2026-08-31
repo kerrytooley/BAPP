@@ -124,10 +124,10 @@ export function normalizeReport(context: SurveyContext): ReportModel {
   };
 }
 
-/** Prefer the displayable raster; fall back to the source ref. */
+/** Return the displayable raster only after media processing completes. */
 function imageRef(asset: Location['frontViewImage']): string | null {
-  if (!asset) return null;
-  return asset.renderRef ?? asset.sourceRef ?? null;
+  if (asset?.status !== 'ready') return null;
+  return asset.renderRef;
 }
 
 /** Flight-path label shown in the report checklist: observation id + first-seen time + species. */
