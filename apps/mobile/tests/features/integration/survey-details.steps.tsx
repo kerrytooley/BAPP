@@ -66,8 +66,8 @@ defineFeature(feature, (test) => {
       },
     );
 
-    and('the admin is taken to upload the boundary', () => {
-      expect(mockNavigate).toHaveBeenCalledWith('UploadRedLineBoundaryScreen', {
+    and('the admin is taken to save their admin code', () => {
+      expect(mockNavigate).toHaveBeenCalledWith('SaveAdminCodeScreen', {
         surveyId: 'survey-1',
       });
     });
