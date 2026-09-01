@@ -1,10 +1,11 @@
 import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { fonts, textStyles } from '@theme/fonts';
+import { textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';
 import MapPin from '@assets/icons/mapPin.svg';
 import Plus from '@assets/icons/plus.svg';
 import RightArrow from '@assets/icons/rightArrow.svg';
+import ChevronRight from '@assets/icons/chevronRight.svg';
 
 export interface ButtonProps {
   variant?: 'dark' | 'light';
@@ -89,7 +90,7 @@ export const BackButton = ({
 }: BackButtonProps) => {
   return (
     <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={styles.backButton} onPress={() => navigation.goBack()}>
-      <Text style={styles.backButtonText}>{'←'}</Text>
+      <ChevronRight width={12} height={20} style={styles.backChevron} />
     </TouchableOpacity>
   );
 }
@@ -110,7 +111,6 @@ const styles = StyleSheet.create({
     borderRadius: 48,
     width: "100%",
     minWidth: '100%',
-    height: 48,
     borderStyle: "solid",
     borderWidth: 1,
     overflow: "hidden",
@@ -158,14 +158,14 @@ const styles = StyleSheet.create({
     right: 16
   },
   buttonGroup: {
+    width: '100%',
     gap: 16
   },
   backButton: {
     justifyContent: "flex-start",
   },
-  backButtonText: {
-    color: colours.light,
-    fontSize: fonts.size.xl
+  backChevron: {
+    transform: [{ scaleX: -1 }],
   },
   inlineButtonText: {
     ...textStyles.subtitle,

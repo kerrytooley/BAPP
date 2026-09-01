@@ -21,13 +21,11 @@ export const textStyles = {
     bappLogo: {
         fontFamily: fonts.family.bappLogo,
         fontSize: fonts.size.lg,
-        fontWeight: '700',
         lineHeight: 24,
     },
     inputTitleText: {
         fontFamily: fonts.family.semiBold,
         fontSize: fonts.size.sm,
-        fontWeight: '600',
         letterSpacing: 0.6,
         lineHeight: 24,
         textTransform: "uppercase",
@@ -37,21 +35,18 @@ export const textStyles = {
     inputText: {
         fontFamily: fonts.family.body,
         fontSize: fonts.size.md,
-        fontWeight: '400',
         letterSpacing: 0,
         textAlign: 'left',
     },
     dateTimeInputText: {
         fontFamily: fonts.family.semiBold,
         fontSize: fonts.size.md,
-        fontWeight: '600',
         letterSpacing: 4,
         textAlign: "center"
     },
     countdown: {
         fontFamily: fonts.family.semiBold,
         fontSize: fonts.size.lg,
-        fontWeight: '800',
         letterSpacing: 4,
         textAlign: "center",
         color: colours.light,
@@ -59,13 +54,10 @@ export const textStyles = {
     unit: {
         fontFamily: fonts.family.semiBold,
         fontSize: fonts.size.md,
-        fontWeight: '600',
     },
     buttonLabel: {
         fontFamily: fonts.family.semiBold,
         fontSize: fonts.size.md,
-        fontWeight: '600',
-        lineHeight: 18,
     },
     title: {
         fontSize: fonts.size.xl,
@@ -84,7 +76,6 @@ export const textStyles = {
     placeholderText: {
         fontFamily: fonts.family.body,
         fontSize: fonts.size.md,
-        fontWeight: '400',
         letterSpacing: 0,
         textAlign: 'left',
         color: colours.placeholderText
