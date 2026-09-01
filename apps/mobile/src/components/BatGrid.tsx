@@ -12,7 +12,7 @@ export const BatGrid = ({ bats, onPress }: BatGridProps) => {
         groups.map((group) => (
             <View key={group}>
                 <Button label={group} onPress={() => onPress(group)} />
-                <View style={styles.grid}>
+                <View key={group} style={styles.grid}>
                     {bats
                         .filter((bat) => bat.group === group)
                         .map((bat) => (
