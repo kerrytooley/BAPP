@@ -36,53 +36,43 @@ backend (that's why `@bapp/repository` does not export the Firebase repos; they
 live behind `@bapp/repository/firebase`). Runtime verification must happen on a
 booted simulator/emulator (see "Verification handoff" below).
 
-## Device setup (required before the adapters can run) — NOT YET DONE
+## Device setup — DONE (opt-in via env), verification still pending
 
-This was not applied to `apps/mobile` because it needs a native build that can't
-be produced or verified in this environment. To wire it up on a machine with the
-native toolchain:
+The native wiring below is now applied to `apps/mobile`. It stays **dormant by
+default** (the in-memory backend runs unless you opt in), so no existing flow
+changes until you set `EXPO_PUBLIC_USE_FIREBASE=true`.
 
-1. **Install the native SDKs into the app** (aligned to the Expo SDK):
-   ```bash
-   cd apps/mobile
-   npx expo install @react-native-firebase/app @react-native-firebase/auth \
-     @react-native-firebase/firestore @react-native-firebase/storage \
-     expo-build-properties
-   ```
-   (`packages/repository` already depends on `@react-native-firebase/*@^22.4.0`.)
+1. **Native SDKs added** to `apps/mobile/package.json`:
+   `@react-native-firebase/{app,auth,firestore,storage}@^22.4.0` +
+   `expo-build-properties`. (`packages/repository` already depended on RNFB.)
 
-2. **Add the config plugins** to `apps/mobile/app.json` under `expo.plugins`:
-   ```jsonc
-   ["@react-native-firebase/app"],
-   ["expo-build-properties", { "ios": { "useFrameworks": "static" } }]
-   ```
-   and point the native config files:
-   ```jsonc
-   "ios":     { "googleServicesFile": "./GoogleService-Info.plist", ... },
-   "android": { "googleServicesFile": "./google-services.json", ... }
-   ```
+2. **Config plugins added** to `apps/mobile/app.json` under `expo.plugins`:
+   `"@react-native-firebase/app"` and
+   `["expo-build-properties", { "ios": { "useFrameworks": "static" } }]`, with
+   `ios.googleServicesFile` / `android.googleServicesFile` pointing at the demo
+   files below and `extra.eas.projectId` set for EAS.
 
-3. **Provide the native config files.** Even for emulator-only use, the native
-   SDK must initialize a default app from `GoogleService-Info.plist` (iOS) /
-   `google-services.json` (Android). A **demo** file with the `demo-bapp` project
-   id is sufficient for the emulator — real API keys are not needed — but the
-   files must exist for the native build. These are **not** committed here; add
-   them locally (and to `.gitignore` if they ever hold real values).
+3. **Demo native config files committed** at `apps/mobile/`:
+   `google-services.json` (Android) + `GoogleService-Info.plist` (iOS), both for
+   the `demo-bapp` project id / `com.bapp.mobile` package. They carry **no real
+   credentials** (placeholder keys) — enough for the native SDK to initialise a
+   default app and talk to the **emulator**. Replace with real files (and
+   gitignore them) before any cloud backend use.
 
 4. **Build a dev client / prebuild** — RNFB does **not** work in Expo Go:
    ```bash
-   npx expo prebuild
-   npx expo run:ios    # or run:android
+   npx expo prebuild          # regenerates ios/ + android/ with the plugins
+   npx expo run:android       # or run:ios
+   # or a real-device build:  eas build --platform android --profile preview
    ```
 
-5. **Connect to the emulators at startup** (opt-in; the app currently wires the
-   in-memory backend in `apps/mobile/src/services/surveyServiceContext.ts`):
-   ```ts
-   import { initFirebase, DEFAULT_EMULATOR_CONFIG } from '@bapp/repository/firebase';
-   await initFirebase({ emulator: DEFAULT_EMULATOR_CONFIG });
-   ```
-   On the **Android emulator**, reach the host machine via `10.0.2.2` instead of
-   `localhost` (override `DEFAULT_EMULATOR_CONFIG.host`).
+5. **Opt in at startup.** `App.tsx` bootstraps the Firebase backend when
+   `EXPO_PUBLIC_USE_FIREBASE=true`, via
+   `apps/mobile/src/services/firebaseSurveyService.ts`. Point it at the local
+   emulator with `EXPO_PUBLIC_FIREBASE_EMULATOR=true` (and, on the **Android
+   emulator**, `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST=10.0.2.2` to reach the host).
+   With the flag unset the app uses the in-memory backend exactly as before.
+
 
 ## Notes on the rules & indexes
 
