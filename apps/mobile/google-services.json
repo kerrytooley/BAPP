@@ -1,29 +1,29 @@
 {
-    "project_info": {
-        "project_number": "000000000000",
-        "project_id": "demo-bapp",
-        "storage_bucket": "demo-bapp.appspot.com"
-    },
-    "client": [
-        {
-            "client_info": {
-                "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
-                "android_client_info": {
-                    "package_name": "com.bapp.mobile"
-                }
-            },
-            "oauth_client": [],
-            "api_key": [
-                {
-                    "current_key": "AIzaSyDEMO0000000000000000000000000000000"
-                }
-            ],
-            "services": {
-                "appinvite_service": {
-                    "other_platform_oauth_client": []
-                }
-            }
+  "project_info": {
+    "project_number": "80551100349",
+    "project_id": "bapp-ca44b",
+    "storage_bucket": "bapp-ca44b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:80551100349:android:d15e41c0c4a7e13c125cd4",
+        "android_client_info": {
+          "package_name": "com.bapp.mobile"
         }
-    ],
-    "configuration_version": "1"
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQ2IQXmqVN6wufpjtlavtK9Jn5ky8opXU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
 }
