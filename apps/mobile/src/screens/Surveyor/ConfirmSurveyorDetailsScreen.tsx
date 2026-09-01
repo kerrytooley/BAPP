@@ -5,7 +5,7 @@ import { screen } from "@theme/screen";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { BackButton, Button, InlineButton } from "@components/Button";
 import { Title } from "@components/Titles";
-import { Survey, Surveyor } from "@bapp/domain";
+import { BoundaryPosition, Survey, Surveyor } from "@bapp/domain";
 import { useEffect, useState } from "react";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { SummaryGroup } from "@components/SummaryRow";
@@ -22,6 +22,7 @@ export function ConfirmSurveyorDetailsScreen(): React.JSX.Element {
     const [surveyor, setSurveyor] = useState<Surveyor>();
     const [survey, setSurvey] = useState<Survey>();
     const [boundaryImage, setBoundaryImage] = useState<string | null>();
+    const [positions, setPositions] = useState<BoundaryPosition[]>([]);
 
     useEffect(() => {
         const loadSurveyor = async () => {
@@ -30,6 +31,13 @@ export function ConfirmSurveyorDetailsScreen(): React.JSX.Element {
                 const currentSurveyor = surveyContext.surveyors.find((surveyor) => surveyor?.id == surveyorId)
                 setSurveyor(currentSurveyor);
                 setSurvey(surveyContext.survey);
+                const positions = currentSurveyor?.isLead
+                    ? surveyContext.locations.flatMap((location) => location.boundaryPosition ?? [])
+                    : surveyContext.locations
+                        .filter((location) => location.id === currentSurveyor?.locationId)
+                        .flatMap((location) => location.boundaryPosition ?? []);
+                setPositions(positions);
+
             } catch (e) {
                 console.error("Error: unable to fetch survey context", e)
             }
@@ -87,7 +95,7 @@ export function ConfirmSurveyorDetailsScreen(): React.JSX.Element {
                             }
                         ]} />
                     <Text style={styles.summaryTitle}>Red Line Boundary</Text>
-                    <DocumentPreview imageUri={boundaryImage} />
+                    <DocumentPreview imageUri={boundaryImage} values={positions} />
 
                 </ScrollView>}
             <View style={{ gap: 8 }} >

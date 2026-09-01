@@ -3,21 +3,21 @@ import { BatGrid } from '@components/BatGrid';
 import { Bat } from '@components/BatItem';
 
 const bats: Bat[] = [
-    { id: 'noctule', species: 'Noctule', abr: 'Noc', image: { uri: 'file://noctule.png' } },
-    { id: 'serotine', species: 'Serotine', abr: 'Ser', image: { uri: 'file://serotine.png' } },
+    { id: 'noctule', species: 'Noctule', abr: 'Noc', image: { uri: 'file://noctule.png' }, group: 'Nyctalus', frequencyRange: '20-45 kHz', info: 'A large, fast-flying bat.' },
+    { id: 'common-pip', species: 'Common Pipistrelle', abr: 'CP', image: { uri: 'file://common-pip.png' }, group: 'Pipistrelle', frequencyRange: '45-70 kHz', info: 'A small, common bat.' },
 ];
 
 describe('BatGrid', () => {
     it('renders one item per bat', () => {
         render(<BatGrid bats={bats} onPress={jest.fn()} />);
         expect(screen.getByText('Noctule')).toBeOnTheScreen();
-        expect(screen.getByText('Serotine')).toBeOnTheScreen();
+        expect(screen.getByText('Common Pipistrelle')).toBeOnTheScreen();
     });
 
     it('forwards the bat species when an item is pressed', () => {
         const onPress = jest.fn();
         render(<BatGrid bats={bats} onPress={onPress} />);
-        fireEvent.press(screen.getByLabelText('Serotine'));
-        expect(onPress).toHaveBeenCalledWith('Serotine');
+        fireEvent.press(screen.getByLabelText('Common Pipistrelle'));
+        expect(onPress).toHaveBeenCalledWith('Common Pipistrelle');
     });
 });

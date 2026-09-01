@@ -1,4 +1,4 @@
-import { StyleSheet, View } from "react-native"
+import { StyleSheet, useWindowDimensions, View } from "react-native"
 import { Title } from "./Titles"
 import { forwardRef, useState } from "react"
 import { BottomSheetBackdrop, BottomSheetBackdropProps, BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet"
@@ -21,6 +21,11 @@ export const AddLocationBottomSheet = forwardRef<BottomSheetModal, AddLocationPr
 
         const [position, setPosition] = useState<BoundaryPosition | null>(null);
         const insets = useSafeAreaInsets();
+        const { height: windowHeight } = useWindowDimensions();
+
+        // BottomSheetView wraps its content height rather than filling the sheet,
+        // so give it an explicit height to establish a bounded flex context.
+        const sheetHeight = windowHeight - insets.top;
 
 
         const renderBackdrop = (props: BottomSheetBackdropProps) => (
@@ -44,7 +49,7 @@ export const AddLocationBottomSheet = forwardRef<BottomSheetModal, AddLocationPr
                 handleIndicatorStyle={styles.handle}
                 backgroundStyle={styles.sheetBackground}
             >
-                <BottomSheetView style={[styles.content, { paddingBottom: 16 + insets.bottom }]}>
+                <BottomSheetView style={[styles.content, { height: sheetHeight, paddingBottom: 16 + insets.bottom }]}>
                     <Title title={isEditing ? "Edit Surveyor Location" : "Add Surveyor Location"} subtitle="Tap on the image to drop a pin" />
                     <LocationEditor boundaryImageUri={boundaryImageUri}
                         position={position}
@@ -74,7 +79,6 @@ const styles = StyleSheet.create({
         width: 40
     },
     content: {
-        flex: 1,
         padding: 16,
         gap: 24
     },
