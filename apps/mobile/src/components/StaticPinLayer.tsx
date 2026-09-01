@@ -42,9 +42,9 @@ export const StaticPinLayer = ({ imageUri, values, style }: StaticPinLayerProps)
             <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
 
             {values && layout.width > 0 && (
-                values.map((value) => (
+                values.map((value, index) => (
                     <View
-                        key={value.x}
+                        key={`${value.x}-${value.y}-${index}`}
                         pointerEvents="none"
                         style={[
                             styles.pin,

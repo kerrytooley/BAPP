@@ -2,7 +2,7 @@ import { BackButton, Button } from "@components/Button";
 import { Title } from "@components/Titles";
 import { screen } from "@theme/screen";
 import React from "react";
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
@@ -19,9 +19,9 @@ export function WelcomeWalkthroughScreen(): React.JSX.Element {
                 <BackButton navigation={navigation} />
                 <Title title="How it works!" />
             </View>
-            <View style={screen.content}>
+            <ScrollView style={screen.scroll} contentContainerStyle={screen.content}>
                 <WelcomeWalkthrough />
-            </View>
+            </ScrollView>
             <Button variant="light" label="Let's get started" onPress={() => navigation.navigate('CreateSurvey')} />
         </View>
     );

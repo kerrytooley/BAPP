@@ -37,7 +37,7 @@ export const BatItem = ({ bat, onPress }: BatItemProps) => {
                     animationType="fade"
                     onRequestClose={() => setIsFullScreen(false)}
                 >
-                    <Pressable style={styles.infoBackdrop} onPress={() => setIsFullScreen(false)}>
+                    <Pressable testID="bat-info-backdrop" style={styles.infoBackdrop} onPress={() => setIsFullScreen(false)}>
                         <Pressable style={styles.infoModal} onPress={() => { }}>
                             <Text style={styles.infoTitle}>{bat.species}</Text>
                             <Text style={styles.infoFrequency}>{bat.frequencyRange}</Text>

@@ -117,8 +117,8 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
                 <Title title="Confirm Location" subtitle="Confirm your location is correct on the map" />
             </View>
             <View style={[screen.content, styles.imageArea]}>
-                {boundaryImageUri && position &&
-                    <StaticPinLayer imageUri={boundaryImageUri} values={[position]} style={styles.pinLayer} />
+                {boundaryImageUri &&
+                    <StaticPinLayer imageUri={boundaryImageUri} values={position ? [position] : []} style={styles.pinLayer} />
                 }
             </View>
             <ButtonGroup labels={["Continue", "Change Location"]}
@@ -147,4 +147,3 @@ const styles = StyleSheet.create({
         maxHeight: "100%",
     },
 });
-

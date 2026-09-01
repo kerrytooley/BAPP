@@ -20,4 +20,11 @@ describe('BatGrid', () => {
         fireEvent.press(screen.getByLabelText('Common Pipistrelle'));
         expect(onPress).toHaveBeenCalledWith('Common Pipistrelle');
     });
+
+    it('forwards the group name when a group button is pressed', () => {
+        const onPress = jest.fn();
+        render(<BatGrid bats={bats} onPress={onPress} />);
+        fireEvent.press(screen.getByText('Pipistrelle'));
+        expect(onPress).toHaveBeenCalledWith('Pipistrelle');
+    });
 });

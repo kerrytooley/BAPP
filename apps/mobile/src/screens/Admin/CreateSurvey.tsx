@@ -23,9 +23,11 @@ export function CreateSurvey(): React.JSX.Element {
     const [startTime, setStartTime] = useState<Date | undefined>(undefined);
     const [endTime, setEndTime] = useState<Date | undefined>(undefined);
     const [sunsetTime, setSunsetTime] = useState<Date | undefined>(undefined);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const scrollRef = useRef<ScrollView>(null);
     const fieldY = useRef<Record<string, number>>({});
+    const createdSurveyId = useRef<string | undefined>(undefined);
 
     const scrollToField = (key: string) => {
         const y = fieldY.current[key];
@@ -61,11 +63,13 @@ export function CreateSurvey(): React.JSX.Element {
             <Button
                 variant="light"
                 label="Continue"
+                disabled={isSubmitting}
                 onPress={async () => {
+                    if (isSubmitting) return;
+                    setIsSubmitting(true);
                     try {
-                        const created = await service.createSurvey();
-                        const surveyId = created.id;
-                        console.log('Survey created:', created);
+                        const surveyId = createdSurveyId.current ?? (await service.createSurvey()).id;
+                        createdSurveyId.current = surveyId;
                         const updated = await service.updateSurvey(surveyId, {
                             name,
                             postcode,
@@ -76,7 +80,9 @@ export function CreateSurvey(): React.JSX.Element {
                         });
                         console.log('Survey details updated:', updated);
                         navigation.navigate('SaveAdminCodeScreen', { surveyId });
-                    } catch (e) { console.error('createSurvey failed:', e) }
+                    } catch (e) { console.error('createSurvey failed:', e) } finally {
+                        setIsSubmitting(false);
+                    }
                 }}
             />
         </View>

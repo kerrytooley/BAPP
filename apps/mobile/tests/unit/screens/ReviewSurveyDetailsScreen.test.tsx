@@ -4,13 +4,18 @@ jest.mock('@react-navigation/native', () =>
 
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { ReviewSurveyDetailsScreen } from '@screens/Admin/ReviewSurveyDetailsScreen';
-import { buildContext, buildSurvey, buildSurveyor } from '../../helpers/factories';
+import { DocumentPreview } from '@components/DocumentPreview';
+import { buildContext, buildLocation, buildSurvey, buildSurveyor } from '../../helpers/factories';
 import { createMockService, renderWithService } from '../../helpers/testUtils';
 import {
     mockNavigate,
     resetNavigationMock,
     setRouteParams,
 } from '../../helpers/reactNavigationMock';
+
+jest.mock('@components/DocumentPreview', () => ({
+    DocumentPreview: jest.fn(() => null),
+}));
 
 beforeEach(() => {
     resetNavigationMock();
@@ -45,6 +50,30 @@ describe('ReviewSurveyDetailsScreen', () => {
         expect(screen.getByText('Lead Surveyor')).toBeOnTheScreen();
         expect(screen.getByText('Surveyor 1')).toBeOnTheScreen();
         expect(screen.getByText('N/A')).toBeOnTheScreen();
+    });
+
+    it('passes all positioned surveyor locations to the boundary preview', async () => {
+        const service = createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(
+                buildContext({
+                    locations: [
+                        buildLocation({ id: 'location-1', boundaryPosition: { x: 0.1, y: 0.2 } }),
+                        buildLocation({ id: 'location-2', boundaryPosition: { x: 0.3, y: 0.4 } }),
+                    ],
+                }),
+            ),
+            getBoundaryImage: jest.fn().mockResolvedValue({ status: 'ready', url: 'https://img/boundary.jpg' }),
+        });
+        renderWithService(<ReviewSurveyDetailsScreen />, service);
+
+        await waitFor(() =>
+            expect(DocumentPreview).toHaveBeenLastCalledWith(
+                expect.objectContaining({
+                    values: [{ x: 0.1, y: 0.2 }, { x: 0.3, y: 0.4 }],
+                }),
+                undefined,
+            ),
+        );
     });
 
     it('navigates to share the code when setup is completed', async () => {
