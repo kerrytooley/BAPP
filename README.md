@@ -13,7 +13,7 @@ Ecological bat surveys require multiple surveyors positioned at different locati
 3. Define survey locations on the boundary image
 4. Share a **surveyor code** with the team (surveyors use this to join)
 5. Retain an **admin code** to return to the survey admin view
-6. After all surveyors are done, mark the survey as complete and receive a CSV download link via email
+6. After all surveyors are done, mark the survey as complete and export the results as a CSV
 
 ### Surveyor Journey
 

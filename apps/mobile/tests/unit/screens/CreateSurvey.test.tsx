@@ -49,7 +49,7 @@ describe('CreateSurvey', () => {
                 sunsetTime: null,
             }),
         );
-        expect(mockNavigate).toHaveBeenCalledWith('UploadRedLineBoundaryScreen', {
+        expect(mockNavigate).toHaveBeenCalledWith('SaveAdminCodeScreen', {
             surveyId: 'survey-1',
         });
     });

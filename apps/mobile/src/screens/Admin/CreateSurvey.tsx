@@ -4,7 +4,7 @@ import { Title } from "@components/Titles";
 import { screen } from "@theme/screen";
 import React, { useRef, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { useSurveyService } from "@services/surveyServiceContext";
@@ -15,9 +15,8 @@ type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
 export function CreateSurvey(): React.JSX.Element {
     const service = useSurveyService();
-    const { surveyId } = useRoute<RouteProp<AdminStackParamList, 'CreateSurvey'>>().params;
-
     const navigation = useNavigation<Nav>();
+
     const [name, setName] = useState('');
     const [postcode, setPostcode] = useState('');
     const [date, setDate] = useState<Date | undefined>(undefined);
@@ -64,6 +63,9 @@ export function CreateSurvey(): React.JSX.Element {
                 label="Continue"
                 onPress={async () => {
                     try {
+                        const created = await service.createSurvey();
+                        const surveyId = created.id;
+                        console.log('Survey created:', created);
                         const updated = await service.updateSurvey(surveyId, {
                             name,
                             postcode,
@@ -73,10 +75,8 @@ export function CreateSurvey(): React.JSX.Element {
                             sunsetTime: sunsetTime ?? null,
                         });
                         console.log('Survey details updated:', updated);
-                        navigation.navigate('UploadRedLineBoundaryScreen', { surveyId });
-                    } catch (e) {
-                        console.error('Error updating create survey fields: ', e);
-                    }
+                        navigation.navigate('SaveAdminCodeScreen', { surveyId });
+                    } catch (e) { console.error('createSurvey failed:', e) }
                 }}
             />
         </View>
