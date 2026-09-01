@@ -33,7 +33,7 @@ export function EmailScreen(): React.JSX.Element {
                         const { survey } = await service.getSurveyContext(surveyId);
                         await service.updateSurvey(surveyId, { data: { ...survey.data, adminEmail: email } })
                             .then((survey) => console.log('Admin email address updated:', survey));
-                        navigation.navigate('CreateSurvey', { surveyId });
+                        navigation.navigate('SaveAdminCodeScreen', { surveyId });
                     } catch (e) {
                         console.error('updateSurvey failed:', e);
                     }

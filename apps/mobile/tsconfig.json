@@ -10,6 +10,9 @@
       "@bapp/repository": [
         "../../packages/repository/src/index.ts"
       ],
+      "@bapp/export": [
+        "../../packages/export/src/index.ts"
+      ],
       "@components/*": [
         "../../apps/mobile/src/components/*"
       ],

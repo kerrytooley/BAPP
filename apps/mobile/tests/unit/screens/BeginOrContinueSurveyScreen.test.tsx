@@ -35,12 +35,12 @@ describe('BeginOrContinueSurveyScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('does nothing when choosing to continue an existing survey', () => {
+    it('navigates to the admin code screen when choosing to continue an existing survey', () => {
         const service = createMockService();
         renderWithService(<BeginOrContinueSurveyScreen />, service);
         fireEvent.press(screen.getByText('Continue existing survey'));
         expect(service.createSurvey).not.toHaveBeenCalled();
-        expect(mockNavigate).not.toHaveBeenCalled();
+        expect(mockNavigate).toHaveBeenCalledWith('AdminCodeScreen');
     });
 
     it('goes back from the back button', () => {

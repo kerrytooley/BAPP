@@ -111,6 +111,7 @@ export function SurveyScreen(): React.JSX.Element {
                     onAddSeen={(observation) => addSeen(observation)}
                     onEdit={(observationId) => navigation.navigate("AddObservationScreen", { surveyId, locationId, surveyorId, observationId })} />
             </View>
+            <Button label="End Survey" onPress={() => navigation.navigate('SurveySummaryScreen', { surveyId, surveyorId })} />
             <Toast
                 visible={!!toast}
                 message={toast?.message ?? ""}

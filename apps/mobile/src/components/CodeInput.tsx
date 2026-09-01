@@ -43,5 +43,7 @@ export const styles = StyleSheet.create({
         paddingVertical: 8,
         paddingHorizontal: 16,
         color: colours.light,
+        includeFontPadding: false,
+        textAlignVertical: "center",
     }
 })

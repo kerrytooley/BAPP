@@ -42,7 +42,7 @@ export function ShareCodeScreen(): React.JSX.Element {
                 <Title title="Share Your Survey Code" subtitle="Share this surveyor code with your team to invite them to the survey." />
             </View>
             <View style={styles.content} >
-                <CodeShare value={surveyorCode} />
+                <CodeShare value={surveyorCode} codeType='surveyor' />
             </View>
             <Button label="Return Home" variant="light" onPress={() => navigation.navigate("Welcome")} />
         </View>

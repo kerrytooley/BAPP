@@ -1,0 +1,24 @@
+{
+  "name": "@bapp/export",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Survey report assembler: normalizes a SurveyContext into a report model and builds the export artifacts (HTML + XLSX)",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@bapp/domain": "workspace:*",
+    "jszip": "^3.10.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@bapp/repository": "workspace:^",
+    "typescript": "~5.3.3",
+    "vitest": "^1.6.0"
+  }
+}

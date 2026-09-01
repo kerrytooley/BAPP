@@ -99,6 +99,9 @@ const styles = StyleSheet.create({
         ...textStyles.inputText,
         color: colours.light,
         flex: 1,
+        paddingVertical: 0,
+        includeFontPadding: false,
+        textAlignVertical: "center",
     },
     unit: {
         ...textStyles.unit,

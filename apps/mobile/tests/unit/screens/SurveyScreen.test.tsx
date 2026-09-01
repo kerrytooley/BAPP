@@ -172,6 +172,16 @@ describe('SurveyScreen', () => {
         });
     });
 
+    it('navigates to the survey summary when ending the survey', async () => {
+        renderWithService(<SurveyScreen />, serviceWith());
+        await waitFor(() => expect(screen.getByText('End Survey')).toBeOnTheScreen());
+        fireEvent.press(screen.getByText('End Survey'));
+        expect(mockNavigate).toHaveBeenCalledWith('SurveySummaryScreen', {
+            surveyId: 'survey-1',
+            surveyorId: 'surveyor-1',
+        });
+    });
+
     it('logs an error when loading the context fails', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = createMockService({

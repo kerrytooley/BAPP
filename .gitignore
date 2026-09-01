@@ -46,6 +46,11 @@ hosting/.cache
 /.firebase/
 /emulator-ui/
 
+# Non-pnpm lockfiles — this is a pnpm monorepo. A stray package-lock.json/yarn.lock
+# makes EAS Build install with npm/yarn instead of pnpm, breaking dependency resolution.
+package-lock.json
+yarn.lock
+
 # Logs
 *.log
 npm-debug.log*

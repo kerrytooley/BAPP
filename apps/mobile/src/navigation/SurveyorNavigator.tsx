@@ -11,6 +11,7 @@ import { SetupCompleteScreen } from "@screens/Surveyor/SetupCompleteScreen";
 import { SurveyScreen } from "@screens/Surveyor/SurveyScreen";
 import { AddObservationScreen } from "@screens/Surveyor/AddObservationScreen";
 import { type LocationImageType } from "@bapp/domain";
+import { SurveySummaryScreen } from "@screens/Surveyor/SurveySummaryScreen";
 
 export type SurveyorStackParamList = {
     InputCodeScreen: undefined,
@@ -24,6 +25,7 @@ export type SurveyorStackParamList = {
     SurveyScreen: { surveyId: string, locationId: string, surveyorId: string }
     SelectSpeciesScreen: { surveyId: string, locationId: string, surveyorId: string }
     AddObservationScreen: { surveyId: string, observationId: string, surveyorId: string, locationId: string }
+    SurveySummaryScreen: { surveyId: string, surveyorId: string }
 };
 
 const Stack = createNativeStackNavigator<SurveyorStackParamList>();
@@ -42,6 +44,7 @@ export function SurveyorNavigator() {
             <Stack.Screen name="SurveyScreen" component={SurveyScreen} />
             <Stack.Screen name="SelectSpeciesScreen" component={SelectSpeciesPage} />
             <Stack.Screen name="AddObservationScreen" component={AddObservationScreen} />
+            <Stack.Screen name="SurveySummaryScreen" component={SurveySummaryScreen} />
         </Stack.Navigator>
     )
 }

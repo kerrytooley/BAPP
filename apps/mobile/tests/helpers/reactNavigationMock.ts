@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 export const mockNavigate = jest.fn();
 export const mockGoBack = jest.fn();
 export const mockPush = jest.fn();
@@ -15,6 +17,10 @@ export const useNavigation = () => ({
 });
 
 export const useRoute = () => ({ params: routeState.params });
+
+export const useFocusEffect = (effect: () => void | (() => void)) => {
+    useEffect(effect, [effect]);
+};
 
 export const setRouteParams = (params: Record<string, unknown>) => {
     routeState.params = params;

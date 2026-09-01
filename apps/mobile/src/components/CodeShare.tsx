@@ -6,21 +6,21 @@ import { Share } from "react-native";
 
 export interface CodeShareProps {
     value?: string;
-    placeholder?: string;
-    onChangeText?: (text: string) => void
+    codeType?: 'admin' | 'surveyor';
 }
 
 export const CodeShare = ({
-    value
+    value, codeType = 'surveyor'
 }: CodeShareProps) => {
 
     const shareCode = async (code: string | undefined) => {
         try {
-            const message =
+            const message = codeType === 'surveyor' ?
                 `Join my survey! 🦇 \n\n` +
                 `Download or open the BAPP app and join my survey as a surveyor. \n\n` +
                 `Enter this code to join: ${code} \n\n` +
                 `Download the BAPP app: https://example.com`
+                : `${code}`
             await Share.share({ message })
         } catch (e) {
             console.error("Failed to share code", e);

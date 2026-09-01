@@ -230,6 +230,15 @@ export class SurveyService {
     return { status: 'ready', url };
   }
 
+  /**
+   * Resolve a raw media reference (e.g. a figure's `imageRef`) to a
+   * locally-available URI. Thin passthrough to the media repository used by
+   * export/report tooling that already holds references from the report model.
+   */
+  async getMediaUrl(reference: string): Promise<string> {
+    return this.mediaRepository.getDownloadUrl(reference);
+  }
+
 
   // --- Locations ---
 

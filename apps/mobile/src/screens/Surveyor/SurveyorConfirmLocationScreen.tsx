@@ -95,6 +95,15 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
     const handleContinue = async () => {
         try {
             const id = await ensureLocationId();
+            let currentSurveyor = surveyor;
+            if (!currentSurveyor) {
+                const surveyContext = await service.getSurveyContext(surveyId);
+                currentSurveyor = surveyContext.surveyors.find((s) => s.id === surveyorId);
+            }
+            if (currentSurveyor?.status === 'pending') {
+                await service.updateSurveyor(surveyorId, { status: 'ready' });
+                setSurveyor({ ...currentSurveyor, status: 'ready' });
+            }
             navigation.navigate("CapturePhotoScreen", { surveyId, locationId: id, surveyorId, photoType: 'frontView' });
         } catch (e) {
             console.error("Unable to continue to photo capture", e);
