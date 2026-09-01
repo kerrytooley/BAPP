@@ -16,7 +16,16 @@ interface ObservationTileProps {
 export const ObservationTile = ({ observation, onAddSeen, onAddHeard, onEdit }: ObservationTileProps) => {
 
     function getSpeciesAbbreviation(observation: Observation) {
-        return bats.find((bat) => bat.species == observation.species)?.abr;
+        const species = observation.species?.trim();
+        if (!species) return "?";
+
+        const speciesAbr = bats.find((bat) => bat.species === species)?.abr;
+        if (speciesAbr) return speciesAbr;
+
+        // Group selections (e.g. "Pipistrelle", "Long-eared") have no per-species
+        // abbreviation — derive a short label so the tile is never blank.
+        const initials = species.split(/[\s-]+/).filter(Boolean).map((word) => word[0]).join("");
+        return initials.length > 1 ? initials.toUpperCase() : species.slice(0, 3);
     }
 
     return (
