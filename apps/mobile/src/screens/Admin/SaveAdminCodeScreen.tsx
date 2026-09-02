@@ -10,6 +10,7 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { CodeShare } from "@components/CodeShare";
+import KeyIllustration from "@assets/illustrations/key.svg"
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
@@ -35,6 +36,7 @@ export function SaveAdminCodeScreen(): React.JSX.Element {
         <View style={screen.justifyScreen}>
             <View style={{ width: "100%" }}>
                 <BackButton navigation={navigation} />
+                <KeyIllustration width={180} height={180} style={styles.illustration} />
                 <Title title="Save Your Admin Code" subtitle="Keep this admin code safe. You'll need it later to access your survey results." />
                 <Text style={styles.hint}>Don't share this code. You'll get a different code later on to invite your surveyors to join. </Text>
             </View>
@@ -53,6 +55,10 @@ const styles = StyleSheet.create({
         flex: 1,
         gap: 24,
     },
+    illustration: {
+        alignSelf: "center",
+        marginVertical: 24
+    },
     codeContainer: {
         backgroundColor: colours.inputBackground,
         borderRadius: 16,
@@ -70,7 +76,7 @@ const styles = StyleSheet.create({
     hint: {
         ...textStyles.inputText,
         color: colours.light,
-        textAlign: "center",
+        textAlign: "left",
         paddingTop: 24
     },
 });

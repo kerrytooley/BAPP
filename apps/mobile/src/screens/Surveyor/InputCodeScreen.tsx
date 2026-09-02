@@ -8,6 +8,7 @@ import React, { useState } from "react"
 import { useNavigation } from "@react-navigation/native";
 import { StyleSheet, View } from "react-native";
 import { useSurveyService } from "../../services/surveyServiceContext";
+import PadlockIllustration from "@assets/illustrations/padlock.svg"
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
@@ -20,6 +21,7 @@ export function InputCodeScreen(): React.JSX.Element {
         <View style={styles.screen}>
             <View style={{ width: "100%" }}>
                 <BackButton navigation={navigation} />
+                <PadlockIllustration width={180} height={180} style={styles.illustration} />
                 <Title title="Input Survey Code" subtitle="Join survey by entering code shared by lead surveyor" />
             </View>
             <View style={styles.content}>
@@ -50,8 +52,11 @@ const styles = StyleSheet.create({
     },
     content: {
         ...screen.content,
-        position: 'absolute',
-        top: '50%'
-    }
+        paddingBottom: 80
+    },
+    illustration: {
+        alignSelf: "center",
+        margin: 24
+    },
 })
 

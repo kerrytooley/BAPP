@@ -25,6 +25,8 @@
     "@bapp/domain": "workspace:*",
     "@bapp/export": "workspace:^",
     "@bapp/repository": "workspace:*",
+    "@expo-google-fonts/archivo-black": "^0.4.1",
+    "@expo-google-fonts/changa-one": "^0.4.1",
     "@expo-google-fonts/oleo-script": "^0.4.1",
     "@expo-google-fonts/open-sans": "^0.4.2",
     "@expo/react-native-action-sheet": "^4.1.1",

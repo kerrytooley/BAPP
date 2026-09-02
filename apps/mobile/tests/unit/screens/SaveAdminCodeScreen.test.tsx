@@ -40,7 +40,7 @@ describe('SaveAdminCodeScreen', () => {
     });
 
     it('logs an error when the survey fails to load', async () => {
-        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = createMockService({
             getSurvey: jest.fn().mockRejectedValue(new Error('load failed')),
         });

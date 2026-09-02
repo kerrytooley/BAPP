@@ -33,7 +33,8 @@
           "photosPermission": "Allow BAPP to access your photos to attach survey images."
         }
       ],
-      "./plugins/withFmtConstevalPatch"
+      "./plugins/withFmtConstevalPatch",
+      "expo-font"
     ],
     "extra": {
       "eas": {

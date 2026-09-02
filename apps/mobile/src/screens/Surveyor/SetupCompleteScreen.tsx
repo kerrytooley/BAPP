@@ -2,10 +2,11 @@ import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React from "react";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
-import { View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { screen } from "@theme/screen";
 import { BackButton, Button } from "@components/Button";
-import { Title } from "@components/Titles";
+import { fonts, textStyles } from "@theme/fonts";
+
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
@@ -20,9 +21,16 @@ export function SetupCompleteScreen(): React.JSX.Element {
                 <BackButton navigation={navigation} />
             </View>
             <View style={screen.content} >
-                <Title title="Survey Setup Complete!" />
+                <Text style={styles.title}>Survey Setup Complete!</Text>
             </View>
             <Button label="Next" onPress={() => navigation.navigate("SurveyScreen", { surveyId, locationId, surveyorId })} />
         </View>
     )
 }
+
+const styles = StyleSheet.create({
+    title: {
+        ...textStyles.title,
+        fontSize: fonts.size.xl
+    }
+})

@@ -11,7 +11,7 @@ describe('theme tokens', () => {
     it('exposes font families, sizes and style presets', () => {
         expect(fonts.family.body).toBeDefined();
         expect(fonts.size.md).toBeGreaterThan(0);
-        expect(textStyles.title.fontFamily).toBe(fonts.family.semiBold);
+        expect(textStyles.title.fontFamily).toBe(fonts.family.title);
     });
 
     it('exposes reusable screen layouts', () => {

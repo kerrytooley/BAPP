@@ -6,6 +6,7 @@ import { StyleSheet, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
+import ClipboardIllustration from "@assets/illustrations/clipboard.svg"
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
@@ -14,24 +15,24 @@ export function BeginOrContinueSurveyScreen(): React.JSX.Element {
 
     return (
         <View style={screen.justifyScreen}>
-            <View>
+            <View >
                 <BackButton navigation={navigation} />
-                <Title title="Begin or continue a survey" subtitle="Start a new survey or pick up where you left with an existing one" />
+                <View style={styles.content}>
+                    <ClipboardIllustration width={180} height={180} style={styles.illustration} />
+                    <Title title="Begin or continue a survey" subtitle="Start a new survey or pick up where you left with an existing one" />
+                    <ButtonGroup
+                        labels={['Begin a new survey', 'Continue existing survey']}
+                        variant="mixed"
+                        onPress={[
+                            () => {
+                                navigation.navigate('WelcomeWalkthroughScreen');
+                            },
+                            () => {
+                                navigation.navigate('AdminCodeScreen');
+                            },
+                        ]} />
+                </View>
             </View>
-            <View style={styles.content}>
-                <ButtonGroup
-                    labels={['Begin a new survey', 'Continue existing survey']}
-                    variant="mixed"
-                    onPress={[
-                        () => {
-                            navigation.navigate('WelcomeWalkthroughScreen');
-                        },
-                        () => {
-                            navigation.navigate('AdminCodeScreen');
-                        },
-                    ]} />
-            </View>
-
         </View>
     );
 }
@@ -40,9 +41,13 @@ const styles = StyleSheet.create({
     screen: {
         ...screen.baseScreen,
     },
+    illustration: {
+        alignSelf: "center"
+    },
     content: {
         ...screen.content,
-        position: "absolute",
-        top: "50%"
+        width: "100%",
+        gap: 48,
+        paddingVertical: 48
     }
 })

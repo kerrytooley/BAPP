@@ -6,6 +6,7 @@ export const fonts = {
         body: 'OpenSans_400Regular',
         semiBold: 'OpenSans_600SemiBold',
         inter: 'Inter-Regular',
+        title: 'ArchivoBlack_400Regular'
     },
     size: {
         sm: 14,
@@ -60,18 +61,19 @@ export const textStyles = {
         fontSize: fonts.size.md,
     },
     title: {
-        fontSize: fonts.size.xl,
+        fontSize: fonts.size.lg,
         lineHeight: 36,
-        fontFamily: fonts.family.semiBold,
+        fontFamily: fonts.family.title,
         color: colours.light,
-        textAlign: "center"
+        textAlign: "left",
+        letterSpacing: 1
     },
     subtitle: {
         fontSize: fonts.size.md,
         lineHeight: 24,
         fontFamily: fonts.family.body,
         color: colours.light,
-        textAlign: "center"
+        textAlign: "left"
     },
     placeholderText: {
         fontFamily: fonts.family.body,
