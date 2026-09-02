@@ -7,7 +7,6 @@ Feature: Survey setup end to end
     Given the app is open on the welcome screen
     When the admin chooses to join as a survey admin
     And begins a new survey
-    And provides the admin email "admin@example.com"
     And enters the survey name "Dusk count" and postcode "SW1A 1AA"
     And skips the red line boundary upload
     And names the lead surveyor "Alice"
@@ -22,7 +21,6 @@ Feature: Survey setup end to end
     Given the app is open on the welcome screen
     When the admin chooses to join as a survey admin
     And begins a new survey
-    And provides the admin email "admin@example.com"
     And enters the survey name "Dusk count" and postcode "SW1A 1AA"
     And skips the red line boundary upload
     And names the lead surveyor "Alice"

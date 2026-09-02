@@ -7,7 +7,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { BoundaryPosition, Surveyor } from "@bapp/domain";
 
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { BackButton, ButtonGroup } from "@components/Button";
 import { Title } from "@components/Titles";
 import { StaticPinLayer } from "@components/StaticPinLayer";
@@ -24,7 +24,7 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
     const [surveyor, setSurveyor] = useState<Surveyor>();
     const [locationId, setLocationId] = useState<string>("");
     const [boundaryImageUri, setBoundaryImageUri] = useState<string | null | undefined>();
-    const [position, setPosition] = useState<BoundaryPosition | null | undefined>();
+    const [position, setPosition] = useState<BoundaryPosition>();
 
     const sheetRef = useRef<BottomSheetModal>(null);
 
@@ -38,7 +38,7 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
                     setLocationId(surveyor.locationId ?? "");
                 }
                 const location = surveyContext.locations.find((location) => location.id === surveyor?.locationId);
-                setPosition(location?.boundaryPosition);
+                location?.boundaryPosition && setPosition(location?.boundaryPosition);
             } catch (e) {
                 console.error("Error fetching survey context", e);
             }
@@ -116,9 +116,9 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
                 <BackButton navigation={navigation} />
                 <Title title="Confirm Location" subtitle="Confirm your location is correct on the map" />
             </View>
-            <View style={screen.content}>
+            <View style={[screen.content, styles.imageArea]}>
                 {boundaryImageUri &&
-                    <StaticPinLayer imageUri={boundaryImageUri} value={position} />
+                    <StaticPinLayer imageUri={boundaryImageUri} values={position ? [position] : []} style={styles.pinLayer} />
                 }
             </View>
             <ButtonGroup labels={["Continue", "Change Location"]}
@@ -136,3 +136,14 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
     );
 }
 
+const styles = StyleSheet.create({
+    imageArea: {
+        flex: 1,
+        minHeight: 0,
+        justifyContent: "center",
+        paddingVertical: 24,
+    },
+    pinLayer: {
+        maxHeight: "100%",
+    },
+});

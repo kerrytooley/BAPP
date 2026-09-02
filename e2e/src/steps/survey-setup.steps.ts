@@ -4,7 +4,6 @@ import { expect } from '@wdio/globals';
 import { welcomeScreen } from '../screens/welcome.screen';
 import {
     beginScreen,
-    emailScreen,
     createSurveyScreen,
     uploadBoundaryScreen,
     addSurveyorScreen,
@@ -33,11 +32,6 @@ When('the admin chooses to join as a survey admin', async () => {
 
 When('begins a new survey', async () => {
     await tap(beginScreen.beginNewSurvey());
-});
-
-When(/^provides the admin email "(.*)"$/, async (email: string) => {
-    await enterText(emailScreen.emailInput(), email);
-    await tap(emailScreen.continue());
 });
 
 When(

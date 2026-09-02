@@ -4,7 +4,7 @@ import { Title } from "@components/Titles";
 import { screen } from "@theme/screen";
 import React, { useRef, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { useSurveyService } from "@services/surveyServiceContext";
@@ -15,18 +15,19 @@ type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
 export function CreateSurvey(): React.JSX.Element {
     const service = useSurveyService();
-    const { surveyId } = useRoute<RouteProp<AdminStackParamList, 'CreateSurvey'>>().params;
-
     const navigation = useNavigation<Nav>();
+
     const [name, setName] = useState('');
     const [postcode, setPostcode] = useState('');
     const [date, setDate] = useState<Date | undefined>(undefined);
     const [startTime, setStartTime] = useState<Date | undefined>(undefined);
     const [endTime, setEndTime] = useState<Date | undefined>(undefined);
     const [sunsetTime, setSunsetTime] = useState<Date | undefined>(undefined);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const scrollRef = useRef<ScrollView>(null);
     const fieldY = useRef<Record<string, number>>({});
+    const createdSurveyId = useRef<string | undefined>(undefined);
 
     const scrollToField = (key: string) => {
         const y = fieldY.current[key];
@@ -62,8 +63,13 @@ export function CreateSurvey(): React.JSX.Element {
             <Button
                 variant="light"
                 label="Continue"
+                disabled={isSubmitting}
                 onPress={async () => {
+                    if (isSubmitting) return;
+                    setIsSubmitting(true);
                     try {
+                        const surveyId = createdSurveyId.current ?? (await service.createSurvey()).id;
+                        createdSurveyId.current = surveyId;
                         const updated = await service.updateSurvey(surveyId, {
                             name,
                             postcode,
@@ -73,9 +79,9 @@ export function CreateSurvey(): React.JSX.Element {
                             sunsetTime: sunsetTime ?? null,
                         });
                         console.log('Survey details updated:', updated);
-                        navigation.navigate('UploadRedLineBoundaryScreen', { surveyId });
-                    } catch (e) {
-                        console.error('Error updating create survey fields: ', e);
+                        navigation.navigate('SaveAdminCodeScreen', { surveyId });
+                    } catch (e) { console.error('createSurvey failed:', e) } finally {
+                        setIsSubmitting(false);
                     }
                 }}
             />

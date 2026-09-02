@@ -2,12 +2,15 @@ import { useState } from "react";
 import { Image, Modal, Pressable, StyleSheet, TouchableOpacity, View } from "react-native";
 import { colours } from "@theme/colours";
 import Expand from "@assets/icons/expand.svg";
+import { StaticPinLayer } from "./StaticPinLayer";
+import { BoundaryPosition } from "@bapp/domain";
 
 export interface DocumentPreviewProps {
     imageUri: string | undefined | null,
+    values: BoundaryPosition[]
 }
 
-export const DocumentPreview = ({ imageUri }: DocumentPreviewProps) => {
+export const DocumentPreview = ({ imageUri, values }: DocumentPreviewProps) => {
     const [isFullScreen, setIsFullScreen] = useState(false);
 
     return (
@@ -27,7 +30,7 @@ export const DocumentPreview = ({ imageUri }: DocumentPreviewProps) => {
                         onRequestClose={() => setIsFullScreen(false)}
                     >
                         <Pressable style={styles.fullScreenBackdrop} onPress={() => setIsFullScreen(false)}>
-                            <Image source={{ uri: imageUri }} style={styles.fullScreenImage} resizeMode="contain" />
+                            <StaticPinLayer imageUri={imageUri} values={values} style={styles.fullScreenImage} />
                         </Pressable>
                     </Modal>
                 </>
@@ -68,7 +71,6 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     fullScreenImage: {
-        width: "100%",
-        height: "100%",
+        maxHeight: "80%",
     }
 });

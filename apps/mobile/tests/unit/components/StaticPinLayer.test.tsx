@@ -14,20 +14,20 @@ const measure = (width = 100, height = 100) =>
 
 describe('StaticPinLayer', () => {
     it('renders the boundary image', () => {
-        render(<StaticPinLayer imageUri="file://boundary.png" value={null} />);
+        render(<StaticPinLayer imageUri="file://boundary.png" values={[]} />);
         expect(screen.UNSAFE_getByType(Image).props.source).toEqual({
             uri: 'file://boundary.png',
         });
     });
 
     it('renders a pin when a value is set and the layout is measured', () => {
-        render(<StaticPinLayer imageUri="file://boundary.png" value={{ x: 0.5, y: 0.5 }} />);
+        render(<StaticPinLayer imageUri="file://boundary.png" values={[{ x: 0.5, y: 0.5 }]} />);
         measure(100, 100);
         expect(screen.UNSAFE_queryByProps({ pointerEvents: 'none' })).not.toBeNull();
     });
 
     it('renders no pin when there is no value', () => {
-        render(<StaticPinLayer imageUri="file://boundary.png" value={null} />);
+        render(<StaticPinLayer imageUri="file://boundary.png" values={[]} />);
         measure(100, 100);
         expect(screen.UNSAFE_queryByProps({ pointerEvents: 'none' })).toBeNull();
     });
@@ -35,7 +35,7 @@ describe('StaticPinLayer', () => {
     it('logs an error when the aspect ratio cannot be resolved', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         (getAspectRatio as jest.Mock).mockRejectedValueOnce(new Error('size failed'));
-        render(<StaticPinLayer imageUri="file://boundary.png" value={null} />);
+        render(<StaticPinLayer imageUri="file://boundary.png" values={[]} />);
         await waitFor(() =>
             expect(errorSpy).toHaveBeenCalledWith(
                 'Error getting image aspect ratio',
@@ -46,7 +46,7 @@ describe('StaticPinLayer', () => {
 
     it('does not resolve the aspect ratio without an image uri', () => {
         (getAspectRatio as jest.Mock).mockClear();
-        render(<StaticPinLayer imageUri="" value={null} />);
+        render(<StaticPinLayer imageUri="" values={[]} />);
         expect(getAspectRatio).not.toHaveBeenCalled();
     });
 
@@ -58,7 +58,7 @@ describe('StaticPinLayer', () => {
             }),
         );
         const { unmount } = render(
-            <StaticPinLayer imageUri="file://boundary.png" value={null} />,
+            <StaticPinLayer imageUri="file://boundary.png" values={[]} />,
         );
         unmount();
         await act(async () => {

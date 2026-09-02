@@ -1,5 +1,5 @@
 import { BoundaryPosition } from "@bapp/domain"
-import { LayoutChangeEvent, View } from "react-native"
+import { LayoutChangeEvent, StyleProp, View, ViewStyle } from "react-native"
 import { useEffect, useState } from "react"
 import { Image, StyleSheet } from "react-native"
 import MapPin from "@assets/icons/mapPin.svg"
@@ -8,13 +8,14 @@ import { getAspectRatio } from "@utils/image"
 
 export interface StaticPinLayerProps {
     imageUri: string
-    value: BoundaryPosition | null | undefined
+    values: BoundaryPosition[]
+    style?: StyleProp<ViewStyle>
 }
 
 const PIN_WIDTH = 24;
 const PIN_HEIGHT = 24;
 
-export const StaticPinLayer = ({ imageUri, value }: StaticPinLayerProps) => {
+export const StaticPinLayer = ({ imageUri, values, style }: StaticPinLayerProps) => {
     const [layout, setLayout] = useState({ width: 0, height: 0 });
     const [aspectRatio, setAspectRatio] = useState<number>(0.5);
 
@@ -37,22 +38,26 @@ export const StaticPinLayer = ({ imageUri, value }: StaticPinLayerProps) => {
     }
 
     return (
-        <View onLayout={onLayout} style={[styles.layer, { aspectRatio }]}>
+        <View onLayout={onLayout} style={[styles.layer, { aspectRatio }, style]}>
             <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
 
-            {value && layout.width > 0 && (
-                <View
-                    pointerEvents="none"
-                    style={[
-                        styles.pin,
-                        {
-                            left: value.x * layout.width - PIN_WIDTH / 2,
-                            top: value.y * layout.height - PIN_HEIGHT
-                        }
-                    ]}
-                >
-                    <MapPin width={PIN_WIDTH} height={PIN_HEIGHT} stroke={colours.red} strokeWidth={2} />
-                </View>
+            {values && layout.width > 0 && (
+                values.map((value, index) => (
+                    <View
+                        key={`${value.x}-${value.y}-${index}`}
+                        pointerEvents="none"
+                        style={[
+                            styles.pin,
+                            {
+                                left: value.x * layout.width - PIN_WIDTH / 2,
+                                top: value.y * layout.height - PIN_HEIGHT
+                            }
+                        ]}
+                    >
+                        <MapPin width={PIN_WIDTH} height={PIN_HEIGHT} stroke={colours.red} strokeWidth={2} />
+                    </View>
+                ))
+
             )}
         </View>
     );

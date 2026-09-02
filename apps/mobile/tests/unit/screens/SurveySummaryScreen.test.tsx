@@ -29,7 +29,7 @@ beforeEach(() => {
     setRouteParams({ surveyId: 'survey-1', surveyorId: 'surveyor-1' });
     service.completeSurveyor.mockReset().mockResolvedValue(buildSurveyor({ status: 'done' }));
     service.completeSurvey.mockReset().mockResolvedValue(buildSurvey({ status: 'completed' }));
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    jest.spyOn(Alert, 'alert').mockImplementation(() => { });
 });
 
 describe('SurveySummaryScreen', () => {
@@ -95,7 +95,7 @@ describe('SurveySummaryScreen', () => {
     });
 
     it('shows a loading overlay while the results are saving', async () => {
-        let resolveComplete: (value: Surveyor) => void = () => {};
+        let resolveComplete: (value: Surveyor) => void = () => { };
         service.completeSurveyor.mockImplementation(
             () => new Promise((resolve) => { resolveComplete = resolve; }),
         );
@@ -115,7 +115,7 @@ describe('SurveySummaryScreen', () => {
     });
 
     it('disables the button while saving is already in progress', async () => {
-        let resolveComplete: (value: Surveyor) => void = () => {};
+        let resolveComplete: (value: Surveyor) => void = () => { };
         service.completeSurveyor.mockImplementation(
             () => new Promise((resolve) => { resolveComplete = resolve; }),
         );

@@ -4,13 +4,18 @@ jest.mock('@react-navigation/native', () =>
 
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { ConfirmSurveyorDetailsScreen } from '@screens/Surveyor/ConfirmSurveyorDetailsScreen';
-import { buildContext, buildSurvey, buildSurveyor } from '../../helpers/factories';
+import { DocumentPreview } from '@components/DocumentPreview';
+import { buildContext, buildLocation, buildSurvey, buildSurveyor } from '../../helpers/factories';
 import { createMockService, renderWithService } from '../../helpers/testUtils';
 import {
     mockNavigate,
     resetNavigationMock,
     setRouteParams,
 } from '../../helpers/reactNavigationMock';
+
+jest.mock('@components/DocumentPreview', () => ({
+    DocumentPreview: jest.fn(() => null),
+}));
 
 beforeEach(() => {
     resetNavigationMock();
@@ -22,6 +27,11 @@ const context = (isLead: boolean, name = 'Ada') =>
         survey: buildSurvey({ name: 'Dusk count', postcode: 'SW1A 1AA' }),
         surveyors: [buildSurveyor({ id: 'surveyor-1', isLead, name })],
     });
+
+const positionedLocations = [
+    buildLocation({ id: 'location-1', boundaryPosition: { x: 0.1, y: 0.2 } }),
+    buildLocation({ id: 'location-2', boundaryPosition: { x: 0.3, y: 0.4 } }),
+];
 
 describe('ConfirmSurveyorDetailsScreen', () => {
     it('shows the lead surveyor summary and continues to weather conditions', async () => {
@@ -42,6 +52,44 @@ describe('ConfirmSurveyorDetailsScreen', () => {
             surveyId: 'survey-1',
             surveyorId: 'surveyor-1',
         });
+    });
+
+    it('passes all positioned locations to a lead surveyor', async () => {
+        const service = createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(
+                buildContext({
+                    surveyors: [buildSurveyor({ id: 'surveyor-1', isLead: true })],
+                    locations: positionedLocations,
+                }),
+            ),
+        });
+        renderWithService(<ConfirmSurveyorDetailsScreen />, service);
+
+        await waitFor(() =>
+            expect(DocumentPreview).toHaveBeenLastCalledWith(
+                expect.objectContaining({ values: [{ x: 0.1, y: 0.2 }, { x: 0.3, y: 0.4 }] }),
+                undefined,
+            ),
+        );
+    });
+
+    it('passes only the assigned positioned location to a non-lead surveyor', async () => {
+        const service = createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(
+                buildContext({
+                    surveyors: [buildSurveyor({ id: 'surveyor-1', isLead: false, locationId: 'location-2' })],
+                    locations: positionedLocations,
+                }),
+            ),
+        });
+        renderWithService(<ConfirmSurveyorDetailsScreen />, service);
+
+        await waitFor(() =>
+            expect(DocumentPreview).toHaveBeenLastCalledWith(
+                expect.objectContaining({ values: [{ x: 0.3, y: 0.4 }] }),
+                undefined,
+            ),
+        );
     });
 
     it('continues a non-lead surveyor to confirm their location', async () => {

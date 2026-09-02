@@ -49,7 +49,7 @@ describe('CreateSurvey', () => {
                 sunsetTime: null,
             }),
         );
-        expect(mockNavigate).toHaveBeenCalledWith('UploadRedLineBoundaryScreen', {
+        expect(mockNavigate).toHaveBeenCalledWith('SaveAdminCodeScreen', {
             surveyId: 'survey-1',
         });
     });
@@ -63,6 +63,31 @@ describe('CreateSurvey', () => {
         fireEvent.press(screen.getByText('Continue'));
         await waitFor(() => expect(errorSpy).toHaveBeenCalled());
         expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('reuses a created survey after an update failure', async () => {
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+        const service = createMockService({
+            createSurvey: jest.fn().mockResolvedValue({
+                id: 'created-survey',
+            }),
+            updateSurvey: jest.fn()
+                .mockRejectedValueOnce(new Error('nope'))
+                .mockResolvedValueOnce({}),
+        });
+        renderWithService(<CreateSurvey />, service);
+
+        fireEvent.press(screen.getByText('Continue'));
+        await waitFor(() => expect(errorSpy).toHaveBeenCalled());
+        fireEvent.press(screen.getByText('Continue'));
+
+        await waitFor(() =>
+            expect(service.updateSurvey).toHaveBeenCalledTimes(2),
+        );
+        expect(service.createSurvey).toHaveBeenCalledTimes(1);
+        expect(mockNavigate).toHaveBeenCalledWith('SaveAdminCodeScreen', {
+            surveyId: 'created-survey',
+        });
     });
 
     it('ignores scroll requests for fields that have not been laid out', () => {

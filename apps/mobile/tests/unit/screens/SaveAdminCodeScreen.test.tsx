@@ -26,7 +26,7 @@ describe('SaveAdminCodeScreen', () => {
         await waitFor(() => expect(screen.getByText('ADMIN1')).toBeOnTheScreen());
     });
 
-    it('continues to the create survey screen', async () => {
+    it('continues to the upload boundary screen', async () => {
         const service = createMockService({
             getSurvey: jest.fn().mockResolvedValue(buildSurvey({ adminCode: 'ADMIN1' })),
         });
@@ -34,7 +34,7 @@ describe('SaveAdminCodeScreen', () => {
 
         await waitFor(() => expect(screen.getByText('ADMIN1')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Continue'));
-        expect(mockNavigate).toHaveBeenCalledWith('CreateSurvey', {
+        expect(mockNavigate).toHaveBeenCalledWith('UploadRedLineBoundaryScreen', {
             surveyId: 'survey-1',
         });
     });

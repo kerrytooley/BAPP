@@ -6,13 +6,11 @@ import { StyleSheet, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
-import { useSurveyService } from "@services/surveyServiceContext";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
 export function BeginOrContinueSurveyScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
-    const service = useSurveyService()
 
     return (
         <View style={screen.justifyScreen}>
@@ -26,13 +24,7 @@ export function BeginOrContinueSurveyScreen(): React.JSX.Element {
                     variant="mixed"
                     onPress={[
                         () => {
-                            service.createSurvey()
-                                .then(survey => {
-                                    console.log('Survey created:', survey);
-                                    navigation.navigate('EmailScreen',
-                                        { surveyId: survey.id });
-                                })
-                                .catch(e => console.error('createSurvey failed:', e));
+                            navigation.navigate('WelcomeWalkthroughScreen');
                         },
                         () => {
                             navigation.navigate('AdminCodeScreen');

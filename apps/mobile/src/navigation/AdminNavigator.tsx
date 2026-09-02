@@ -1,7 +1,6 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { BeginOrContinueSurveyScreen } from "@screens/Admin/BeginOrContinueSurveyScreen";
 import { CreateSurvey } from "@screens/Admin/CreateSurvey";
-import { EmailScreen } from "@screens/Admin/EmailScreen";
 import { UploadRedLineBoundaryScreen } from "@screens/Admin/UploadRedLineBoundaryScreen"
 import { AddSurveyorScreen } from "@screens/Admin/AddSurveyorScreen";
 import { ReviewSurveyDetailsScreen } from "@screens/Admin/ReviewSurveyDetailsScreen";
@@ -10,12 +9,13 @@ import { ShareCodeScreen } from "@screens/Admin/ShareCodeScreen";
 import { AdminCodeScreen } from "@screens/Admin/AdminCodeScreen";
 import { SurveyStatusScreen } from "@screens/Admin/SurveyStatusScreen";
 import { SaveAdminCodeScreen } from "@screens/Admin/SaveAdminCodeScreen";
+import { WelcomeWalkthroughScreen } from "@screens/Admin/WelcomeWalkthroughScreen";
 
 export type AdminStackParamList = {
     BeginOrContinueSurveyScreen: undefined;
-    EmailScreen: { surveyId: string };
+    WelcomeWalkthroughScreen: undefined;
+    CreateSurvey: undefined;
     SaveAdminCodeScreen: { surveyId: string };
-    CreateSurvey: { surveyId: string };
     UploadRedLineBoundaryScreen: { surveyId: string };
     AddSurveyorScreen: { surveyId: string };
     ReviewSurveyDetailsScreen: { surveyId: string };
@@ -31,7 +31,7 @@ export function AdminNavigator() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="BeginOrContinueSurveyScreen" component={BeginOrContinueSurveyScreen} />
-            <Stack.Screen name="EmailScreen" component={EmailScreen} />
+            <Stack.Screen name="WelcomeWalkthroughScreen" component={WelcomeWalkthroughScreen} />
             <Stack.Screen name="SaveAdminCodeScreen" component={SaveAdminCodeScreen} />
             <Stack.Screen name="CreateSurvey" component={CreateSurvey} />
             <Stack.Screen name="UploadRedLineBoundaryScreen" component={UploadRedLineBoundaryScreen} />

@@ -7,7 +7,7 @@ import { screen } from "@theme/screen";
 import { colours } from "@theme/colours";
 import { fonts, textStyles } from "@theme/fonts";
 import React, { useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { CodeShare } from "@components/CodeShare";
 
@@ -36,11 +36,12 @@ export function SaveAdminCodeScreen(): React.JSX.Element {
             <View style={{ width: "100%" }}>
                 <BackButton navigation={navigation} />
                 <Title title="Save Your Admin Code" subtitle="Keep this admin code safe. You'll need it later to access your survey results." />
+                <Text style={styles.hint}>Don't share this code. You'll get a different code later on to invite your surveyors to join. </Text>
             </View>
             <View style={styles.content}>
                 <CodeShare value={adminCode} codeType="admin" />
             </View>
-            <Button label="Continue" disabled={!adminCode} onPress={() => navigation.navigate("CreateSurvey", { surveyId })} />
+            <Button label="Continue" disabled={!adminCode} onPress={() => navigation.navigate('UploadRedLineBoundaryScreen', { surveyId })} />
         </View>
     );
 }
@@ -70,5 +71,6 @@ const styles = StyleSheet.create({
         ...textStyles.inputText,
         color: colours.light,
         textAlign: "center",
+        paddingTop: 24
     },
 });
