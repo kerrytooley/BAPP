@@ -40,11 +40,13 @@
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "static"
+            "useFrameworks": "static",
+            "buildReactNativeFromSource": true
           }
         }
       ],
       "./plugins/withFmtConstevalPatch",
+      "./plugins/withNonModularHeaderFix",
       "expo-font"
     ],
     "extra": {

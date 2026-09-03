@@ -9,33 +9,24 @@ import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { RootNavigator } from '@navigators/index';
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
-import type { SurveyService } from '@bapp/domain';
 import { SurveyServiceProvider } from '@services/surveyServiceContext';
-import { isFirebaseEnabled, createFirebaseSurveyService } from '@services/firebaseSurveyService';
+import { useFirebaseService } from './src/hooks/useFirebaseService';
+import { FirebaseConnectionError } from '@components/FirebaseConnectionError';
 // TODO: Initialize Sentry for error monitoring (@sentry/react-native)
-
-/** When Firebase is opted in, build its backend once before rendering; otherwise
- *  the screens use the default in-memory service from the context. */
-function useFirebaseService(): { service: SurveyService | null; ready: boolean } {
-  const [service, setService] = React.useState<SurveyService | null>(null);
-
-  React.useEffect(() => {
-    if (!isFirebaseEnabled()) return;
-    let active = true;
-    createFirebaseSurveyService()
-      .then((s) => { if (active) setService(s); })
-      .catch((err) => { console.error('Firebase init failed', err); });
-    return () => { active = false; };
-  }, []);
-
-  return { service, ready: !isFirebaseEnabled() || service !== null };
-}
 
 export default function App(): React.JSX.Element | null {
   const [fontsLoaded] = useFonts({ OleoScript_700Bold, OpenSans_400Regular, OpenSans_600SemiBold, ArchivoBlack_400Regular });
-  const { service, ready } = useFirebaseService();
+  const { service, ready, failed, error, retry } = useFirebaseService();
 
   if (!fontsLoaded || !ready) return null;
+
+  const content = failed ? (
+    <FirebaseConnectionError onRetry={retry} detail={__DEV__ ? error?.message : undefined} />
+  ) : (
+    <NavigationContainer>
+      <RootNavigator />
+    </NavigationContainer>
+  );
 
   const app = (
     <GestureHandlerRootView style={{ flex: 1 }} >
@@ -43,9 +34,7 @@ export default function App(): React.JSX.Element | null {
         <ActionSheetProvider>
           <BottomSheetModalProvider>
             <StatusBar style="light" />
-            <NavigationContainer>
-              <RootNavigator />
-            </NavigationContainer>
+            {content}
           </BottomSheetModalProvider>
         </ActionSheetProvider>
       </SafeAreaProvider>
