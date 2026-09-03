@@ -3,7 +3,7 @@ import { FirebaseConnectionError } from '@components/FirebaseConnectionError';
 
 describe('FirebaseConnectionError', () => {
     it('shows the connection error message', () => {
-        render(<FirebaseConnectionError onRetry={() => {}} />);
+        render(<FirebaseConnectionError onRetry={() => { }} />);
         expect(screen.getByText("Can't connect to the server")).toBeOnTheScreen();
     });
 
@@ -15,12 +15,12 @@ describe('FirebaseConnectionError', () => {
     });
 
     it('shows the detail text when provided', () => {
-        render(<FirebaseConnectionError onRetry={() => {}} detail="auth/network-request-failed" />);
+        render(<FirebaseConnectionError onRetry={() => { }} detail="auth/network-request-failed" />);
         expect(screen.getByText('auth/network-request-failed')).toBeOnTheScreen();
     });
 
     it('omits the detail text when not provided', () => {
-        render(<FirebaseConnectionError onRetry={() => {}} />);
+        render(<FirebaseConnectionError onRetry={() => { }} />);
         expect(screen.queryByText('auth/network-request-failed')).toBeNull();
     });
 });

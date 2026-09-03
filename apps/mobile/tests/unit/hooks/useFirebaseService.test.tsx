@@ -41,7 +41,7 @@ describe('useFirebaseService', () => {
     });
 
     it('marks failed (but ready) when init rejects', async () => {
-        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         mockIsEnabled.mockReturnValue(true);
         mockCreate.mockRejectedValue(new Error('no network'));
         const { result } = renderHook(() => useFirebaseService());
@@ -54,7 +54,7 @@ describe('useFirebaseService', () => {
     });
 
     it('recovers on retry after an initial failure', async () => {
-        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         mockIsEnabled.mockReturnValue(true);
         mockCreate
             .mockRejectedValueOnce(new Error('no network'))

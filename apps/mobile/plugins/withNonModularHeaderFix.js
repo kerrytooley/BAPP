@@ -23,26 +23,26 @@ const NON_MODULAR_HEADER_RUBY = `
  * so it survives `expo prebuild --clean` and EAS builds.
  */
 module.exports = function withNonModularHeaderFix(config) {
-  return withDangerousMod(config, [
-    'ios',
-    async (cfg) => {
-      const podfilePath = path.join(
-        cfg.modRequest.platformProjectRoot,
-        'Podfile',
-      );
-      let contents = fs.readFileSync(podfilePath, 'utf8');
+    return withDangerousMod(config, [
+        'ios',
+        async (cfg) => {
+            const podfilePath = path.join(
+                cfg.modRequest.platformProjectRoot,
+                'Podfile',
+            );
+            let contents = fs.readFileSync(podfilePath, 'utf8');
 
-      if (!contents.includes('[withNonModularHeaderFix]')) {
-        const anchor = 'post_install do |installer|\n';
-        if (contents.includes(anchor)) {
-          contents = contents.replace(anchor, anchor + NON_MODULAR_HEADER_RUBY);
-          fs.writeFileSync(podfilePath, contents);
-        } else {
-          console.warn('[withNonModularHeaderFix] Could not find Podfile post_install hook; fix not applied.');
-        }
-      }
+            if (!contents.includes('[withNonModularHeaderFix]')) {
+                const anchor = 'post_install do |installer|\n';
+                if (contents.includes(anchor)) {
+                    contents = contents.replace(anchor, anchor + NON_MODULAR_HEADER_RUBY);
+                    fs.writeFileSync(podfilePath, contents);
+                } else {
+                    console.warn('[withNonModularHeaderFix] Could not find Podfile post_install hook; fix not applied.');
+                }
+            }
 
-      return cfg;
-    },
-  ]);
+            return cfg;
+        },
+    ]);
 };
