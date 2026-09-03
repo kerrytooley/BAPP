@@ -9,6 +9,7 @@ import { Title } from "@components/Titles";
 import { CodeShare } from "@components/CodeShare";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { useSurveyService } from "@services/surveyServiceContext";
+import SurveyorIllustration from "@assets/illustrations/surveyors.svg"
 
 type Nav = CompositeNavigationProp<
     NativeStackNavigationProp<AdminStackParamList>,
@@ -39,6 +40,7 @@ export function ShareCodeScreen(): React.JSX.Element {
                 <View style={styles.header}>
                     <BackButton navigation={navigation} />
                 </View>
+                <SurveyorIllustration width={180} height={180} style={styles.illustration} />
                 <Title title="Share Your Survey Code" subtitle="Share this surveyor code with your team to invite them to the survey." />
             </View>
             <View style={styles.content} >
@@ -60,6 +62,10 @@ const styles = StyleSheet.create({
         ...screen.content,
         justifyContent: "center",
         flex: 1
+    },
+    illustration: {
+        alignSelf: "center",
+        marginVertical: 24
     },
 
 })

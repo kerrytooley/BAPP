@@ -98,7 +98,7 @@ export function ConfirmSurveyorDetailsScreen(): React.JSX.Element {
                     <DocumentPreview imageUri={boundaryImage} values={positions} />
 
                 </ScrollView>}
-            <View style={{ gap: 8 }} >
+            <View style={{ alignItems: "center", gap: 8 }} >
                 <Button label="Continue" variant="light" onPress={() =>
                     surveyor?.isLead ? navigation.navigate("WeatherConditionsScreen", { surveyId, surveyorId }) :
                         navigation.navigate("SurveyorConfirmLocationScreen", { surveyId, surveyorId })} />

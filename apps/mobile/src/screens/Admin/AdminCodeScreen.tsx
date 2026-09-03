@@ -8,6 +8,7 @@ import React, { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { Alert, StyleSheet, View } from "react-native";
 import { useSurveyService } from "@services/surveyServiceContext";
+import PadlockIllustration from "@assets/illustrations/padlock.svg"
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
@@ -20,6 +21,7 @@ export function AdminCodeScreen(): React.JSX.Element {
         <View style={styles.screen}>
             <View style={{ width: "100%" }}>
                 <BackButton navigation={navigation} />
+                <PadlockIllustration width={180} height={180} style={styles.illustration} />
                 <Title title="Enter Admin Code" subtitle="Enter the admin code for the survey you want to continue" />
             </View>
             <View style={styles.content}>
@@ -48,7 +50,10 @@ const styles = StyleSheet.create({
     },
     content: {
         ...screen.content,
-        position: 'absolute',
-        top: '50%'
-    }
+        paddingBottom: 80
+    },
+    illustration: {
+        alignSelf: "center",
+        margin: 24
+    },
 });

@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Logo from "@assets/icons/logo.svg"
+import Logo from "@assets/illustrations/logo.svg"
 import { textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';
 import { ButtonGroup } from "@components/Button";
@@ -15,8 +15,8 @@ export function WelcomeScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     return (
         <View style={styles.welcomeScreen}>
-            <View style={{ paddingRight: 24 }}>
-                <Logo width={180} height={130} />
+            <View >
+                <Logo width={150} />
             </View>
             <ButtonGroup variant="dark"
                 labels={[
@@ -35,8 +35,8 @@ export function WelcomeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
     welcomeScreen: {
         ...screen.baseScreen,
-        gap: 120,
-        paddingTop: 200
+
+
     },
     bappLogo: {
         ...textStyles.bappLogo,

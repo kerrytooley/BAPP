@@ -17,7 +17,7 @@ export const Title = ({
     testID
 }: TitleProps) => {
     return (
-        <View style={{ width: '100%', gap: 16 }}>
+        <View style={{ width: '100%', paddingTop: 16 }}>
             <Text testID={testID} style={[textStyles.title, style]}>{title}</Text>
             {subtitle != null && <Text style={textStyles.subtitle}>{subtitle}</Text>}
         </View>

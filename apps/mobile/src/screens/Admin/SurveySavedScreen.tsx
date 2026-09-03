@@ -1,12 +1,13 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { screen } from "@theme/screen";
-import { textStyles } from "@theme/fonts";
+import { fonts, textStyles } from "@theme/fonts";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { CompositeNavigationProp, useNavigation } from "@react-navigation/native";
 import { BackButton, Button } from "@components/Button";
 import { RootStackParamList } from "@navigators/index";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
+import SavedIllustration from "@assets/illustrations/saved.svg"
 
 type Nav = CompositeNavigationProp<
     NativeStackNavigationProp<AdminStackParamList>,
@@ -23,8 +24,10 @@ export function SurveySavedScreen(): React.JSX.Element {
                 <BackButton navigation={navigation} />
             </View>
             <View style={styles.content} >
-                <Text style={textStyles.title}>Survey Saved!</Text>
+                <Text style={styles.title}>Survey Saved!</Text>
+                <SavedIllustration width={240} height={240} style={styles.illustration} />
             </View>
+
             <Button label="Return Home" variant="light" onPress={() => navigation.navigate("Welcome")} />
         </View>
     )
@@ -42,4 +45,12 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         flex: 1
     },
+    illustration: {
+        alignSelf: "center",
+        marginVertical: 80
+    },
+    title: {
+        ...textStyles.title,
+        fontSize: fonts.size.xl
+    }
 })

@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
         width: "100%",
         justifyContent: 'flex-start',
         flexDirection: 'row',
-        gap: 24,
+        gap: 16,
     },
     column: {
         justifyContent: "flex-start",
@@ -94,5 +94,6 @@ const styles = StyleSheet.create({
     text: {
         ...textStyles.inputText,
         color: colours.light,
+        paddingLeft: 16
     }
 })
