@@ -34,12 +34,20 @@ module.exports = function withNonModularHeaderFix(config) {
 
             if (!contents.includes('[withNonModularHeaderFix]')) {
                 const anchor = 'post_install do |installer|\n';
-                if (contents.includes(anchor)) {
-                    contents = contents.replace(anchor, anchor + NON_MODULAR_HEADER_RUBY);
-                    fs.writeFileSync(podfilePath, contents);
-                } else {
-                    console.warn('[withNonModularHeaderFix] Could not find Podfile post_install hook; fix not applied.');
+                if (!contents.includes(anchor)) {
+                    // Fail the prebuild/config step LOUDLY. If Expo changes the
+                    // generated Podfile shape, silently skipping this required fix
+                    // lets prebuild "succeed" only to fail later during CocoaPods/
+                    // Xcode compilation with an inscrutable non-modular-header error.
+                    throw new Error(
+                        '[withNonModularHeaderFix] Could not find the Podfile "post_install do |installer|" ' +
+                        'hook to inject the required Firebase non-modular-header fix. The generated Podfile ' +
+                        'shape has likely changed — update this plugin\'s anchor. Refusing to prebuild without ' +
+                        'the fix (the iOS build would otherwise fail later with -Wnon-modular-include-in-framework-module).',
+                    );
                 }
+                contents = contents.replace(anchor, anchor + NON_MODULAR_HEADER_RUBY);
+                fs.writeFileSync(podfilePath, contents);
             }
 
             return cfg;

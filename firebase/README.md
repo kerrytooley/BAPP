@@ -1,9 +1,19 @@
-# Firebase — local emulator config
+# Firebase config
 
-Version-controlled config for running the app against the **local Firebase
-Emulator Suite**. There is **no cloud project** here: `.firebaserc` uses a
-`demo-` project id (`demo-bapp`), which makes the emulators run fully offline
-with no real credentials or billing.
+Version-controlled config for the emulator suite **and** for a real cloud
+project.
+
+> ### ⚠️ The committed native config targets a REAL cloud project
+> The committed `apps/mobile/google-services.json` and
+> `apps/mobile/GoogleService-Info.plist` are for the **real** Firebase project
+> **`bapp-ca44b`** (bucket `bapp-ca44b.firebasestorage.app`) — they are **not**
+> `demo-` placeholders. All three EAS build profiles (`development`, `preview`,
+> `production`) set `EXPO_PUBLIC_USE_FIREBASE=true` and **none** set
+> `EXPO_PUBLIC_FIREBASE_EMULATOR`, so a build from any of them talks to the
+> **real cloud backend** — governed by the loose v1 rules below (any anonymous
+> caller can read/write everything). To develop against the emulator instead,
+> you **must** opt in explicitly with `EXPO_PUBLIC_FIREBASE_EMULATOR=true` (see
+> step 5); it is not the default.
 
 This directory pairs with the `@react-native-firebase` repository adapters in
 `packages/repository/src/**/firebase-*.ts` (exported via
@@ -13,10 +23,14 @@ for the design.
 ## Start the emulators
 
 > **Note:** `.firebaserc` is gitignored (repo `.gitignore`), so it is **not**
-> committed. Create `firebase/.firebaserc` locally first:
+> committed. Create `firebase/.firebaserc` locally first. A `demo-` project id
+> keeps the emulator fully offline with no real credentials/billing:
 > ```json
 > { "projects": { "default": "demo-bapp" } }
 > ```
+> The emulator connection is chosen at runtime by `EXPO_PUBLIC_FIREBASE_EMULATOR`
+> (step 5), independent of the real project id baked into the committed native
+> files — that id only namespaces local emulator data.
 
 ```bash
 npm i -g firebase-tools      # or: npx firebase-tools
@@ -52,12 +66,15 @@ changes until you set `EXPO_PUBLIC_USE_FIREBASE=true`.
    `ios.googleServicesFile` / `android.googleServicesFile` pointing at the demo
    files below and `extra.eas.projectId` set for EAS.
 
-3. **Demo native config files committed** at `apps/mobile/`:
+3. **Native config files committed** at `apps/mobile/`:
    `google-services.json` (Android) + `GoogleService-Info.plist` (iOS), both for
-   the `demo-bapp` project id / `com.bapp.mobile` package. They carry **no real
-   credentials** (placeholder keys) — enough for the native SDK to initialise a
-   default app and talk to the **emulator**. Replace with real files (and
-   gitignore them) before any cloud backend use.
+   the **real `bapp-ca44b` project** / `com.bapp.mobile` package (bucket
+   `bapp-ca44b.firebasestorage.app`). ⚠️ These are **real credentials for a real
+   cloud project**, not `demo-` placeholders — with `EXPO_PUBLIC_FIREBASE_EMULATOR`
+   unset the app reads/writes the live backend. For emulator-only work the same
+   files are fine (the SDK just needs a valid config to initialise a default app);
+   the emulator vs. cloud choice is made at runtime by that env flag (step 5), not
+   by these files.
 
 4. **Build a dev client / prebuild** — RNFB does **not** work in Expo Go:
    ```bash
@@ -172,5 +189,9 @@ Intentionally **not** done in the local-emulator adapter — action later:
    un-GC'd.
 
 See also, above: the concrete native `Rasterizer` (with multi-page-PDF
-fail-clear) and a launch-time sweep that re-enqueues unsent uploads across app
-kills.
+fail-clear).
+
+**Done (no longer deferred):** the launch-time sweep that re-enqueues unsent
+uploads across app kills is now implemented — `FirebaseMediaRepository` persists
+a pending-uploads manifest and `resumePendingUploads()` (called at startup from
+`firebaseSurveyService.ts`) re-sends anything that hadn't reached Storage.
