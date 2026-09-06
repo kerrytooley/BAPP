@@ -34,6 +34,9 @@ import { fromSurveyorDoc } from '../surveyors/firebase-surveyor-repository';
 import { fromObservationDoc } from '../observations/firebase-observation-repository';
 
 const COLLECTION = 'surveys';
+/** Child subcollections that must be deleted with their parent survey (no
+ *  Firestore cascade). Names match the other repositories' SUBCOLLECTION. */
+const SUBCOLLECTIONS = ['locations', 'surveyors', 'observations'] as const;
 
 function fromSurveyDoc(snap: FirebaseFirestoreTypes.DocumentSnapshot): Survey {
   const d = (snap.data() ?? {}) as FirebaseFirestoreTypes.DocumentData;
@@ -101,9 +104,21 @@ export class FirebaseSurveyRepository implements SurveyRepository {
   }
 
   async delete(id: string): Promise<void> {
+    const db = getDb();
+    // Firestore does NOT cascade: deleting the survey doc alone would orphan its
+    // locations/surveyors/observations, which remain reachable via collection-group
+    // queries. Delete every child first, then the parent. Reads come from cache
+    // offline; all deletes are queued (not awaited on server ack) and flush on
+    // reconnect, so this stays offline-safe.
+    for (const sub of SUBCOLLECTIONS) {
+      const children = await getDocs(collection(db, COLLECTION, id, sub));
+      for (const child of children.docs) {
+        queueWrite(deleteDoc(child.ref), `survey.delete ${id}/${sub}/${child.id}`);
+      }
+    }
     // Queued, not awaited: the deletion is applied to the local cache
     // immediately and flushed on reconnect. Awaiting would hang while offline.
-    queueWrite(deleteDoc(doc(getDb(), COLLECTION, id)), `survey.delete ${id}`);
+    queueWrite(deleteDoc(doc(db, COLLECTION, id)), `survey.delete ${id}`);
   }
 
   subscribeById(id: string, callback: (survey: Survey | null) => void): Unsubscribe {
