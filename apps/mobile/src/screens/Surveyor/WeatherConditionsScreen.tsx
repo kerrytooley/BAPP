@@ -6,7 +6,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { screen } from "@theme/screen";
 import { colours } from "@theme/colours";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Card } from "@components/Card";
 import { useSurveyService } from "@services/surveyServiceContext";
@@ -25,6 +25,7 @@ export function WeatherConditionsScreen(): React.JSX.Element {
     const [humidity, setHumidity] = useState<string>();
     const [wind, setWind] = useState<string>();
     const [rain, setRain] = useState<string>();
+    const isSubmitting = useRef(false);
 
     const rainOptions: { label: string }[] = [
         { label: "Wet" },
@@ -32,6 +33,8 @@ export function WeatherConditionsScreen(): React.JSX.Element {
     ];
 
     const handleContinue = async () => {
+        if (isSubmitting.current) return;
+        isSubmitting.current = true;
         const weatherConditions = {
             weather: {
                 temperature: temperature,
@@ -41,9 +44,15 @@ export function WeatherConditionsScreen(): React.JSX.Element {
                 rain: rain
             }
         } as UpdateSurveyInput;
-        const updatedSurvey = await service.updateSurvey(surveyId, weatherConditions);
-        console.log('Survey updated with weather conditions: ', updatedSurvey);
-        navigation.navigate("SurveyorConfirmLocationScreen", { surveyId, surveyorId })
+        try {
+            const updatedSurvey = await service.updateSurvey(surveyId, weatherConditions);
+            console.log('Survey updated with weather conditions: ', updatedSurvey);
+            navigation.navigate("SurveyorConfirmLocationScreen", { surveyId, surveyorId })
+        } catch (e) {
+            console.error('Failed to save weather conditions', e);
+        } finally {
+            isSubmitting.current = false;
+        }
     }
 
     return (

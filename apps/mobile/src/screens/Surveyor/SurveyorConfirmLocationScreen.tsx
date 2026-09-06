@@ -1,11 +1,12 @@
 import { useSurveyService } from "@services/surveyServiceContext";
+import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { screen } from "@theme/screen"
 import { useEffect, useRef, useState } from "react";
 
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
-import { BoundaryPosition, Surveyor } from "@bapp/domain";
+import { BoundaryPosition } from "@bapp/domain";
 
 import { StyleSheet, View } from "react-native";
 import { BackButton, ButtonGroup } from "@components/Button";
@@ -20,31 +21,15 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
     const { surveyId, surveyorId } = useRoute<RouteProp<SurveyorStackParamList, "SurveyorConfirmLocationScreen">>().params;
     const navigation = useNavigation<Nav>();
     const service = useSurveyService();
+    const { context } = useActiveSurvey();
 
-    const [surveyor, setSurveyor] = useState<Surveyor>();
-    const [locationId, setLocationId] = useState<string>("");
+    const surveyor = context?.surveyors.find((surveyor) => surveyor.id === surveyorId);
+    const locationId = surveyor?.locationId ?? "";
+    const position = context?.locations.find((location) => location.id === surveyor?.locationId)?.boundaryPosition;
+
     const [boundaryImageUri, setBoundaryImageUri] = useState<string | null | undefined>();
-    const [position, setPosition] = useState<BoundaryPosition>();
 
     const sheetRef = useRef<BottomSheetModal>(null);
-
-    useEffect(() => {
-        const loadSurvey = async () => {
-            try {
-                const surveyContext = await service.getSurveyContext(surveyId);
-                const surveyor = surveyContext.surveyors.find((surveyor) => surveyor.id === surveyorId);
-                if (surveyor) {
-                    setSurveyor(surveyor);
-                    setLocationId(surveyor.locationId ?? "");
-                }
-                const location = surveyContext.locations.find((location) => location.id === surveyor?.locationId);
-                location?.boundaryPosition && setPosition(location?.boundaryPosition);
-            } catch (e) {
-                console.error("Error fetching survey context", e);
-            }
-        };
-        loadSurvey();
-    }, [service, surveyId, surveyorId]);
 
     useEffect(() => {
         const loadBoundaryImage = async () => {
@@ -66,19 +51,20 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
         sheetRef.current?.present();
     };
     const saveLocation = async (newPosition: BoundaryPosition) => {
-        if (surveyor && surveyor.locationId) {
-            const updatedLocation = await service.updateLocation(surveyor.locationId, { boundaryPosition: newPosition });
-            console.log('Surveyor location updated:', updatedLocation);
-            setPosition(newPosition);
-        } else {
-            const location = await service.addLocation(surveyId, { boundaryPosition: newPosition });
-            await service.updateSurveyor(surveyorId, { locationId: location.id });
-            setSurveyor((prev) => (prev ? { ...prev, locationId: location.id } : prev));
-            setLocationId(location.id);
-            console.log('Surveyor location saved:', location);
-            setPosition(newPosition);
+        try {
+            if (surveyor && surveyor.locationId) {
+                const updatedLocation = await service.updateLocation(surveyor.locationId, { boundaryPosition: newPosition });
+                console.log('Surveyor location updated:', updatedLocation);
+            } else {
+                const location = await service.addLocation(surveyId, { boundaryPosition: newPosition });
+                await service.updateSurveyor(surveyorId, { locationId: location.id });
+                console.log('Surveyor location saved:', location);
+            }
+        } catch (e) {
+            console.error("Error saving surveyor location", e);
+        } finally {
+            sheetRef.current?.dismiss();
         }
-        sheetRef.current?.dismiss();
     }
 
     const ensureLocationId = async (): Promise<string> => {
@@ -87,8 +73,6 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
         // (no boundary coordinates) so photos can still be attached to it.
         const location = await service.addLocation(surveyId, {});
         await service.updateSurveyor(surveyorId, { locationId: location.id });
-        setSurveyor((prev) => (prev ? { ...prev, locationId: location.id } : prev));
-        setLocationId(location.id);
         return location.id;
     };
 
@@ -102,7 +86,6 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
             }
             if (currentSurveyor?.status === 'pending') {
                 await service.updateSurveyor(surveyorId, { status: 'ready' });
-                setSurveyor({ ...currentSurveyor, status: 'ready' });
             }
             navigation.navigate("CapturePhotoScreen", { surveyId, locationId: id, surveyorId, photoType: 'frontView' });
         } catch (e) {

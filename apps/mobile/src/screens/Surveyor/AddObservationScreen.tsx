@@ -8,8 +8,9 @@ import { Title } from "@components/Titles";
 import { TimeOfObservation } from "@components/TimeOfObservation";
 import { HeardAndSeenCount } from "@components/HeardAndSeenCount";
 import React, { useEffect, useRef, useState } from "react";
-import { FlightPath, FlightPathSurface, Observation, UpdateObservationInput } from "@bapp/domain";
+import { FlightPath, FlightPathSurface, UpdateObservationInput } from "@bapp/domain";
 import { useSurveyService } from "@services/surveyServiceContext";
+import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { InputField } from "@components/InputField";
 import { Card } from "@components/Card";
 import { PlusButton as PlusIcon } from "@components/icons"
@@ -30,7 +31,8 @@ export function AddObservationScreen(): React.JSX.Element {
     const { surveyId, observationId, surveyorId, locationId } = useRoute<RouteProp<SurveyorStackParamList, 'AddObservationScreen'>>().params;
 
     const service = useSurveyService();
-    const [observation, setObservation] = useState<Observation>();
+    const { context } = useActiveSurvey();
+    const observation = context?.observations.find((observation) => observation.id === observationId);
 
     const [observationTime, setObservationTime] = useState<Date>(new Date());
     const [lastSeenTime, setLastSeenTime] = useState<Date>(new Date());
@@ -47,6 +49,10 @@ export function AddObservationScreen(): React.JSX.Element {
 
 
     const sheetRef = useRef<BottomSheetModal>(null);
+    // Seed the editable field buffers from the observation exactly once, when it
+    // first becomes available. Guarded so later subscription re-emits can't wipe
+    // in-progress edits.
+    const seeded = useRef(false);
 
     const bumpLastSeen = () => setLastSeenTime(new Date());
 
@@ -62,25 +68,23 @@ export function AddObservationScreen(): React.JSX.Element {
 
 
     useEffect(() => {
-        const loadContext = async () => {
+        if (!observation || seeded.current) return;
+        seeded.current = true;
+        if (observation.firstSeenAt) setObservationTime(observation.firstSeenAt);
+        // Default last seen to first seen when it hasn't been recorded yet.
+        setLastSeenTime(observation.lastSeenAt ?? observation.firstSeenAt ?? new Date());
+        setSeenCount(observation.seenCount);
+        setHeardCount(observation.heardCount);
+        if (observation.frequency) setFrequency(observation.frequency);
+        if (observation.direction) setDirection(observation.direction);
+        if (observation.notes) setNotes(observation.notes);
+        setEmergence(observation.emergence);
+        setFlightPaths(observation.flightPaths);
+    }, [observation]);
+
+    useEffect(() => {
+        const loadImages = async () => {
             try {
-                const { observations } = await service.getSurveyContext(surveyId);
-                const currentObservation = observations.find((observation) => observation.id === observationId);
-
-                if (currentObservation) {
-                    setObservation(currentObservation);
-                    if (currentObservation.firstSeenAt) setObservationTime(currentObservation.firstSeenAt);
-                    // Default last seen to first seen when it hasn't been recorded yet.
-                    setLastSeenTime(currentObservation.lastSeenAt ?? currentObservation.firstSeenAt ?? new Date());
-                    setSeenCount(currentObservation.seenCount);
-                    setHeardCount(currentObservation.heardCount);
-                    if (currentObservation.frequency) setFrequency(currentObservation.frequency);
-                    if (currentObservation.direction) setDirection(currentObservation.direction);
-                    if (currentObservation.notes) setNotes(currentObservation.notes);
-                    setEmergence(currentObservation.emergence);
-                    setFlightPaths(currentObservation.flightPaths);
-                }
-
                 const boundaryImageResult = await service.getBoundaryImage(surveyId);
                 if (boundaryImageResult.status === "ready") {
                     setBoundaryImageUri(boundaryImageResult.url);
@@ -90,13 +94,12 @@ export function AddObservationScreen(): React.JSX.Element {
                 if (frontViewImageResult.status === "ready") {
                     setFrontViewImageUri(frontViewImageResult.url);
                 }
-
             } catch (e) {
-                console.error("Error loading survey context", e);
+                console.error("Error loading observation media", e);
             }
         };
-        loadContext();
-    }, [service, surveyId, observationId, locationId]);
+        loadImages();
+    }, [service, surveyId, locationId]);
 
     const presentFlightPathSheet = (surface: FlightPathSurface) => {
         if (activeSurface === surface) {

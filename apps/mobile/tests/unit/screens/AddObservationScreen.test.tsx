@@ -39,7 +39,13 @@ jest.mock('@components/AddFlightPathBottomSheet', () => {
 
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { AddObservationScreen } from '@screens/Surveyor/AddObservationScreen';
-import { createMockService, renderWithService } from '../../helpers/testUtils';
+import {
+    createContextSubscription,
+    createMockService,
+    mockSubscribeContext,
+    renderWithActiveSurvey,
+    type MockSurveyService,
+} from '../../helpers/testUtils';
 import { buildContext, buildObservation } from '../../helpers/factories';
 import {
     mockNavigate,
@@ -63,14 +69,14 @@ type Mocks = {
     removeObservation?: jest.Mock;
     getBoundaryImage?: jest.Mock;
     getLocationImage?: jest.Mock;
-    getSurveyContext?: jest.Mock;
+    subscribeSurveyContext?: MockSurveyService['subscribeSurveyContext'];
 };
 
 const buildService = (mocks: Mocks = {}) => {
     const service = createMockService({
-        getSurveyContext:
-            mocks.getSurveyContext ??
-            jest.fn().mockResolvedValue(buildContext({ observations: [observation] })),
+        subscribeSurveyContext:
+            mocks.subscribeSurveyContext ??
+            mockSubscribeContext(buildContext({ observations: [observation] })),
         getBoundaryImage:
             mocks.getBoundaryImage ??
             jest.fn().mockResolvedValue({ status: 'ready', url: 'boundary.jpg' }),
@@ -97,14 +103,14 @@ beforeEach(() => {
 
 describe('AddObservationScreen', () => {
     it('loads and displays the observation details', async () => {
-        renderWithService(<AddObservationScreen />, buildService());
+        renderWithActiveSurvey(<AddObservationScreen />, buildService());
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
         expect(screen.getByText('First seen time')).toBeOnTheScreen();
         expect(screen.getByText('Last seen time')).toBeOnTheScreen();
     });
 
     it('toggles the emergence radio option', async () => {
-        renderWithService(<AddObservationScreen />, buildService());
+        renderWithActiveSurvey(<AddObservationScreen />, buildService());
         await waitFor(() => expect(screen.getByTestId('emergence-Yes')).toBeOnTheScreen());
         expect(screen.getByTestId('emergence-No').props.accessibilityState.selected).toBe(true);
 
@@ -112,9 +118,28 @@ describe('AddObservationScreen', () => {
         expect(screen.getByTestId('emergence-Yes').props.accessibilityState.selected).toBe(true);
     });
 
+    it('seeds the edit buffers from context and keeps in-progress edits on re-emit', async () => {
+        const sub = createContextSubscription(buildContext({ observations: [observation] }));
+        renderWithActiveSurvey(
+            <AddObservationScreen />,
+            buildService({ subscribeSurveyContext: sub.subscribe }),
+        );
+        await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
+        // Seeded from context.
+        expect(screen.getByDisplayValue('a nice bat')).toBeOnTheScreen();
+
+        // Edit the notes buffer, then let the context re-emit different notes.
+        fireEvent.changeText(screen.getByDisplayValue('a nice bat'), 'my edit');
+        sub.emit(
+            buildContext({ observations: [buildObservation({ id: 'obs-1', notes: 'server notes' })] }),
+        );
+        // The in-progress edit is preserved, not clobbered by the re-emit.
+        expect(screen.getByDisplayValue('my edit')).toBeOnTheScreen();
+    });
+
     it('saves the observation with the current values and navigates back', async () => {
         const updateObservation = jest.fn().mockResolvedValue(observation);
-        renderWithService(<AddObservationScreen />, buildService({ updateObservation }));
+        renderWithActiveSurvey(<AddObservationScreen />, buildService({ updateObservation }));
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByTestId('emergence-Yes'));
@@ -140,7 +165,7 @@ describe('AddObservationScreen', () => {
                 resolveUpdate = resolve;
             }),
         );
-        renderWithService(<AddObservationScreen />, buildService({ updateObservation }));
+        renderWithActiveSurvey(<AddObservationScreen />, buildService({ updateObservation }));
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByText('Save Observation'));
@@ -159,7 +184,7 @@ describe('AddObservationScreen', () => {
 
     it('deletes the observation and navigates back', async () => {
         const removeObservation = jest.fn().mockResolvedValue(observation);
-        renderWithService(<AddObservationScreen />, buildService({ removeObservation }));
+        renderWithActiveSurvey(<AddObservationScreen />, buildService({ removeObservation }));
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByText('Delete Observation'));
@@ -173,7 +198,7 @@ describe('AddObservationScreen', () => {
     });
 
     it('increments the seen count, bumping the last seen time', async () => {
-        renderWithService(<AddObservationScreen />, buildService());
+        renderWithActiveSurvey(<AddObservationScreen />, buildService());
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
         fireEvent.press(screen.getByLabelText('Increase seen count'));
         expect(screen.getByText('3')).toBeOnTheScreen();
@@ -186,7 +211,7 @@ describe('AddObservationScreen', () => {
                 resolveDelete = resolve;
             }),
         );
-        renderWithService(<AddObservationScreen />, buildService({ removeObservation }));
+        renderWithActiveSurvey(<AddObservationScreen />, buildService({ removeObservation }));
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByText('Delete Observation'));
@@ -204,14 +229,14 @@ describe('AddObservationScreen', () => {
     });
 
     it('increments the heard count', async () => {
-        renderWithService(<AddObservationScreen />, buildService());
+        renderWithActiveSurvey(<AddObservationScreen />, buildService());
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
         fireEvent.press(screen.getByLabelText('Increase heard count'));
         expect(screen.getAllByText('2').length).toBeGreaterThanOrEqual(2);
     });
 
     it('opens the flight path sheet and commits a boundary path', async () => {
-        renderWithService(<AddObservationScreen />, buildService());
+        renderWithActiveSurvey(<AddObservationScreen />, buildService());
         await waitFor(() => expect(screen.getByText('Edit overhead flight path')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Edit overhead flight path'));
         await waitFor(() => expect(screen.getByText('flight-path-sheet')).toBeOnTheScreen());
@@ -219,7 +244,7 @@ describe('AddObservationScreen', () => {
     });
 
     it('re-presents the sheet when the same surface is opened again', async () => {
-        renderWithService(<AddObservationScreen />, buildService());
+        renderWithActiveSurvey(<AddObservationScreen />, buildService());
         await waitFor(() => expect(screen.getByText('Edit overhead flight path')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Edit overhead flight path'));
         await waitFor(() => expect(screen.getByText('flight-path-sheet')).toBeOnTheScreen());
@@ -229,7 +254,7 @@ describe('AddObservationScreen', () => {
     });
 
     it('opens the flight path sheet for the front view surface', async () => {
-        renderWithService(<AddObservationScreen />, buildService());
+        renderWithActiveSurvey(<AddObservationScreen />, buildService());
         await waitFor(() => expect(screen.getByText('Add front-view flight path')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Add front-view flight path'));
         await waitFor(() => expect(screen.getByLabelText('commit-frontView')).toBeOnTheScreen());
@@ -244,11 +269,11 @@ describe('AddObservationScreen', () => {
             ],
         });
         const service = buildService({
-            getSurveyContext: jest
-                .fn()
-                .mockResolvedValue(buildContext({ observations: [frontViewObservation] })),
+            subscribeSurveyContext: mockSubscribeContext(
+                buildContext({ observations: [frontViewObservation] }),
+            ),
         });
-        renderWithService(<AddObservationScreen />, service);
+        renderWithActiveSurvey(<AddObservationScreen />, service);
         await waitFor(() => expect(screen.getByText('Add overhead flight path')).toBeOnTheScreen());
         expect(screen.getByText('Edit front-view flight path')).toBeOnTheScreen();
     });
@@ -258,7 +283,7 @@ describe('AddObservationScreen', () => {
             getBoundaryImage: jest.fn().mockResolvedValue({ status: 'pending' }),
             getLocationImage: jest.fn().mockResolvedValue({ status: 'pending' }),
         });
-        renderWithService(<AddObservationScreen />, service);
+        renderWithActiveSurvey(<AddObservationScreen />, service);
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
         expect(screen.queryByText('Add overhead flight path')).toBeNull();
         expect(screen.queryByText('Add front-view flight path')).toBeNull();
@@ -277,19 +302,14 @@ describe('AddObservationScreen', () => {
             flightPaths: [],
         });
         const updateObservation = jest.fn().mockResolvedValue(bareObservation);
-        const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+        const service = buildService({
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({ observations: [bareObservation] }),
             ),
-            getBoundaryImage: jest.fn().mockResolvedValue({ status: 'ready', url: 'boundary.jpg' }),
+            updateObservation,
         });
-        (service as unknown as { getLocationImage: jest.Mock }).getLocationImage = jest
-            .fn()
-            .mockResolvedValue({ status: 'ready', url: 'front.jpg' });
-        (service as unknown as { updateObservation: jest.Mock }).updateObservation =
-            updateObservation;
 
-        renderWithService(<AddObservationScreen />, service);
+        renderWithActiveSurvey(<AddObservationScreen />, service);
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByText('Save Observation'));
@@ -307,27 +327,23 @@ describe('AddObservationScreen', () => {
     });
 
     it('renders defaults when the observation cannot be found', async () => {
-        const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(buildContext({ observations: [] })),
-            getBoundaryImage: jest.fn().mockResolvedValue({ status: 'ready', url: 'boundary.jpg' }),
+        const service = buildService({
+            subscribeSurveyContext: mockSubscribeContext(buildContext({ observations: [] })),
         });
-        (service as unknown as { getLocationImage: jest.Mock }).getLocationImage = jest
-            .fn()
-            .mockResolvedValue({ status: 'ready', url: 'front.jpg' });
 
-        renderWithService(<AddObservationScreen />, service);
+        renderWithActiveSurvey(<AddObservationScreen />, service);
         await waitFor(() => expect(screen.getByText('Unknown Species')).toBeOnTheScreen());
     });
 
-    it('logs an error when loading the observation fails', async () => {
+    it('logs an error when loading the observation media fails', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = buildService({
-            getSurveyContext: jest.fn().mockRejectedValue(new Error('load failed')),
+            getBoundaryImage: jest.fn().mockRejectedValue(new Error('load failed')),
         });
-        renderWithService(<AddObservationScreen />, service);
+        renderWithActiveSurvey(<AddObservationScreen />, service);
         await waitFor(() =>
             expect(errorSpy).toHaveBeenCalledWith(
-                'Error loading survey context',
+                'Error loading observation media',
                 expect.any(Error),
             ),
         );
@@ -337,7 +353,7 @@ describe('AddObservationScreen', () => {
     it('logs an error when saving fails', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const updateObservation = jest.fn().mockRejectedValue(new Error('save failed'));
-        renderWithService(<AddObservationScreen />, buildService({ updateObservation }));
+        renderWithActiveSurvey(<AddObservationScreen />, buildService({ updateObservation }));
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Save Observation'));
         await waitFor(() =>
@@ -353,7 +369,7 @@ describe('AddObservationScreen', () => {
     it('logs an error when deleting fails', async () => {
         const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
         const removeObservation = jest.fn().mockRejectedValue(new Error('delete failed'));
-        renderWithService(<AddObservationScreen />, buildService({ removeObservation }));
+        renderWithActiveSurvey(<AddObservationScreen />, buildService({ removeObservation }));
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Delete Observation'));
         await waitFor(() =>
