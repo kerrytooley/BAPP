@@ -23,7 +23,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const bat = {
-    image: require("@assets/images/bats/alacthoe.jpg"),
     species: 'Alcathoe'
 } as Bat;
 

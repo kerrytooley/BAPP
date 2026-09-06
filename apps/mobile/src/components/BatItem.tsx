@@ -1,13 +1,13 @@
-import { Image, ImageSourcePropType, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { ChevronRight, Info as InfoTooltip } from "@components/icons"
-import { textStyles } from "@theme/fonts";
+import { fonts, textStyles } from "@theme/fonts";
 import { colours } from "@theme/colours";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
+import BatIcon from "@assets/illustrations/bat.svg"
 
 export interface Bat {
     id: string,
-    image: ImageSourcePropType,
     species: string,
     abr: string,
     group: "Pipistrelle" | "Myotis" | "Long-eared" | "Nyctalus" | "Horseshoe" | "Other",
@@ -26,7 +26,7 @@ export const BatItem = ({ bat, onPress }: BatItemProps) => {
     return (
         <TouchableOpacity onPress={onPress} accessibilityRole="button" testID={bat.species} accessibilityLabel={bat.species} style={styles.container}>
             <View style={styles.batItem}>
-                <Image source={bat.image} style={styles.batImage} />
+                <BatIcon width="50%" height="50%" style={styles.batImage} />
                 <TouchableOpacity accessibilityRole="button" accessibilityLabel="Bat Info" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={styles.infoTooltip} onPress={() => setIsFullScreen(true)}>
                     <InfoTooltip width={20} />
                 </TouchableOpacity>
@@ -45,15 +45,16 @@ export const BatItem = ({ bat, onPress }: BatItemProps) => {
                     </Pressable>
                 </Modal>
                 <LinearGradient
-                    colors={["transparent", colours.cardbackground]}
+                    colors={["transparent", colours.dark]}
                     style={styles.gradient}
                 />
                 <View style={styles.labelContainer}>
                     <Text style={styles.speciesLabel}>{bat.species}</Text>
                     <View style={styles.labelRow} >
                         <Text style={styles.frequencyLabel}>{bat.frequencyRange}</Text>
-                        <ChevronRight />
+
                     </View>
+                    <ChevronRight style={styles.chevron} />
                 </View>
             </View>
         </TouchableOpacity>
@@ -70,14 +71,16 @@ const styles = StyleSheet.create({
         aspectRatio: 1,
         width: "100%",
         alignContent: "center",
+        backgroundColor: colours.cardbackground,
+        borderWidth: 0.5,
+        borderColor: colours.inputBorder
     },
     batImage: {
-        resizeMode: "cover",
-        width: "100%",
-        height: "100%"
+        alignSelf: "center",
+        marginRight: 16
     },
     gradient: {
-        height: "50%",
+        height: "70%",
         width: "100%",
         position: "absolute",
         bottom: 0
@@ -87,24 +90,30 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        padding: 16,
+        padding: 8,
         gap: 4,
     },
     labelRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        gap: 12,
+    },
+    chevron: {
+        position: "absolute",
+        right: 8,
+        bottom: 8
     },
     speciesLabel: {
         ...textStyles.buttonLabel,
         textAlign: "left",
         color: colours.light,
+
     },
     frequencyLabel: {
         ...textStyles.buttonLabel,
         textAlign: "left",
         color: colours.placeholderText,
+        fontSize: fonts.size.sm
     },
     infoTooltip: {
         position: 'absolute',
@@ -132,7 +141,7 @@ const styles = StyleSheet.create({
     infoFrequency: {
         ...textStyles.subtitle,
         textAlign: "left",
-        color: colours.placeholderText,
+        color: colours.placeholderText
     },
     infoText: {
         ...textStyles.subtitle,

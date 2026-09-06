@@ -6,7 +6,6 @@ const bat: Bat = {
     id: 'noctule',
     species: 'Noctule',
     abr: 'Noc',
-    image: { uri: 'file://noctule.png' },
     group: 'Nyctalus',
     frequencyRange: '20-45 kHz',
     info: 'A large, fast-flying bat.',
