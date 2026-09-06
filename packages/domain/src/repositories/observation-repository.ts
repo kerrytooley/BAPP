@@ -9,4 +9,5 @@ export interface ObservationRepository {
   update(id: string, input: UpdateObservationInput): Promise<Observation>;
   delete(id: string): Promise<void>;
   subscribeByLocationId(locationId: string, callback: (observations: Observation[]) => void): Unsubscribe;
+  subscribeBySurveyId(surveyId: string, callback: (observations: Observation[]) => void): Unsubscribe;
 }

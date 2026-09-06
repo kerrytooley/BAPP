@@ -11,7 +11,6 @@ import {
   collectionGroup,
   doc,
   getDocFromCache,
-  getDocs,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -26,6 +25,7 @@ import {
   stripUndefined,
   nowTimestamp,
   queueWrite,
+  getDocsCacheFirst,
 } from '../config/firestore-mapping';
 
 /** Locations live under `surveys/{surveyId}/locations/{id}` (see FIREBASE_ARCHITECTURE.md). */
@@ -74,12 +74,12 @@ export class FirebaseLocationRepository implements LocationRepository {
   async findById(id: string): Promise<Location | null> {
     // findById carries no surveyId, so scan the `locations` collection group by
     // the stored `id` field to locate the doc regardless of its parent survey.
-    const snap = await getDocs(query(collectionGroup(getDb(), SUBCOLLECTION), where('id', '==', id)));
+    const snap = await getDocsCacheFirst(query(collectionGroup(getDb(), SUBCOLLECTION), where('id', '==', id)));
     return snap.empty ? null : fromLocationDoc(snap.docs[0]);
   }
 
   async findBySurveyId(surveyId: string): Promise<Location[]> {
-    const snap = await getDocs(collection(getDb(), 'surveys', surveyId, SUBCOLLECTION));
+    const snap = await getDocsCacheFirst(collection(getDb(), 'surveys', surveyId, SUBCOLLECTION));
     return snap.docs.map(fromLocationDoc);
   }
 

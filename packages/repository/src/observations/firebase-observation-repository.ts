@@ -11,7 +11,6 @@ import {
   collectionGroup,
   doc,
   getDocFromCache,
-  getDocs,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -27,6 +26,7 @@ import {
   stripUndefined,
   nowTimestamp,
   queueWrite,
+  getDocsCacheFirst,
 } from '../config/firestore-mapping';
 
 /** Observations live under `surveys/{surveyId}/observations/{id}`. */
@@ -75,19 +75,19 @@ export class FirebaseObservationRepository implements ObservationRepository {
   }
 
   async findById(id: string): Promise<Observation | null> {
-    const snap = await getDocs(query(collectionGroup(getDb(), SUBCOLLECTION), where('id', '==', id)));
+    const snap = await getDocsCacheFirst(query(collectionGroup(getDb(), SUBCOLLECTION), where('id', '==', id)));
     return snap.empty ? null : fromObservationDoc(snap.docs[0]);
   }
 
   async findBySurveyId(surveyId: string): Promise<Observation[]> {
-    const snap = await getDocs(collection(getDb(), 'surveys', surveyId, SUBCOLLECTION));
+    const snap = await getDocsCacheFirst(collection(getDb(), 'surveys', surveyId, SUBCOLLECTION));
     return snap.docs.map(fromObservationDoc);
   }
 
   async findByLocationId(locationId: string): Promise<Observation[]> {
     // Observations are scoped per survey, but this lookup only has a locationId,
     // so scan the collection group and filter by the stored `locationId` field.
-    const snap = await getDocs(
+    const snap = await getDocsCacheFirst(
       query(collectionGroup(getDb(), SUBCOLLECTION), where('locationId', '==', locationId)),
     );
     return snap.docs.map(fromObservationDoc);
@@ -116,5 +116,10 @@ export class FirebaseObservationRepository implements ObservationRepository {
   subscribeByLocationId(locationId: string, callback: (observations: Observation[]) => void): Unsubscribe {
     const q = query(collectionGroup(getDb(), SUBCOLLECTION), where('locationId', '==', locationId));
     return onSnapshot(q, (snap) => callback(snap.docs.map(fromObservationDoc)));
+  }
+
+  subscribeBySurveyId(surveyId: string, callback: (observations: Observation[]) => void): Unsubscribe {
+    const col = collection(getDb(), 'surveys', surveyId, SUBCOLLECTION);
+    return onSnapshot(col, (snap) => callback(snap.docs.map(fromObservationDoc)));
   }
 }

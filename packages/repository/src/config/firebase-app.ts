@@ -26,6 +26,9 @@ import {
 import {
   getStorage,
   connectStorageEmulator,
+  setMaxOperationRetryTime,
+  setMaxDownloadRetryTime,
+  setMaxUploadRetryTime,
   type FirebaseStorageTypes,
 } from '@react-native-firebase/storage';
 import {
@@ -61,6 +64,11 @@ export interface InitFirebaseOptions {
 
 let emulatorsConnected = false;
 
+/** Storage retry budget (ms). The RNFB default is ~2 minutes, so a download or
+ *  upload attempted offline hangs for that long before rejecting. Lowered to 10s
+ *  so `getDownloadUrl` and background uploads fail fast offline instead. */
+const STORAGE_RETRY_MS = 10_000;
+
 /**
  * Wire the native SDK for local development. Idempotent — the emulator
  * connection is applied at most once per process (re-connecting throws in the
@@ -76,8 +84,22 @@ export async function initFirebase(options: InitFirebaseOptions = {}): Promise<v
     emulatorsConnected = true;
   }
 
+  // Fail fast offline: shrink Storage's ~2-minute retry budget to 10s so image
+  // downloads/uploads reject quickly rather than hanging. These are local config
+  // sets (no network), so they are safe to apply on every init, emulator or not.
+  const storage = getStorage();
+  await setMaxOperationRetryTime(storage, STORAGE_RETRY_MS);
+  await setMaxDownloadRetryTime(storage, STORAGE_RETRY_MS);
+  await setMaxUploadRetryTime(storage, STORAGE_RETRY_MS);
+
   if (anonymousAuth && !getAuth().currentUser) {
-    await signInAnonymously(getAuth());
+    // Non-blocking: a first-ever OFFLINE launch must still boot. Awaiting
+    // signInAnonymously would hang with no connectivity, so fire it and swallow
+    // (log) an offline failure — the native SDK completes it once online, and a
+    // failed attempt is simply retried on a later launch via the same guard.
+    void signInAnonymously(getAuth()).catch((error) => {
+      console.error('[firebase] anonymous sign-in failed (will retry next launch):', error);
+    });
   }
 }
 
