@@ -10,7 +10,7 @@ import {
   collection,
   collectionGroup,
   doc,
-  getDoc,
+  getDocFromCache,
   getDocs,
   setDoc,
   updateDoc,
@@ -18,11 +18,15 @@ import {
   query,
   where,
   onSnapshot,
-  serverTimestamp,
   type FirebaseFirestoreTypes,
 } from '@react-native-firebase/firestore';
 import { getDb } from '../config/firebase-app';
-import { toDateRequired, stripUndefined } from '../config/firestore-mapping';
+import {
+  toDateRequired,
+  stripUndefined,
+  nowTimestamp,
+  queueWrite,
+} from '../config/firestore-mapping';
 
 /** Locations live under `surveys/{surveyId}/locations/{id}` (see FIREBASE_ARCHITECTURE.md). */
 const SUBCOLLECTION = 'locations';
@@ -50,15 +54,21 @@ export class FirebaseLocationRepository implements LocationRepository {
     // Pre-generate the id so we can store it as a field (needed for the
     // collection-group lookups below) and know it before the write resolves.
     const ref = doc(col);
-    await setDoc(ref, {
-      // Business defaults come from the shared domain normalizer — never
-      // re-implemented here. This backend owns only id + timestamps.
-      ...stripUndefined(applyLocationDefaults(input)),
-      id: ref.id,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-    return fromLocationDoc(await getDoc(ref));
+    const now = nowTimestamp();
+    // Queue the write (do not await server ack — that hangs offline) and read the
+    // result back from the local cache. See firestore-mapping.ts `queueWrite`.
+    queueWrite(
+      setDoc(ref, {
+        // Business defaults come from the shared domain normalizer — never
+        // re-implemented here. This backend owns only id + timestamps.
+        ...stripUndefined(applyLocationDefaults(input)),
+        id: ref.id,
+        createdAt: now,
+        updatedAt: now,
+      }),
+      `location.create ${ref.id}`,
+    );
+    return fromLocationDoc(await getDocFromCache(ref));
   }
 
   async findById(id: string): Promise<Location | null> {
@@ -77,14 +87,20 @@ export class FirebaseLocationRepository implements LocationRepository {
     const existing = await this.findById(id);
     if (!existing) throw new Error(`Location ${id} not found`);
     const ref = doc(getDb(), 'surveys', existing.surveyId, SUBCOLLECTION, id);
-    await updateDoc(ref, { ...stripUndefined(input), updatedAt: serverTimestamp() });
-    return fromLocationDoc(await getDoc(ref));
+    queueWrite(
+      updateDoc(ref, { ...stripUndefined(input), updatedAt: nowTimestamp() }),
+      `location.update ${id}`,
+    );
+    return fromLocationDoc(await getDocFromCache(ref));
   }
 
   async delete(id: string): Promise<void> {
     const existing = await this.findById(id);
     if (!existing) return; // idempotent
-    await deleteDoc(doc(getDb(), 'surveys', existing.surveyId, SUBCOLLECTION, id));
+    queueWrite(
+      deleteDoc(doc(getDb(), 'surveys', existing.surveyId, SUBCOLLECTION, id)),
+      `location.delete ${id}`,
+    );
   }
 
   subscribeBySurveyId(surveyId: string, callback: (locations: Location[]) => void): Unsubscribe {

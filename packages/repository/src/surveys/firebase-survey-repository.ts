@@ -10,19 +10,25 @@ import {
 import {
   collection,
   doc,
-  addDoc,
   getDoc,
+  getDocFromCache,
   getDocs,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
   where,
   onSnapshot,
-  serverTimestamp,
   type FirebaseFirestoreTypes,
 } from '@react-native-firebase/firestore';
 import { getDb } from '../config/firebase-app';
-import { toDateOrNull, toDateRequired, stripUndefined } from '../config/firestore-mapping';
+import {
+  toDateOrNull,
+  toDateRequired,
+  stripUndefined,
+  nowTimestamp,
+  queueWrite,
+} from '../config/firestore-mapping';
 import { fromLocationDoc } from '../locations/firebase-location-repository';
 import { fromSurveyorDoc } from '../surveyors/firebase-surveyor-repository';
 import { fromObservationDoc } from '../observations/firebase-observation-repository';
@@ -54,13 +60,22 @@ export class FirebaseSurveyRepository implements SurveyRepository {
   async create(input: CreateSurveyInput): Promise<Survey> {
     // Join codes are supplied by the domain service (generated + made unique
     // there), not invented here. Business defaults come from the shared
-    // normalizer; Firestore owns the id (addDoc) and timestamps.
-    const ref = await addDoc(collection(getDb(), COLLECTION), {
-      ...stripUndefined(applySurveyDefaults(input)),
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-    return fromSurveyDoc(await getDoc(ref));
+    // normalizer; this backend owns only id + timestamps.
+    //
+    // Pre-generate the id with `doc()` (instead of `addDoc`, whose promise only
+    // resolves on server ack) so we know the ref synchronously and can read the
+    // result back from cache while offline. The write is queued, not awaited.
+    const now = nowTimestamp();
+    const ref = doc(collection(getDb(), COLLECTION));
+    queueWrite(
+      setDoc(ref, {
+        ...stripUndefined(applySurveyDefaults(input)),
+        createdAt: now,
+        updatedAt: now,
+      }),
+      `survey.create ${ref.id}`,
+    );
+    return fromSurveyDoc(await getDocFromCache(ref));
   }
 
   async findById(id: string): Promise<Survey | null> {
@@ -78,12 +93,17 @@ export class FirebaseSurveyRepository implements SurveyRepository {
 
   async update(id: string, input: UpdateSurveyInput): Promise<Survey> {
     const ref = doc(getDb(), COLLECTION, id);
-    await updateDoc(ref, { ...stripUndefined(input), updatedAt: serverTimestamp() });
-    return fromSurveyDoc(await getDoc(ref));
+    queueWrite(
+      updateDoc(ref, { ...stripUndefined(input), updatedAt: nowTimestamp() }),
+      `survey.update ${id}`,
+    );
+    return fromSurveyDoc(await getDocFromCache(ref));
   }
 
   async delete(id: string): Promise<void> {
-    await deleteDoc(doc(getDb(), COLLECTION, id));
+    // Queued, not awaited: the deletion is applied to the local cache
+    // immediately and flushed on reconnect. Awaiting would hang while offline.
+    queueWrite(deleteDoc(doc(getDb(), COLLECTION, id)), `survey.delete ${id}`);
   }
 
   subscribeById(id: string, callback: (survey: Survey | null) => void): Unsubscribe {

@@ -10,7 +10,7 @@ import {
   collection,
   collectionGroup,
   doc,
-  getDoc,
+  getDocFromCache,
   getDocs,
   setDoc,
   updateDoc,
@@ -18,11 +18,16 @@ import {
   query,
   where,
   onSnapshot,
-  serverTimestamp,
   type FirebaseFirestoreTypes,
 } from '@react-native-firebase/firestore';
 import { getDb } from '../config/firebase-app';
-import { toDateOrNull, toDateRequired, stripUndefined } from '../config/firestore-mapping';
+import {
+  toDateOrNull,
+  toDateRequired,
+  stripUndefined,
+  nowTimestamp,
+  queueWrite,
+} from '../config/firestore-mapping';
 
 /** Observations live under `surveys/{surveyId}/observations/{id}`. */
 const SUBCOLLECTION = 'observations';
@@ -55,13 +60,18 @@ export class FirebaseObservationRepository implements ObservationRepository {
   async create(input: CreateObservationInput): Promise<Observation> {
     const col = collection(getDb(), 'surveys', input.surveyId, SUBCOLLECTION);
     const ref = doc(col);
-    await setDoc(ref, {
-      ...stripUndefined(applyObservationDefaults(input)),
-      id: ref.id,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-    return fromObservationDoc(await getDoc(ref));
+    const now = nowTimestamp();
+    // Queue the write (awaiting server ack hangs offline) and read back from cache.
+    queueWrite(
+      setDoc(ref, {
+        ...stripUndefined(applyObservationDefaults(input)),
+        id: ref.id,
+        createdAt: now,
+        updatedAt: now,
+      }),
+      `observation.create ${ref.id}`,
+    );
+    return fromObservationDoc(await getDocFromCache(ref));
   }
 
   async findById(id: string): Promise<Observation | null> {
@@ -87,14 +97,20 @@ export class FirebaseObservationRepository implements ObservationRepository {
     const existing = await this.findById(id);
     if (!existing) throw new Error(`Observation ${id} not found`);
     const ref = doc(getDb(), 'surveys', existing.surveyId, SUBCOLLECTION, id);
-    await updateDoc(ref, { ...stripUndefined(input), updatedAt: serverTimestamp() });
-    return fromObservationDoc(await getDoc(ref));
+    queueWrite(
+      updateDoc(ref, { ...stripUndefined(input), updatedAt: nowTimestamp() }),
+      `observation.update ${id}`,
+    );
+    return fromObservationDoc(await getDocFromCache(ref));
   }
 
   async delete(id: string): Promise<void> {
     const existing = await this.findById(id);
     if (!existing) return; // idempotent
-    await deleteDoc(doc(getDb(), 'surveys', existing.surveyId, SUBCOLLECTION, id));
+    queueWrite(
+      deleteDoc(doc(getDb(), 'surveys', existing.surveyId, SUBCOLLECTION, id)),
+      `observation.delete ${id}`,
+    );
   }
 
   subscribeByLocationId(locationId: string, callback: (observations: Observation[]) => void): Unsubscribe {
