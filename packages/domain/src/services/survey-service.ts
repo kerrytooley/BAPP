@@ -131,6 +131,21 @@ export class SurveyService {
     const path = `surveys/${surveyId}/boundary/${fileName}`;
     const result = await this.mediaRepository.upload(path, data, { onProgress });
 
+    // TODO(media-fallback / Copilot C): this swaps the survey's sole `boundary`
+    // field to the new asset before it is `ready`. For a still-`processing`
+    // replacement (PDF/HEIC without a rasterizer) `getBoundaryImage()` then
+    // returns `processing` and the UI blanks, even though the previous image is
+    // still live in Storage. Only observable once async rasterization exists
+    // (see Copilot E / the `Rasterizer` seam); a directly-renderable image
+    // returns `ready` synchronously and never blanks.
+    //   Suggested fix (Option 2 — explicit fallback): add
+    //   `fallbackRenderRef?: string | null` to `MediaAsset`; when a `ready`
+    //   previous asset is superseded by a still-`processing`/`failed` one, set
+    //   `fallbackRenderRef = previous.renderRef` here, have `getBoundaryImage`
+    //   render the fallback while `status !== 'ready'`, and clear it + GC the old
+    //   group once the replacement reaches `ready`. No repo/persistence change is
+    //   needed — MediaAsset rides inside the nested doc map that is written/read
+    //   whole. Mirror the same change in `setLocationImage`/`getLocationImage`.
     const boundary: MediaAsset = {
       sourceRef: result.sourceRef,
       renderRef: result.renderRef,
@@ -178,6 +193,11 @@ export class SurveyService {
     const path = `locations/${locationId}/${fileStub}/${fileName}`;
     const result = await this.mediaRepository.upload(path, data, { onProgress });
 
+    // TODO(media-fallback / Copilot C): same blank-on-replace issue as
+    // `setBoundaryImage` — swapping the image field before the replacement is
+    // `ready` blanks a still-live previous photo for `processing` PDF/HEIC
+    // sources. Apply the Option 2 `fallbackRenderRef` fix here and in
+    // `getLocationImage` alongside the boundary one. See setBoundaryImage.
     const image: MediaAsset = {
       sourceRef: result.sourceRef,
       renderRef: result.renderRef,

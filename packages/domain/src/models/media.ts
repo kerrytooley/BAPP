@@ -26,6 +26,11 @@ export interface MediaAsset {
   renderRef: string | null;
   status: MediaAssetStatus;
   error?: string | null;
+  // TODO(media-fallback / Copilot C): add `fallbackRenderRef?: string | null` —
+  // the previous `ready` render kept live while a replacement is still
+  // `processing`, so replacing an image never blanks the existing one. See the
+  // Option 2 note in SurveyService.setBoundaryImage. No persistence change needed
+  // (this rides inside the nested doc map).
 }
 
 export type MediaType = 'equipment' | 'frontView' | 'boundary';
