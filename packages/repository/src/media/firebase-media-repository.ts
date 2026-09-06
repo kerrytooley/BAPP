@@ -11,7 +11,7 @@ import {
 // `/legacy` entry point.
 import * as FileSystem from 'expo-file-system/legacy';
 import { getFirebaseStorage } from '../config/firebase-app';
-import { needsNormalization, derivedImagePath, type Rasterizer } from './boundary-media';
+import { isPdf, isHeic, needsNormalization, derivedImagePath, type Rasterizer } from './boundary-media';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -35,6 +35,27 @@ function bytesToBase64(bytes: Uint8Array): string {
   return result;
 }
 
+/** Decode base64 back to bytes (inverse of `bytesToBase64`). Used to re-read
+ *  cached media off disk when resuming an interrupted upload at launch. */
+function base64ToBytes(b64: string): Uint8Array {
+  const out = new Uint8Array(Math.floor((b64.replace(/=+$/, '').length * 6) / 8));
+  let bits = 0;
+  let value = 0;
+  let o = 0;
+  for (const ch of b64) {
+    if (ch === '=') break;
+    const idx = BASE64_CHARS.indexOf(ch);
+    if (idx === -1) continue; // skip whitespace/newlines
+    value = (value << 6) | idx;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      out[o++] = (value >> bits) & 0xff;
+    }
+  }
+  return out.subarray(0, o);
+}
+
 const MIME_TYPES: Record<string, string> = {
   png: 'image/png',
   jpg: 'image/jpeg',
@@ -50,6 +71,18 @@ function mimeTypeFor(reference: string): string {
   return MIME_TYPES[extension] ?? 'application/octet-stream';
 }
 
+/**
+ * Infer the content type from the bytes' magic number first, falling back to the
+ * extension. `needsNormalization` deliberately detects PDF/HEIC from magic bytes
+ * when the extension lies, so the stored metadata (and what a rasterizer receives)
+ * must agree — inferring purely from a wrong extension would mislabel the object.
+ */
+function inferContentType(reference: string, bytes: Uint8Array): string {
+  if (isPdf(reference, bytes)) return 'application/pdf';
+  if (isHeic(reference, bytes)) return 'image/heic';
+  return mimeTypeFor(reference);
+}
+
 /** Sanitize the final path segment for storage safety (adapter-owned, per the port doc). */
 function sanitizePath(path: string): string {
   const slash = path.lastIndexOf('/');
@@ -60,17 +93,62 @@ function sanitizePath(path: string): string {
   return dir + name;
 }
 
+/**
+ * Reject references that could escape `CACHE_ROOT` when used as a filesystem
+ * path. References are persisted in writable Firestore fields, so a malicious or
+ * corrupt `../`/absolute/backslash reference must never be turned into a local
+ * URI for download, cache seeding, or deletion. Fail closed.
+ */
+function assertSafeReference(reference: string): void {
+  const unsafe =
+    reference.length === 0 ||
+    reference.startsWith('/') ||
+    reference.includes('\\') ||
+    reference.includes('\0') ||
+    reference.split('/').some((segment) => segment === '..');
+  if (unsafe) {
+    throw new Error(`Unsafe media reference rejected: ${JSON.stringify(reference)}`);
+  }
+}
+
 /** Root of the on-device offline cache. Mirrors storage ref paths beneath it so
  *  a reference maps 1:1 to a cache file and survey-scoped clearing is a dir delete. */
 const CACHE_ROOT = `${FileSystem.cacheDirectory ?? ''}bapp-media/`;
 
+/** Durable record of uploads that have not yet reached Storage, persisted next to
+ *  the cached bytes so it survives app kills. Kept OUT of the survey-scoped cache
+ *  subtree so `clearCache(surveyId)` never orphans it. */
+const PENDING_MANIFEST_PATH = `${CACHE_ROOT}.pending-uploads.json`;
+
+interface PendingUpload {
+  contentType: string;
+}
+
 function cachePathFor(reference: string): string {
+  assertSafeReference(reference);
   return `${CACHE_ROOT}${reference}`;
 }
 
 function parentDir(path: string): string {
   const slash = path.lastIndexOf('/');
   return slash >= 0 ? path.slice(0, slash) : path;
+}
+
+/**
+ * The full set of references a `delete(reference)` must remove: the reference
+ * itself plus every paired artifact. `derivedImagePath` maps a source (`.pdf`/
+ * `.heic`) to its canonical `.png` render. The reverse is ambiguous — a `.png`
+ * render does not encode which source produced it — so when given a render we
+ * also target the known normalization-source extensions at the same stem.
+ * Deletion is idempotent, so targeting a non-existent variant is harmless.
+ */
+function deletionGroup(reference: string): string[] {
+  const refs = new Set([reference, derivedImagePath(reference)]);
+  if (/\.png$/i.test(reference)) {
+    const stem = reference.replace(/\.[^./]*$/, '');
+    for (const ext of ['pdf', 'heic', 'heif']) refs.add(`${stem}.${ext}`);
+  }
+  return [...refs];
 }
 
 export class FirebaseMediaRepository implements MediaRepository {
@@ -84,6 +162,9 @@ export class FirebaseMediaRepository implements MediaRepository {
    */
   constructor(private readonly rasterizer?: Rasterizer) {}
 
+  /** Serializes read-modify-write access to the pending-uploads manifest. */
+  private manifestLock: Promise<unknown> = Promise.resolve();
+
   async upload(
     path: string,
     data: ArrayBuffer | Uint8Array,
@@ -91,7 +172,7 @@ export class FirebaseMediaRepository implements MediaRepository {
   ): Promise<UploadResult> {
     const sourceRef = sanitizePath(path);
     const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
-    const contentType = options?.contentType ?? mimeTypeFor(sourceRef);
+    const contentType = options?.contentType ?? inferContentType(sourceRef, bytes);
 
     // Offline-first: persist the picked bytes to the local cache FIRST, keyed by
     // the storage ref, so the originating device can render this media from a
@@ -146,10 +227,14 @@ export class FirebaseMediaRepository implements MediaRepository {
   /**
    * Fire a resumable upload without awaiting it. Offline it cannot finish;
    * awaiting would hang the caller and block the surveyor. It runs/resumes in
-   * the background and flushes when connectivity returns; failures are swallowed
-   * (the source is already recorded and locally drawable, and RNFB resumes the
-   * task — a launch-time sweep of unsent media is the durability backstop across
-   * app kills, see firebase/README).
+   * the background and flushes when connectivity returns.
+   *
+   * Durability across app kills: before starting, the reference is recorded in a
+   * persisted pending-uploads manifest and only cleared once the upload succeeds.
+   * A terminal failure (or an app kill mid-flight) therefore leaves the entry in
+   * place, so `resumePendingUploads()` at the next launch re-sends it from the
+   * cached bytes — the source is never left as a durable doc reference pointing at
+   * an object that never reached Storage.
    *
    * NOTE (device-time hardening): the bytes are also on disk in the cache, so
    * uploading via RNFB's `putFile(ref, cachePath)` is more robust than a byte
@@ -162,6 +247,9 @@ export class FirebaseMediaRepository implements MediaRepository {
     contentType: string,
     onProgress?: (fraction: number) => void,
   ): void {
+    // Record BEFORE starting so an app kill immediately after start is still
+    // recoverable. Fire-and-forget: a local file write, ordered by manifestLock.
+    void this.recordPending(reference, contentType);
     const task = uploadBytesResumable(
       storageRef(getFirebaseStorage(), reference),
       bytes,
@@ -174,7 +262,71 @@ export class FirebaseMediaRepository implements MediaRepository {
         }
       });
     }
-    task.then(undefined, () => undefined);
+    task.then(
+      () => {
+        void this.clearPending(reference); // reached Storage — no longer pending
+      },
+      () => undefined, // leave the entry for launch-time resume
+    );
+  }
+
+  /**
+   * Re-enqueue every upload that had not reached Storage when the app last exited.
+   * Call once at startup, after Firebase init. Entries whose cached bytes are gone
+   * (e.g. the cache was cleared) are pruned rather than resent. Best-effort — a
+   * still-offline device simply re-queues them again next launch.
+   */
+  async resumePendingUploads(): Promise<void> {
+    const manifest = await this.readManifest();
+    for (const [reference, entry] of Object.entries(manifest)) {
+      const cachePath = cachePathFor(reference);
+      const info = await FileSystem.getInfoAsync(cachePath);
+      if (!info.exists) {
+        await this.clearPending(reference);
+        continue;
+      }
+      const b64 = await FileSystem.readAsStringAsync(cachePath, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      this.startBackgroundUpload(reference, base64ToBytes(b64), entry.contentType);
+    }
+  }
+
+  private async readManifest(): Promise<Record<string, PendingUpload>> {
+    const info = await FileSystem.getInfoAsync(PENDING_MANIFEST_PATH);
+    if (!info.exists) return {};
+    try {
+      return JSON.parse(await FileSystem.readAsStringAsync(PENDING_MANIFEST_PATH)) as Record<
+        string,
+        PendingUpload
+      >;
+    } catch {
+      return {}; // corrupt/partial manifest — start clean rather than crash
+    }
+  }
+
+  /** Atomically read-modify-write the manifest, serialized via `manifestLock`. */
+  private mutateManifest(mutator: (manifest: Record<string, PendingUpload>) => void): Promise<void> {
+    const next = this.manifestLock.then(async () => {
+      const manifest = await this.readManifest();
+      mutator(manifest);
+      await FileSystem.makeDirectoryAsync(parentDir(PENDING_MANIFEST_PATH), { intermediates: true });
+      await FileSystem.writeAsStringAsync(PENDING_MANIFEST_PATH, JSON.stringify(manifest));
+    });
+    this.manifestLock = next.catch(() => undefined); // keep the chain alive on failure
+    return next;
+  }
+
+  private recordPending(reference: string, contentType: string): Promise<void> {
+    return this.mutateManifest((manifest) => {
+      manifest[reference] = { contentType };
+    });
+  }
+
+  private clearPending(reference: string): Promise<void> {
+    return this.mutateManifest((manifest) => {
+      delete manifest[reference];
+    });
   }
 
   async getDownloadUrl(reference: string): Promise<string> {
@@ -191,10 +343,13 @@ export class FirebaseMediaRepository implements MediaRepository {
   }
 
   async delete(reference: string): Promise<void> {
-    // Holistic + idempotent: remove the reference and its paired render/source,
-    // in both remote storage and the local cache. Missing objects are ignored.
-    const derived = derivedImagePath(reference);
-    for (const r of new Set([reference, derived])) {
+    // Holistic + idempotent: remove the reference and every paired source/render
+    // (see `deletionGroup`), in both remote storage and the local cache. Missing
+    // objects are ignored. Each ref is also dropped from the pending-uploads
+    // manifest so a not-yet-flushed upload can't be resurrected by the launch-time
+    // resume sweep after its object was deleted here.
+    for (const r of deletionGroup(reference)) {
+      await this.clearPending(r);
       try {
         await deleteObject(storageRef(getFirebaseStorage(), r));
       } catch {

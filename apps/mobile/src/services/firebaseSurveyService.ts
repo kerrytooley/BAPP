@@ -41,6 +41,13 @@ export async function createFirebaseSurveyService(): Promise<SurveyService> {
     const observationRepo = new FirebaseObservationRepository();
     const mediaRepo = new FirebaseMediaRepository();
 
+    // Re-enqueue any media whose upload didn't reach Storage before the app last
+    // exited (killed mid-upload, or offline). Fire-and-forget so startup isn't
+    // blocked; still-offline devices simply re-queue again next launch.
+    void mediaRepo.resumePendingUploads().catch((error) => {
+        console.error('[firebase] failed to resume pending media uploads:', error);
+    });
+
     return new SurveyService(
         surveyRepo,
         locationRepo,
