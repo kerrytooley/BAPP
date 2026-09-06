@@ -24,9 +24,6 @@
       "package": "com.bapp.mobile",
       "versionCode": 1,
       "edgeToEdgeEnabled": true,
-      "permissions": [
-        "android.permission.RECORD_AUDIO"
-      ],
       "googleServicesFile": "./google-services.json"
     },
     "web": {
@@ -47,7 +44,8 @@
         "expo-image-picker",
         {
           "cameraPermission": "Allow BAPP to take photos of equipment.",
-          "photosPermission": "Allow BAPP to access your photos to attach survey images."
+          "photosPermission": "Allow BAPP to access your photos to attach survey images.",
+          "microphonePermission": false
         }
       ],
       "@react-native-firebase/app",

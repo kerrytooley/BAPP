@@ -2,7 +2,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';
-import { MapPin, Plus, RightArrow, ChevronRight } from '@components/icons';
+import { MapPin, Plus, RightArrow, ChevronLeft } from '@components/icons';
 
 export interface ButtonProps {
   variant?: 'dark' | 'light';
@@ -87,7 +87,7 @@ export const BackButton = ({
 }: BackButtonProps) => {
   return (
     <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={styles.backButton} onPress={() => navigation.goBack()}>
-      <ChevronRight width={12} height={20} style={styles.backChevron} />
+      <ChevronLeft width={28} />
     </TouchableOpacity>
   );
 }
@@ -159,10 +159,7 @@ const styles = StyleSheet.create({
     gap: 16
   },
   backButton: {
-    justifyContent: "flex-start",
-  },
-  backChevron: {
-    transform: [{ scaleX: -1 }],
+    alignSelf: "flex-start",
   },
   inlineButtonText: {
     ...textStyles.subtitle,

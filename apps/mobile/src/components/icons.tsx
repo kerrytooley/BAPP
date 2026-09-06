@@ -34,6 +34,7 @@ export const MinusButton = makeIcon("minus-circle", 44);
 export const MapPin = makeIcon("map-pin", 24);
 export const Close = makeIcon("x", 14);
 export const ChevronRight = makeIcon("chevron-right", 16);
+export const ChevronLeft = makeIcon("chevron-left", 28);
 export const Expand = makeIcon("maximize", 24);
 export const Upload = makeIcon("upload", 44);
 export const Rotate = makeIcon("refresh-cw", 48, colours.placeholderText);

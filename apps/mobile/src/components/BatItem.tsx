@@ -77,7 +77,8 @@ const styles = StyleSheet.create({
     },
     batImage: {
         alignSelf: "center",
-        marginRight: 16
+        marginRight: 16,
+        marginTop: 16
     },
     gradient: {
         height: "70%",
@@ -90,7 +91,8 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        padding: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 16,
         gap: 4,
     },
     labelRow: {
@@ -100,8 +102,8 @@ const styles = StyleSheet.create({
     },
     chevron: {
         position: "absolute",
-        right: 8,
-        bottom: 8
+        right: 16,
+        bottom: 16
     },
     speciesLabel: {
         ...textStyles.buttonLabel,
