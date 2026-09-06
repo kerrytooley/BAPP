@@ -4,15 +4,16 @@ import { Title } from "@components/Titles";
 import { RootStackParamList } from "@navigators/index";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { CompositeNavigationProp, RouteProp, useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import { CompositeNavigationProp, RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { screen } from "@theme/screen";
 import { colours } from "@theme/colours";
 import { textStyles } from "@theme/fonts";
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSurveyService } from "@services/surveyServiceContext";
+import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { exportSurvey } from "@services/export/exportSurvey";
-import { Survey, Surveyor, SurveyorStatus, SurveyStatus } from "@bapp/domain";
+import { SurveyorStatus, SurveyStatus } from "@bapp/domain";
 import { displayValue } from "@utils/displayValue";
 
 type Nav = CompositeNavigationProp<
@@ -36,29 +37,10 @@ export function SurveyStatusScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const { surveyId } = useRoute<RouteProp<AdminStackParamList, "SurveyStatusScreen">>().params;
     const service = useSurveyService();
-    const [survey, setSurvey] = useState<Survey>();
-    const [surveyors, setSurveyors] = useState<Surveyor[]>();
+    const { context } = useActiveSurvey();
+    const survey = context?.survey;
+    const surveyors = context?.surveyors;
     const [exporting, setExporting] = useState(false);
-
-    useFocusEffect(
-        useCallback(() => {
-            let active = true;
-            const loadContext = async () => {
-                try {
-                    const { survey, surveyors } = await service.getSurveyContext(surveyId);
-                    if (!active) return;
-                    setSurvey(survey);
-                    setSurveyors(surveyors);
-                } catch (e) {
-                    console.error("failed to load survey status", e);
-                }
-            };
-            loadContext();
-            return () => {
-                active = false;
-            };
-        }, [service, surveyId])
-    );
 
     const handleExport = async () => {
         setExporting(true);

@@ -5,7 +5,11 @@ jest.mock('@react-navigation/native', () =>
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { CodeConfirmationScreen } from '@screens/Surveyor/CodeConfirmationScreen';
 import { buildContext, buildSurvey } from '../../helpers/factories';
-import { createMockService, renderWithService } from '../../helpers/testUtils';
+import {
+    createMockService,
+    mockSubscribeContext,
+    renderWithActiveSurvey,
+} from '../../helpers/testUtils';
 import {
     mockGoBack,
     resetNavigationMock,
@@ -22,13 +26,13 @@ describe('CodeConfirmationScreen', () => {
     it('shows the survey name, postcode and date once loaded', async () => {
         const date = new Date(2026, 6, 13);
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     survey: buildSurvey({ name: 'Dusk count', postcode: 'SW1A 1AA', date }),
                 }),
             ),
         });
-        renderWithService(<CodeConfirmationScreen />, service);
+        renderWithActiveSurvey(<CodeConfirmationScreen />, service);
         await waitFor(() =>
             expect(screen.getByText('Dusk count - SW1A 1AA')).toBeOnTheScreen(),
         );
@@ -37,13 +41,13 @@ describe('CodeConfirmationScreen', () => {
 
     it('shows fallbacks when the survey details are missing', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     survey: buildSurvey({ name: '', postcode: '', date: null }),
                 }),
             ),
         });
-        renderWithService(<CodeConfirmationScreen />, service);
+        renderWithActiveSurvey(<CodeConfirmationScreen />, service);
         await waitFor(() =>
             expect(screen.getByText('Survey name not found')).toBeOnTheScreen(),
         );
@@ -52,25 +56,11 @@ describe('CodeConfirmationScreen', () => {
 
     it('goes back when the details do not look right', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(buildContext()),
+            subscribeSurveyContext: mockSubscribeContext(buildContext()),
         });
-        renderWithService(<CodeConfirmationScreen />, service);
+        renderWithActiveSurvey(<CodeConfirmationScreen />, service);
         fireEvent.press(screen.getByText('Continue'));
         fireEvent.press(screen.getByText("Doesn't look right?"));
         expect(mockGoBack).toHaveBeenCalledTimes(1);
-    });
-
-    it('logs an error when the survey fails to load', async () => {
-        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
-        const service = createMockService({
-            getSurveyContext: jest.fn().mockRejectedValue(new Error('load failed')),
-        });
-        renderWithService(<CodeConfirmationScreen />, service);
-        await waitFor(() =>
-            expect(errorSpy).toHaveBeenCalledWith(
-                'getSurveyContext failed:',
-                expect.any(Error),
-            ),
-        );
     });
 });

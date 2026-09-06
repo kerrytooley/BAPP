@@ -6,7 +6,11 @@ import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { ReviewSurveyDetailsScreen } from '@screens/Admin/ReviewSurveyDetailsScreen';
 import { DocumentPreview } from '@components/DocumentPreview';
 import { buildContext, buildLocation, buildSurvey, buildSurveyor } from '../../helpers/factories';
-import { createMockService, renderWithService } from '../../helpers/testUtils';
+import {
+    createMockService,
+    mockSubscribeContext,
+    renderWithActiveSurvey,
+} from '../../helpers/testUtils';
 import {
     mockNavigate,
     resetNavigationMock,
@@ -41,10 +45,10 @@ const populatedContext = () =>
 describe('ReviewSurveyDetailsScreen', () => {
     it('renders the loaded survey summary', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(populatedContext()),
+            subscribeSurveyContext: mockSubscribeContext(populatedContext()),
             getBoundaryImage: jest.fn().mockResolvedValue({ status: 'ready', url: 'https://img/boundary.jpg' }),
         });
-        renderWithService(<ReviewSurveyDetailsScreen />, service);
+        renderWithActiveSurvey(<ReviewSurveyDetailsScreen />, service);
         await waitFor(() => expect(screen.getByText('Dusk count')).toBeOnTheScreen());
         expect(screen.getByText('SW1A 1AA')).toBeOnTheScreen();
         expect(screen.getByText('Lead Surveyor')).toBeOnTheScreen();
@@ -54,7 +58,7 @@ describe('ReviewSurveyDetailsScreen', () => {
 
     it('passes all positioned surveyor locations to the boundary preview', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     locations: [
                         buildLocation({ id: 'location-1', boundaryPosition: { x: 0.1, y: 0.2 } }),
@@ -64,7 +68,7 @@ describe('ReviewSurveyDetailsScreen', () => {
             ),
             getBoundaryImage: jest.fn().mockResolvedValue({ status: 'ready', url: 'https://img/boundary.jpg' }),
         });
-        renderWithService(<ReviewSurveyDetailsScreen />, service);
+        renderWithActiveSurvey(<ReviewSurveyDetailsScreen />, service);
 
         await waitFor(() =>
             expect(DocumentPreview).toHaveBeenLastCalledWith(
@@ -78,9 +82,9 @@ describe('ReviewSurveyDetailsScreen', () => {
 
     it('navigates to share the code when setup is completed', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(populatedContext()),
+            subscribeSurveyContext: mockSubscribeContext(populatedContext()),
         });
-        renderWithService(<ReviewSurveyDetailsScreen />, service);
+        renderWithActiveSurvey(<ReviewSurveyDetailsScreen />, service);
         await waitFor(() => expect(screen.getByText('Dusk count')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Complete Survey Setup'));
         expect(mockNavigate).toHaveBeenCalledWith('ShareCodeScreen', {
@@ -90,25 +94,27 @@ describe('ReviewSurveyDetailsScreen', () => {
 
     it('navigates to the saved screen when saving for later', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(populatedContext()),
+            subscribeSurveyContext: mockSubscribeContext(populatedContext()),
         });
-        renderWithService(<ReviewSurveyDetailsScreen />, service);
+        renderWithActiveSurvey(<ReviewSurveyDetailsScreen />, service);
         await waitFor(() => expect(screen.getByText('Dusk count')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Save for Later'));
         expect(mockNavigate).toHaveBeenCalledWith('SurveySavedScreen');
     });
 
-    it('logs an error when the survey fails to load', async () => {
+    it('logs an error when the boundary image fails to load', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = createMockService({
-            getSurveyContext: jest.fn().mockRejectedValue(new Error('load failed')),
+            subscribeSurveyContext: mockSubscribeContext(populatedContext()),
+            getBoundaryImage: jest.fn().mockRejectedValue(new Error('load failed')),
         });
-        renderWithService(<ReviewSurveyDetailsScreen />, service);
+        renderWithActiveSurvey(<ReviewSurveyDetailsScreen />, service);
         await waitFor(() =>
             expect(errorSpy).toHaveBeenCalledWith(
                 'failed to fetch survey',
                 expect.any(Error),
             ),
         );
+        errorSpy.mockRestore();
     });
 });
