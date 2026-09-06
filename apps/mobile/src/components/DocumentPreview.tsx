@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Image, Modal, Pressable, StyleSheet, TouchableOpacity, View } from "react-native";
 import { colours } from "@theme/colours";
-import Expand from "@assets/icons/expand.svg";
+import { Expand } from "@components/icons";
 import { StaticPinLayer } from "./StaticPinLayer";
 import { BoundaryPosition } from "@bapp/domain";
 

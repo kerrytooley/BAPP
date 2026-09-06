@@ -2,7 +2,7 @@ import { BoundaryPosition } from "@bapp/domain"
 import { GestureResponderEvent, LayoutChangeEvent, View } from "react-native"
 import { useEffect, useState } from "react"
 import { Image, Pressable, StyleSheet } from "react-native"
-import MapPin from "@assets/icons/mapPin.svg"
+import { MapPin } from "@components/icons"
 import { colours } from "@theme/colours"
 import { getAspectRatio } from "@utils/image"
 

@@ -10,8 +10,8 @@ const groups = ["Pipistrelle", "Myotis", "Long-eared", "Nyctalus", "Horseshoe", 
 export const BatGrid = ({ bats, onPress }: BatGridProps) => {
     return (
         groups.map((group) => (
-            <View key={group}>
-                <Button label={group} onPress={() => onPress(group)} />
+            <View key={group} >
+                <Button label={group} onPress={() => onPress(group)} action="right arrow" />
                 <View key={group} style={styles.grid}>
                     {bats
                         .filter((bat) => bat.group === group)
@@ -38,6 +38,6 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
     },
     cell: {
-        width: "48%"
+        width: "48%",
     }
 })

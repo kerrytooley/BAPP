@@ -3,8 +3,8 @@ import { BatGrid } from '@components/BatGrid';
 import { Bat } from '@components/BatItem';
 
 const bats: Bat[] = [
-    { id: 'noctule', species: 'Noctule', abr: 'Noc', image: { uri: 'file://noctule.png' }, group: 'Nyctalus', frequencyRange: '20-45 kHz', info: 'A large, fast-flying bat.' },
-    { id: 'common-pip', species: 'Common Pipistrelle', abr: 'CP', image: { uri: 'file://common-pip.png' }, group: 'Pipistrelle', frequencyRange: '45-70 kHz', info: 'A small, common bat.' },
+    { id: 'noctule', species: 'Noctule', abr: 'Noc', group: 'Nyctalus', frequencyRange: '20-45 kHz', info: 'A large, fast-flying bat.' },
+    { id: 'common-pip', species: 'Common Pipistrelle', abr: 'CP', group: 'Pipistrelle', frequencyRange: '45-70 kHz', info: 'A small, common bat.' },
 ];
 
 describe('BatGrid', () => {

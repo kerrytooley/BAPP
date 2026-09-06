@@ -6,9 +6,11 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bapp.mobile",
+      "buildNumber": "1",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -16,23 +18,34 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
       },
       "package": "com.bapp.mobile",
-      "permissions": [
-        "android.permission.RECORD_AUDIO"
-      ],
+      "versionCode": 1,
+      "edgeToEdgeEnabled": true,
       "googleServicesFile": "./google-services.json"
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#000000"
+        }
+      ],
       [
         "expo-image-picker",
         {
           "cameraPermission": "Allow BAPP to take photos of equipment.",
-          "photosPermission": "Allow BAPP to access your photos to attach survey images."
+          "photosPermission": "Allow BAPP to access your photos to attach survey images.",
+          "microphonePermission": false
         }
       ],
       "@react-native-firebase/app",
@@ -53,6 +66,12 @@
       "eas": {
         "projectId": "0581a969-0e72-4411-8da9-98e49598d4db"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0581a969-0e72-4411-8da9-98e49598d4db"
     }
   }
 }

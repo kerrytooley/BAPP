@@ -44,10 +44,10 @@ export function SelectSpeciesPage(): React.JSX.Element {
                     <BackButton navigation={navigation} />
                     <Title title="Add New Bat Type" subtitle="Tap species to continue" />
                 </View>
-                <View style={screen.content} >
+                <View style={[screen.content, { marginTop: 16 }]} >
                     <BatGrid bats={bats} onPress={(species) => handlePress(species)} />
                 </View>
-                <Button label="Unknown" variant="dark" onPress={() => handlePress("Unknown")} />
+                <Button label="Unknown" variant="dark" action="right arrow" onPress={() => handlePress("Unknown")} />
             </ScrollView >
         </View>
     )
