@@ -240,6 +240,24 @@ export class FirebaseMediaRepository implements MediaRepository {
    * uploading via RNFB's `putFile(ref, cachePath)` is more robust than a byte
    * buffer; left as `uploadBytesResumable` because the input choice can only be
    * validated on a real device.
+   *
+   * TODO(upload-task-tracking / Copilot A4 & A5): tasks are fired and forgotten,
+   * so two operations on the SAME reference can interleave with no ordering
+   * guarantee:
+   *   - A4 (re-upload race): replacing an asset with a file that sanitizes to the
+   *     same ref (e.g. re-picking a same-named boundary PDF) starts a second task
+   *     to the same path; if the older task flushes last it overwrites the
+   *     canonical remote bytes with stale content while the doc/cache show the new
+   *     image.
+   *   - A5 (delete-vs-upload race): `delete()` can remove an object while its
+   *     upload is still in flight (or before it exists); the task then finalizes
+   *     and resurrects the supposedly-deleted object.
+   * Fix: keep a `Map<reference, UploadTask>` of in-flight tasks; before starting a
+   * new upload for a reference, cancel (`task.cancel()`) and await/clear any prior
+   * task for that same reference, and have `delete()` cancel + await the group's
+   * in-flight tasks before deleting. Remove the entry on settle. Low priority:
+   * camera photos get unique names (no collision) and boundary same-name
+   * re-upload is uncommon; the doc reference stays consistent either way.
    */
   private startBackgroundUpload(
     reference: string,
