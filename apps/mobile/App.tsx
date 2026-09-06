@@ -9,26 +9,38 @@ import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { RootNavigator } from '@navigators/index';
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
-// TODO: Initialize Firebase via packages/repository's initFirebase()
+import { SurveyServiceProvider } from '@services/surveyServiceContext';
+import { useFirebaseService } from './src/hooks/useFirebaseService';
+import { FirebaseConnectionError } from '@components/FirebaseConnectionError';
 // TODO: Initialize Sentry for error monitoring (@sentry/react-native)
 
 export default function App(): React.JSX.Element | null {
   const [fontsLoaded] = useFonts({ OleoScript_700Bold, OpenSans_400Regular, OpenSans_600SemiBold, ArchivoBlack_400Regular });
+  const { service, ready, failed, error, retry } = useFirebaseService();
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || !ready) return null;
 
-  return (
+  const content = failed ? (
+    <FirebaseConnectionError onRetry={retry} detail={__DEV__ ? error?.message : undefined} />
+  ) : (
+    <NavigationContainer>
+      <RootNavigator />
+    </NavigationContainer>
+  );
+
+  const app = (
     <GestureHandlerRootView style={{ flex: 1 }} >
       <SafeAreaProvider>
         <ActionSheetProvider>
           <BottomSheetModalProvider>
             <StatusBar style="light" />
-            <NavigationContainer>
-              <RootNavigator />
-            </NavigationContainer>
+            {content}
           </BottomSheetModalProvider>
         </ActionSheetProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
+
+  return service ? <SurveyServiceProvider value={service}>{app}</SurveyServiceProvider> : app;
 }
+

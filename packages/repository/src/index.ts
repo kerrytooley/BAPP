@@ -1,7 +1,8 @@
-export * from './config/firebase-app';
-export * from './surveys/firebase-survey-repository';
-export * from './locations/firebase-location-repository';
-export * from './surveyors/firebase-surveyor-repository';
-export * from './observations/firebase-observation-repository';
-export * from './media/firebase-media-repository';
+// Default entry point: the in-memory backend — the Node-runnable test double and
+// the app's current wiring.
+//
+// This does NOT export the Firebase (@react-native-firebase) backend, which is a
+// NATIVE module that cannot load under Node/vitest/jest. Firebase lives behind
+// the '@bapp/repository/firebase' subpath so that importing '@bapp/repository'
+// from the domain tests or the mobile suites never pulls in the native SDK.
 export * from './in-memory';

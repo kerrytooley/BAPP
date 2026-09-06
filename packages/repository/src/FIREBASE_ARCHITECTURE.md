@@ -166,6 +166,8 @@ Firestore's offline cache does **not** cover Firebase Storage files. Images must
 
 **Mitigation: Firebase App Check** verifies that requests come from the genuine app binary using device attestation (Apple DeviceCheck / Google Play Integrity). This blocks requests from scripts or modified clients without requiring user accounts. Recommended for v1.
 
+**App Check is anti-abuse attestation, NOT authorization** — it limits *what client* can reach the backend, not *what data an app user can reach*. Under these v1 rules every anonymous app user passes both `request.auth != null` and App Check, so any user of the genuine app can still read/modify/delete *any* survey — most sharply via the collection-group read rules, which let one caller list every location/surveyor/observation across *all* surveys (join codes gate nothing at the rules layer). Cross-survey confidentiality (e.g. protected-species roost locations) is only actually contained by the v2 per-survey `members` model below.
+
 **Practical risk for v1 is low**: the app is distributed privately to known ecologists, not published as a public website. Someone would need to decompile the app to extract the config.
 
 ### v2: Firebase Auth with accounts

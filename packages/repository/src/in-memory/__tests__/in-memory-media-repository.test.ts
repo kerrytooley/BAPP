@@ -33,6 +33,14 @@ describe('InMemoryMediaRepository', () => {
       expect(result.status).toBe('ready');
     });
 
+    it('normalizes a HEIC photo to a derived .png render ref', async () => {
+      const heic = new Uint8Array([1, 2, 3]); // detected by the .heic extension
+      const result = await repo.upload('locations/1/front.heic', heic);
+      expect(result.sourceRef).toBe('locations/1/front.heic');
+      expect(result.renderRef).toBe('locations/1/front.png');
+      expect(result.status).toBe('ready');
+    });
+
     it('reports progress completion for progress-aware callers', async () => {
       const fractions: number[] = [];
       await repo.upload('t.png', new Uint8Array([1]), { onProgress: (f) => fractions.push(f) });
@@ -62,6 +70,12 @@ describe('InMemoryMediaRepository', () => {
       expect(url).toMatch(/^data:image\/png;base64,/);
     });
 
+    it('resolves the derived PNG render for a HEIC upload', async () => {
+      const { renderRef } = await repo.upload('locations/1/front.heic', new Uint8Array([1, 2, 3]));
+      const url = await repo.getDownloadUrl(renderRef!);
+      expect(url).toMatch(/^data:image\/png;base64,/);
+    });
+
     it('throws for unknown reference', async () => {
       await expect(repo.getDownloadUrl('nonexistent')).rejects.toThrow();
     });
@@ -78,6 +92,15 @@ describe('InMemoryMediaRepository', () => {
     it('removes the whole group: PDF source and its derived render', async () => {
       const pdf = new Uint8Array([0x25, 0x50, 0x44, 0x46, 1, 2]);
       const { sourceRef, renderRef } = await repo.upload('surveys/1/boundary.pdf', pdf);
+
+      await repo.delete(sourceRef);
+
+      await expect(repo.getDownloadUrl(sourceRef)).rejects.toThrow();
+      await expect(repo.getDownloadUrl(renderRef!)).rejects.toThrow();
+    });
+
+    it('removes the whole group: HEIC source and its derived render', async () => {
+      const { sourceRef, renderRef } = await repo.upload('locations/1/front.heic', new Uint8Array([1, 2, 3]));
 
       await repo.delete(sourceRef);
 

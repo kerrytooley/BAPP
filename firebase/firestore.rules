@@ -1,0 +1,29 @@
+rules_version = '2';
+// v1 (loose) rules per FIREBASE_ARCHITECTURE.md: any authenticated caller
+// (anonymous auth is enough for v1) can read/write any survey and its
+// subcollections. Tighten to the member/admin models in v2.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /surveys/{surveyId} {
+      allow read, write: if request.auth != null;
+      match /{subcollection}/{docId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    // Collection-group reads. The repository interface is flat-id
+    // (findById/findByLocationId carry no surveyId), so those lookups run as
+    // collection-group queries over the subcollections below. Collection-group
+    // queries are authorized by rules matching the group path, not the nested
+    // match above — hence these explicit allows.
+    match /{path=**}/locations/{docId} {
+      allow read: if request.auth != null;
+    }
+    match /{path=**}/surveyors/{docId} {
+      allow read: if request.auth != null;
+    }
+    match /{path=**}/observations/{docId} {
+      allow read: if request.auth != null;
+    }
+  }
+}
