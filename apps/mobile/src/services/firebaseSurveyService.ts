@@ -39,6 +39,15 @@ export async function createFirebaseSurveyService(): Promise<SurveyService> {
     const locationRepo = new FirebaseLocationRepository();
     const surveyorRepo = new FirebaseSurveyorRepository();
     const observationRepo = new FirebaseObservationRepository();
+    // TODO(rasterizer / Copilot E): constructed with NO rasterizer, and no Cloud
+    // Function runs the server-deferred fallback, so every PDF/HEIC source stays
+    // `status: 'processing'` with `renderRef: null` forever — it never becomes
+    // displayable. Inject a concrete on-device `Rasterizer` here (a native PDF
+    // renderer + HEIC transcoder — see the `Rasterizer` seam in
+    // media/boundary-media.ts and firebase/README.md) OR deploy the documented
+    // server writeback before enabling this backend with PDF/HEIC media. The
+    // rasterizer is also what unblocks Copilot C (image-blank-on-replace).
+    // Directly-renderable images (PNG/JPEG/WebP/GIF) already work without it.
     const mediaRepo = new FirebaseMediaRepository();
 
     // Re-enqueue any media whose upload didn't reach Storage before the app last
