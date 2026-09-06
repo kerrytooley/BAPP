@@ -82,6 +82,7 @@
     "jest-expo": "~54.0.18",
     "react-native-svg-transformer": "^1.5.3",
     "react-test-renderer": "19.1.0",
+    "sharp": "^0.35.4",
     "typescript": "~5.9.2"
   }
 }

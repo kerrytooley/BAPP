@@ -77,3 +77,7 @@ Thumbs.db
 
 *storybook.log
 storybook-static
+
+# Google Play submit service-account key (provide via EAS file secret, never commit)
+apps/mobile/google-service-account.json
+google-service-account.json
