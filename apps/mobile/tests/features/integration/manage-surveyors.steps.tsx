@@ -7,8 +7,11 @@ import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { AddSurveyorScreen } from '@screens/Admin/AddSurveyorScreen';
 import {
   createMockService,
-  renderWithService,
+  renderWithActiveSurvey,
+  createContextSubscription,
+  mockSubscribeContext,
   type MockSurveyService,
+  type ControllableSubscription,
 } from '../../helpers/testUtils';
 import { buildSurveyor, buildContext } from '../../helpers/factories';
 import {
@@ -20,6 +23,7 @@ const feature = loadFeature('./tests/features/integration/manage-surveyors.featu
 
 defineFeature(feature, (test) => {
   let service: MockSurveyService;
+  let subscription: ControllableSubscription;
   const lead = buildSurveyor({ id: 'lead-1', name: 'Alice', isLead: true });
   const extra = buildSurveyor({ id: 'extra-1', name: 'Bob', isLead: false });
 
@@ -32,16 +36,20 @@ defineFeature(feature, (test) => {
 
   test('Admin adds another surveyor', ({ given, when, then }) => {
     given('the add surveyors screen is open with a lead surveyor', async () => {
-      service.getSurveyContext.mockResolvedValue(
+      subscription = createContextSubscription(
         buildContext({ surveyors: [lead], locations: [] }),
       );
+      service.subscribeSurveyContext = subscription.subscribe;
       service.addSurveyor.mockResolvedValue(extra);
-      renderWithService(<AddSurveyorScreen />, service);
+      renderWithActiveSurvey(<AddSurveyorScreen />, service, 'survey-1');
       await waitFor(() => screen.getByText('Add Lead Surveyor'));
     });
 
     when('the admin adds another surveyor', async () => {
       fireEvent.press(screen.getByText('Add More Surveyors'));
+      await waitFor(() => expect(service.addSurveyor).toHaveBeenCalled());
+      // The live subscription re-emits with the new surveyor once the write lands.
+      subscription.emit(buildContext({ surveyors: [lead, extra], locations: [] }));
       await waitFor(() => screen.getByText('Add Surveyor'));
     });
 
@@ -53,10 +61,10 @@ defineFeature(feature, (test) => {
 
   test('Admin removes an additional surveyor', ({ given, when, then }) => {
     given('the add surveyors screen is open with a lead and an extra surveyor', async () => {
-      service.getSurveyContext.mockResolvedValue(
+      service.subscribeSurveyContext = mockSubscribeContext(
         buildContext({ surveyors: [lead, extra], locations: [] }),
       );
-      renderWithService(<AddSurveyorScreen />, service);
+      renderWithActiveSurvey(<AddSurveyorScreen />, service, 'survey-1');
       await waitFor(() => screen.getByText('Add Surveyor'));
     });
 
