@@ -1,21 +1,21 @@
-import { BackButton, ButtonGroup } from "@components/Button";
+import { BackButton, ButtonGroup } from "@components/Common/Button";
 import { screen } from "@theme/screen";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
-import { Title } from "@components/Titles";
-import { TimeOfObservation } from "@components/TimeOfObservation";
-import { HeardAndSeenCount } from "@components/HeardAndSeenCount";
+import { Title } from "@components/Common/Titles";
+import { TimeOfObservation } from "@components/DateTime/TimeOfObservation";
+import { HeardAndSeenCount } from "@components/Observation/HeardAndSeenCount";
 import React, { useEffect, useRef, useState } from "react";
 import { FlightPath, FlightPathSurface, UpdateObservationInput } from "@bapp/domain";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
-import { InputField } from "@components/InputField";
-import { Card } from "@components/Card";
-import { PlusButton as PlusIcon } from "@components/icons"
+import { InputField } from "@components/Common/InputField";
+import { Card } from "@components/Common/Card";
+import { PlusButton as PlusIcon } from "@components/Common/Icons"
 import { textStyles } from "@theme/fonts";
-import { AddFlightPathBottomSheet } from "@components/AddFlightPathBottomSheet";
+import { AddFlightPathBottomSheet } from "@components/BottomSheets/AddFlightPathBottomSheet";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { colours } from "@theme/colours";
 

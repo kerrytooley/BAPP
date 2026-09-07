@@ -9,10 +9,10 @@ import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { BoundaryPosition } from "@bapp/domain";
 
 import { StyleSheet, View } from "react-native";
-import { BackButton, ButtonGroup } from "@components/Button";
-import { Title } from "@components/Titles";
-import { StaticPinLayer } from "@components/StaticPinLayer";
-import { AddLocationBottomSheet } from "@components/AddLocationBottomSheet";
+import { BackButton, ButtonGroup } from "@components/Common/Button";
+import { Title } from "@components/Common/Titles";
+import { StaticPinLayer } from "@components/Location/StaticPinLayer";
+import { AddLocationBottomSheet } from "@components/BottomSheets/AddLocationBottomSheet";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;

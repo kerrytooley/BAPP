@@ -1,5 +1,5 @@
 import { Text, View, StyleSheet } from "react-native";
-import { useCountdown } from "../hooks/countdown";
+import { useCountdown } from "../../hooks/countdown";
 import { formatCountdown } from "@utils/dateTimeUtils";
 import { colours } from "@theme/colours";
 import { textStyles } from "@theme/fonts";

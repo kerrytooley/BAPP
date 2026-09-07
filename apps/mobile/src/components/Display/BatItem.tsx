@@ -1,5 +1,5 @@
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { ChevronRight, Info as InfoTooltip } from "@components/icons"
+import { ChevronRight, Info as InfoTooltip } from "@components/Common/Icons"
 import { fonts, textStyles } from "@theme/fonts";
 import { colours } from "@theme/colours";
 import { LinearGradient } from "expo-linear-gradient";

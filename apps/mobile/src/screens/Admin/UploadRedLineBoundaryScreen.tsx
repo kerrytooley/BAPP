@@ -1,4 +1,4 @@
-import { BackButton, ButtonGroup } from "@components/Button";
+import { BackButton, ButtonGroup } from "@components/Common/Button";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
@@ -6,8 +6,8 @@ import { screen } from "@theme/screen"
 import React, { useRef, useState } from "react"
 import { View, StyleSheet } from "react-native"
 import { useSurveyService } from "@services/surveyServiceContext";
-import { Title } from "@components/Titles";
-import { DocumentUpload } from "@components/DocumentUpload";
+import { Title } from "@components/Common/Titles";
+import { DocumentUpload } from "@components/Interactive/DocumentUpload";
 import { createImageBody } from "@utils/image";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;

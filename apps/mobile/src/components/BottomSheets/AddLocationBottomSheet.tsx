@@ -1,32 +1,32 @@
 import { StyleSheet, useWindowDimensions, View } from "react-native"
-import { Title } from "./Titles"
-import { forwardRef, useMemo, useState } from "react"
+import { Title } from "../Common/Titles"
+import { forwardRef, useState } from "react"
 import { BottomSheetBackdrop, BottomSheetBackdropProps, BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet"
 import { colours } from "@theme/colours"
-import { FlightPath, FlightPathSurface } from "@bapp/domain"
-import { Button } from "./Button";
-import { FlightPathCanvas } from "./FlightPathCanvas"
+import { BoundaryPosition } from "@bapp/domain"
+import { Button } from "../Common/Button"
+import { LocationEditor } from "../Location/LocationEditor"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-export interface AddFlightPathProps {
-    imageUri: string
-    surface: FlightPathSurface
+export interface AddLocationProps {
+    // A resolved, locally-renderable image URI (not a storage reference).
+    boundaryImageUri: string | null | undefined
     isEditing?: boolean
-    initialPaths?: FlightPath[]
-    onCommitPath: (paths: FlightPath[]) => void
+    initialPosition?: BoundaryPosition | null
+    onChange: (position: BoundaryPosition) => void
 }
 
-export const AddFlightPathBottomSheet = forwardRef<BottomSheetModal, AddFlightPathProps>(
-    ({ imageUri, surface, isEditing = false, initialPaths = [], onCommitPath }, ref) => {
+export const AddLocationBottomSheet = forwardRef<BottomSheetModal, AddLocationProps>(
+    ({ boundaryImageUri, isEditing = false, initialPosition = null, onChange }, ref) => {
 
-        const [paths, setPaths] = useState<FlightPath[]>([]);
+        const [position, setPosition] = useState<BoundaryPosition | null>(null);
         const insets = useSafeAreaInsets();
         const { height: windowHeight } = useWindowDimensions();
-        const snapPoints = useMemo(() => ["100%"], []);
 
         // BottomSheetView wraps its content height rather than filling the sheet,
         // so give it an explicit height to establish a bounded flex context.
         const sheetHeight = windowHeight - insets.top;
+
 
         const renderBackdrop = (props: BottomSheetBackdropProps) => (
             <BottomSheetBackdrop
@@ -39,9 +39,9 @@ export const AddFlightPathBottomSheet = forwardRef<BottomSheetModal, AddFlightPa
         return (
             <BottomSheetModal
                 ref={ref}
-                onChange={(index) => { if (index >= 0) setPaths(initialPaths) }}
-                onDismiss={() => setPaths([])}
-                snapPoints={snapPoints}
+                onChange={(index) => { if (index >= 0) setPosition(initialPosition) }}
+                onDismiss={() => setPosition(null)}
+                snapPoints={["100%"]}
                 topInset={insets.top}
                 enablePanDownToClose
                 enableDynamicSizing={false}
@@ -50,26 +50,16 @@ export const AddFlightPathBottomSheet = forwardRef<BottomSheetModal, AddFlightPa
                 backgroundStyle={styles.sheetBackground}
             >
                 <BottomSheetView style={[styles.content, { height: sheetHeight, paddingBottom: 16 + insets.bottom }]}>
-                    <Title title={isEditing ? "Edit Flight Path" : "Add Flight Path"} subtitle="Draw on the image to record a flight path" />
-                    {imageUri &&
-                        <View style={styles.canvasContainer}>
-                            <FlightPathCanvas
-                                imageUri={imageUri}
-                                surface={surface}
-                                paths={paths}
-                                onCommitPath={(committed) =>
-                                    setPaths((prev) => [...prev, ...committed])
-                                }
-                                editable
-                            />
-                        </View>
-                    }
+                    <Title title={isEditing ? "Edit Surveyor Location" : "Add Surveyor Location"} subtitle="Tap on the image to drop a pin" />
+                    <LocationEditor boundaryImageUri={boundaryImageUri}
+                        position={position}
+                        setPosition={setPosition} />
                     <View style={styles.saveButton}>
                         <Button
-                            label="Save Flight Path"
+                            label="Save Location"
                             variant="light"
-                            onPress={() => onCommitPath(paths as FlightPath[])}
-                            disabled={paths.length === 0}
+                            onPress={() => onChange(position as BoundaryPosition)}
+                            disabled={!position}
                         />
                     </View>
                 </BottomSheetView>
@@ -96,10 +86,9 @@ const styles = StyleSheet.create({
         width: "100%",
         marginTop: "auto"
     },
-    canvasContainer: {
-        flex: 1,
-        minHeight: 0,
-        overflow: "hidden",
-    },
+    image: {
+        width: "100%",
+        height: "100%"
+    }
 
 })

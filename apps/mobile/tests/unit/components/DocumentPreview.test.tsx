@@ -4,7 +4,7 @@ jest.mock('@utils/image', () => ({
 
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { Image, Modal, TouchableOpacity } from 'react-native';
-import { DocumentPreview } from '@components/DocumentPreview';
+import { DocumentPreview } from '@components/Display/DocumentPreview';
 import { PressableType } from '../../helpers/rnComponents';
 
 describe('DocumentPreview', () => {

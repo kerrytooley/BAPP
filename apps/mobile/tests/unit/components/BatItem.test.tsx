@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { Modal } from 'react-native';
-import { BatItem, Bat } from '@components/BatItem';
+import { BatItem, Bat } from '@components/Display/BatItem';
 
 const bat: Bat = {
     id: 'noctule',

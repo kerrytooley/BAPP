@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { Button, ButtonGroup, BackButton, InlineButton } from '@components/Button';
+import { Button, ButtonGroup, BackButton, InlineButton } from '@components/Common/Button';
 
 describe('Button', () => {
     it('renders the label', () => {

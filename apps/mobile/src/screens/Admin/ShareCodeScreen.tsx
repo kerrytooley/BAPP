@@ -1,12 +1,12 @@
-import { BackButton, Button } from "@components/Button";
+import { BackButton, Button } from "@components/Common/Button";
 import { RootStackParamList } from "@navigators/index";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { CompositeNavigationProp, useNavigation } from "@react-navigation/native";
 import { screen } from "@theme/screen";
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { Title } from "@components/Titles";
-import { CodeShare } from "@components/CodeShare";
+import { Title } from "@components/Common/Titles";
+import { CodeShare } from "@components/Interactive/CodeShare";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import SurveyorIllustration from "@assets/illustrations/surveyors.svg"

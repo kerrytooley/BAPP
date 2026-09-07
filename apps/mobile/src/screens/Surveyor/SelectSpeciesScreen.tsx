@@ -1,12 +1,12 @@
-import { BackButton, Button } from "@components/Button";
-import { Title } from "@components/Titles";
+import { BackButton, Button } from "@components/Common/Button";
+import { Title } from "@components/Common/Titles";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { screen } from "@theme/screen";
 import React from "react";
 import { ScrollView, View } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
-import { BatGrid } from "@components/BatGrid";
+import { BatGrid } from "@components/Display/BatGrid";
 import { bats } from "../../data/bats";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { CreateObservationInput } from "@bapp/domain";

@@ -4,7 +4,7 @@ jest.mock('@utils/image', () => ({
 
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Image, View } from 'react-native';
-import { PressablePinLayer } from '@components/PressablePinLayer';
+import { PressablePinLayer } from '@components/Location/PressablePinLayer';
 import { getAspectRatio } from '@utils/image';
 import { PressableType } from '../../helpers/rnComponents';
 

@@ -1,5 +1,5 @@
-import { BackButton, Button } from "@components/Button";
-import { Title } from "@components/Titles";
+import { BackButton, Button } from "@components/Common/Button";
+import { Title } from "@components/Common/Titles";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
@@ -9,7 +9,7 @@ import { fonts, textStyles } from "@theme/fonts";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
-import { CodeShare } from "@components/CodeShare";
+import { CodeShare } from "@components/Interactive/CodeShare";
 import KeyIllustration from "@assets/illustrations/key.svg"
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;

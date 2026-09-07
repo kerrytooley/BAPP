@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { ObservationTile } from '@components/ObservationTile';
+import { ObservationTile } from '@components/Observation/ObservationTile';
 import { buildObservation } from '../../helpers/factories';
 
 const setup = (observationOverrides = {}) => {

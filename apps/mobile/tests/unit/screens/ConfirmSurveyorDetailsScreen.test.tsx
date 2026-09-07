@@ -4,7 +4,7 @@ jest.mock('@react-navigation/native', () =>
 
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { ConfirmSurveyorDetailsScreen } from '@screens/Surveyor/ConfirmSurveyorDetailsScreen';
-import { DocumentPreview } from '@components/DocumentPreview';
+import { DocumentPreview } from '@components/Display/DocumentPreview';
 import { buildContext, buildLocation, buildSurvey, buildSurveyor } from '../../helpers/factories';
 import {
     createMockService,

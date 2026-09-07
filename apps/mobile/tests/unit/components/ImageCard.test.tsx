@@ -4,7 +4,7 @@ jest.mock('@utils/image', () => ({
 
 import { render, screen, waitFor, act } from '@testing-library/react-native';
 import { Image } from 'react-native';
-import { ImageCard } from '@components/ImageCard';
+import { ImageCard } from '@components/Display/ImageCard';
 import { getAspectRatio } from '@utils/image';
 
 describe('ImageCard', () => {

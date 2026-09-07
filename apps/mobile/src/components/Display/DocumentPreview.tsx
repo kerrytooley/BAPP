@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Image, Modal, Pressable, StyleSheet, TouchableOpacity, View } from "react-native";
 import { colours } from "@theme/colours";
-import { Expand } from "@components/icons";
-import { StaticPinLayer } from "./StaticPinLayer";
+import { Expand } from "@components/Common/Icons";
+import { StaticPinLayer } from "../Location/StaticPinLayer";
 import { BoundaryPosition } from "@bapp/domain";
 
 export interface DocumentPreviewProps {

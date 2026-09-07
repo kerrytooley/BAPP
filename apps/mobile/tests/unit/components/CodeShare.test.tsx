@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { Share } from 'react-native';
-import { CodeShare } from '@components/CodeShare';
+import { CodeShare } from '@components/Interactive/CodeShare';
 
 describe('CodeShare', () => {
     afterEach(() => jest.restoreAllMocks());

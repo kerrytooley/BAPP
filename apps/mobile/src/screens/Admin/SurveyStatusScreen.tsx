@@ -1,6 +1,6 @@
-import { BackButton, Button } from "@components/Button";
-import { Card } from "@components/Card";
-import { Title } from "@components/Titles";
+import { BackButton, Button } from "@components/Common/Button";
+import { Card } from "@components/Common/Card";
+import { Title } from "@components/Common/Titles";
 import { RootStackParamList } from "@navigators/index";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";

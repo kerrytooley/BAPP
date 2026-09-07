@@ -1,6 +1,6 @@
-import { BackButton, Button } from "@components/Button";
-import { CodeInput } from "@components/CodeInput";
-import { Title } from "@components/Titles";
+import { BackButton, Button } from "@components/Common/Button";
+import { CodeInput } from "@components/Interactive/CodeInput";
+import { Title } from "@components/Common/Titles";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { screen } from "@theme/screen";

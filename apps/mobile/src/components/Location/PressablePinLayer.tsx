@@ -2,7 +2,7 @@ import { BoundaryPosition } from "@bapp/domain"
 import { GestureResponderEvent, LayoutChangeEvent, View } from "react-native"
 import { useEffect, useState } from "react"
 import { Image, Pressable, StyleSheet } from "react-native"
-import { MapPin } from "@components/icons"
+import { MapPin } from "@components/Common/Icons"
 import { colours } from "@theme/colours"
 import { getAspectRatio } from "@utils/image"
 
@@ -69,20 +69,20 @@ export const PressablePinLayer = ({ imageUri, value, onChange }: PressablePinLay
             <Pressable onLayout={onLayout} onPress={handlePress} style={[styles.layer, fitted]}>
                 <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
 
-            {value && layout.width > 0 && (
-                <View
-                    pointerEvents="none"
-                    style={[
-                        styles.pin,
-                        {
-                            left: value.x * layout.width - PIN_WIDTH / 2,
-                            top: value.y * layout.height - PIN_HEIGHT
-                        }
-                    ]}
-                >
-                    <MapPin width={PIN_WIDTH} height={PIN_HEIGHT} stroke={colours.red} strokeWidth={2} />
-                </View>
-            )}
+                {value && layout.width > 0 && (
+                    <View
+                        pointerEvents="none"
+                        style={[
+                            styles.pin,
+                            {
+                                left: value.x * layout.width - PIN_WIDTH / 2,
+                                top: value.y * layout.height - PIN_HEIGHT
+                            }
+                        ]}
+                    >
+                        <MapPin width={PIN_WIDTH} height={PIN_HEIGHT} stroke={colours.red} strokeWidth={2} />
+                    </View>
+                )}
             </Pressable>
         </View>
     );

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { FlightPath } from '@bapp/domain';
-import { FlightPathCanvas } from '@components/FlightPathCanvas';
+import { FlightPathCanvas } from '@components/Interactive/FlightPathCanvas';
 
 const meta = {
     title: 'Components/FlightPathCanvas',

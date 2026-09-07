@@ -1,5 +1,5 @@
-import { BackButton, Button } from "@components/Button";
-import { Title } from "@components/Titles";
+import { BackButton, Button } from "@components/Common/Button";
+import { Title } from "@components/Common/Titles";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { screen } from "@theme/screen";
@@ -11,11 +11,13 @@ import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { ValidationError } from "@bapp/domain";
 import { RootStackParamList } from "@navigators/index";
 import { CompositeNavigationProp } from "@react-navigation/native";
-import { ObservationSummary } from "@components/ObservationSummary";
-import { Card } from "@components/Card";
+import { ObservationSummary } from "@components/Observation/ObservationSummary";
+import { Card } from "@components/Common/Card";
 import { textStyles } from "@theme/fonts";
 import { colours } from "@theme/colours";
 import { formatDate } from "@utils/dateTimeUtils";
+import { NoteSummary } from "@components/Observation/NoteSummary";
+import { WeatherSummary } from "@components/Display/Weathersummary";
 
 type Nav = CompositeNavigationProp<
     NativeStackNavigationProp<SurveyorStackParamList>,
@@ -27,7 +29,7 @@ export function SurveySummaryScreen(): React.JSX.Element {
     const service = useSurveyService();
     const { context } = useActiveSurvey();
     const [saving, setSaving] = useState(false);
-    const { surveyId, surveyorId } = useRoute<RouteProp<SurveyorStackParamList, 'SurveySummaryScreen'>>().params;
+    const { surveyId, surveyorId, locationId } = useRoute<RouteProp<SurveyorStackParamList, 'SurveySummaryScreen'>>().params;
 
     const survey = context?.survey;
     const surveyor = context?.surveyors.find((surveyor) => surveyor.id === surveyorId);
@@ -73,10 +75,23 @@ export function SurveySummaryScreen(): React.JSX.Element {
                 <Card cardLabel="Date and Time">
                     <Text style={styles.text}>{formatDate(survey?.date)}</Text>
                 </Card>
+                {surveyor?.isLead && survey?.startWeather && survey.endWeather &&
+
+                    <WeatherSummary type={"start"} weather={survey?.startWeather} />
+
+                }
+                <WeatherSummary type={"end"} weather={survey?.endWeather} />
+
                 <Text style={styles.header}>Bat Observations:</Text>
                 {
                     observations &&
                     observations.map((observation) => <ObservationSummary key={observation.id} {...observation} />)
+                }
+                {location && location.notes && <Text style={styles.header}>Location Notes:</Text>}
+                {
+                    location && location.notes &&
+
+                    location?.notes.map((note) => <NoteSummary {...note} />)
                 }
             </ScrollView>
             <Button label={saving ? "Saving…" : "Complete and Save Survey"} disabled={saving} onPress={handleComplete} />

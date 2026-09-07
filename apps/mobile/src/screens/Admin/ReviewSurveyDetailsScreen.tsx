@@ -1,6 +1,6 @@
-import { BackButton, ButtonGroup } from "@components/Button";
-import { SummaryGroup } from "@components/SummaryRow";
-import { Title } from "@components/Titles";
+import { BackButton, ButtonGroup } from "@components/Common/Button";
+import { SummaryGroup } from "@components/Display/SummaryRow";
+import { Title } from "@components/Common/Titles";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { screen } from "@theme/screen";
@@ -9,7 +9,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
-import { DocumentPreview } from "@components/DocumentPreview";
+import { DocumentPreview } from "@components/Display/DocumentPreview";
 import { textStyles } from "@theme/fonts";
 import { displayValue } from "@utils/displayValue";
 

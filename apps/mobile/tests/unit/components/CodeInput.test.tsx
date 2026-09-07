@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { CodeInput } from '@components/CodeInput';
+import { CodeInput } from '@components/Interactive/CodeInput';
 
 describe('CodeInput', () => {
     it('renders the placeholder', () => {

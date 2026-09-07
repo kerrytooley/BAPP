@@ -3,7 +3,7 @@ import { Image, TouchableOpacity } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { getAspectRatio } from '@utils/image';
-import { DocumentUpload } from '@components/DocumentUpload';
+import { DocumentUpload } from '@components/Interactive/DocumentUpload';
 
 const mockShowActionSheet = jest.fn();
 

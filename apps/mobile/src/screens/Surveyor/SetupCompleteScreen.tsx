@@ -4,7 +4,7 @@ import React from "react";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { StyleSheet, Text, View } from "react-native";
 import { screen } from "@theme/screen";
-import { BackButton, Button } from "@components/Button";
+import { BackButton, Button } from "@components/Common/Button";
 import { fonts, textStyles } from "@theme/fonts";
 
 

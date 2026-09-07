@@ -1,11 +1,11 @@
-import { Title } from "@components/Titles";
+import { Title } from "@components/Common/Titles";
 import { screen } from "@theme/screen";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
-import { BackButton, Button, InlineButton } from "@components/Button";
+import { BackButton, Button, InlineButton } from "@components/Common/Button";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { formatDate } from "@utils/dateTimeUtils";
 import ClipboardIllustration from "@assets/illustrations/clipboard.svg"

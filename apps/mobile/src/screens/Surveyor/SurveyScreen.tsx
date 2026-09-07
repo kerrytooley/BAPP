@@ -1,6 +1,6 @@
-import { BackButton, Button } from "@components/Button";
-import { CountdownClock } from "@components/CountdownClock";
-import { PreviousEntriesSection } from "@components/PreviousEntriesSection";
+import { BackButton, Button } from "@components/Common/Button";
+import { CountdownClock } from "@components/DateTime/CountdownClock";
+import { PreviousEntriesSection } from "@components/Observation/PreviousEntriesSection";
 import { screen } from "@theme/screen";
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
@@ -9,8 +9,9 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
-import { Observation } from "@bapp/domain";
-import { Toast } from "@components/Toast";
+import { Toast } from "@components/Common/Toast";
+import { NotesProps, Observation } from "@bapp/domain";
+import { LocationInfoModal } from "@components/Modals/AddLocationInfoModal";
 
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
@@ -25,6 +26,7 @@ export function SurveyScreen(): React.JSX.Element {
     const observations = context?.observations.filter((observation) => observation.surveyorId === surveyorId) ?? [];
 
     const [toast, setToast] = useState<{ message: string; undo: () => void }>();
+    const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
 
     const showToast = (message: string, previous: Observation) => {
         setToast({
@@ -71,6 +73,19 @@ export function SurveyScreen(): React.JSX.Element {
         }
     }
 
+    const saveNote = async (note: NotesProps | undefined) => {
+        if (note) {
+            try {
+                const updatedNotes = [...locationNotes, note];
+                await service.updateLocation(locationId, { notes: updatedNotes })
+                console.log(`Updated location notes: ${updatedNotes.entries}`);
+                setLocationNotes(updatedNotes);
+            } catch (e) {
+                console.error(`Error updating location notes: `, e);
+            }
+        }
+    }
+
     return (
         <View style={screen.justifyScreen} >
             <View style={{ width: "100%" }} >
@@ -80,17 +95,35 @@ export function SurveyScreen(): React.JSX.Element {
                 {survey?.startTime && survey.endTime &&
                     <CountdownClock startTime={survey?.startTime} endTime={survey?.endTime} />
                 }
-                <Button
-                    action="add"
-                    label="Add new bat observation"
-                    onPress={() => navigation.push('SelectSpeciesScreen', { surveyId, surveyorId, locationId })} />
+                <View style={{ gap: 16 }}>
+                    <Button
+                        action="add"
+                        label="Add new bat observation"
+                        onPress={() => navigation.push('SelectSpeciesScreen', { surveyId, surveyorId, locationId })} />
+                    <Button
+                        action="add"
+                        label="Add survey note"
+                        onPress={() => setIsFullScreen(true)} />
+                </View>
+                <LocationInfoModal
+                    isFullScreen={isFullScreen}
+                    setIsFullScreen={(is) => setIsFullScreen(is)}
+                    saveNote={(note) => saveNote(note)} />
                 <PreviousEntriesSection
                     observations={observations}
+                    notes={locationNotes}
                     onAddHeard={(observation) => addHeard(observation)}
                     onAddSeen={(observation) => addSeen(observation)}
                     onEdit={(observationId) => navigation.navigate("AddObservationScreen", { surveyId, locationId, surveyorId, observationId })} />
             </View>
-            <Button label="End Survey" onPress={() => navigation.navigate('SurveySummaryScreen', { surveyId, surveyorId })} />
+            <Button label="End Survey" onPress={() => {
+                const type = "end";
+                surveyor?.isLead
+                    ? navigation.navigate('WeatherConditionsScreen', { surveyId, surveyorId, locationId, type })
+                    : navigation.navigate('SurveySummaryScreen', { surveyId, surveyorId, locationId })
+
+            }
+            } />
             <Toast
                 visible={!!toast}
                 message={toast?.message ?? ""}
@@ -104,7 +137,7 @@ export function SurveyScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
     content: {
         ...screen.content,
-        gap: 48,
+        gap: 24,
         justifyContent: "flex-start",
         flex: 1,
         paddingVertical: 8

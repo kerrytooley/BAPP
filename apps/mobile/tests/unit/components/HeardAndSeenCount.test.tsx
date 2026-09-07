@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { TouchableOpacity } from 'react-native';
-import { HeardAndSeenCount } from '@components/HeardAndSeenCount';
+import { HeardAndSeenCount } from '@components/Observation/HeardAndSeenCount';
 
 const setup = (heardCount = 1, seenCount = 2) => {
     const onChangeHeard = jest.fn();

@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { DatePickerInput } from '@components/DatePickerInput';
+import { DatePickerInput } from '@components/DateTime/DatePickerInput';
 
 jest.mock('@react-native-community/datetimepicker', () => {
     const React = require('react');

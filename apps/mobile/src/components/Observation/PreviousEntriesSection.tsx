@@ -1,20 +1,41 @@
-import { Observation } from "@bapp/domain";
+import { NotesProps, Observation } from "@bapp/domain";
 import { colours } from "@theme/colours";
 import { textStyles } from "@theme/fonts";
 import { screen } from "@theme/screen";
 import { Text, View, StyleSheet, ScrollView } from "react-native";
 import { ObservationTile } from "./ObservationTile";
+import { LocationNote } from "@components/Display/LocationNote";
 
 interface PreviousEntriesInterface {
     observations: Observation[]
+    notes?: NotesProps[]
     onAddHeard: (observation: Observation) => void
     onAddSeen: (observation: Observation) => void
     onEdit: (observationId: string) => void
 }
 
-export const PreviousEntriesSection = ({ observations, onAddHeard, onAddSeen, onEdit }: PreviousEntriesInterface) => {
+type TimedEntry =
+    | { time: Date; type: "observation"; value: Observation }
+    | { time: Date; type: "note"; value: NotesProps };
 
-    const inverseObservations = [...observations].reverse();
+export const PreviousEntriesSection = ({ observations = [], notes = [], onAddHeard, onAddSeen, onEdit }: PreviousEntriesInterface) => {
+
+    const timedObservations: TimedEntry[] = observations.map((observation) => ({
+        time: observation.firstSeenAt ?? observation.createdAt,
+        type: "observation",
+        value: observation,
+    }));
+
+    const timedNotes: TimedEntry[] = notes.map((note) => ({
+        time: note.time,
+        type: "note",
+        value: note,
+    }));
+
+    const allEntries = [...timedObservations, ...timedNotes].sort(
+        (a, b) => b.time.getTime() - a.time.getTime()
+    );
+
     return (
         <View style={styles.container}>
             <Text style={styles.header}>Previous entries:</Text>
@@ -24,13 +45,15 @@ export const PreviousEntriesSection = ({ observations, onAddHeard, onAddSeen, on
                     {(!observations || observations.length < 1) &&
                         <Text style={styles.placeholderText}>Add a bat entry to see it here</Text>
                     }
-                    {inverseObservations.map((observation) => (
-                        <ObservationTile
-                            key={observation.id}
-                            observation={observation}
-                            onAddHeard={() => onAddHeard(observation)}
-                            onAddSeen={() => onAddSeen(observation)}
-                            onEdit={() => onEdit(observation.id)} />
+                    {allEntries.map((entry) => (
+                        entry.type === "note"
+                            ? <LocationNote key={`note-${entry.time.getTime()}`} note={entry.value} onEdit={() => { }} />
+                            : <ObservationTile
+                                key={entry.value.id}
+                                observation={entry.value}
+                                onAddHeard={() => onAddHeard(entry.value)}
+                                onAddSeen={() => onAddSeen(entry.value)}
+                                onEdit={() => onEdit(entry.value.id)} />
                     ))}
                 </ScrollView>
             </View>

@@ -19,13 +19,13 @@ export type SurveyorStackParamList = {
     SelectSurveyorScreen: { surveyId: string }
     ConfirmSurveyorDetailsScreen: { surveyId: string, surveyorId: string }
     SurveyorConfirmLocationScreen: { surveyId: string, surveyorId: string }
-    WeatherConditionsScreen: { surveyId: string, surveyorId: string }
+    WeatherConditionsScreen: { surveyId: string, surveyorId: string, locationId: string, type: "start" | "end" }
     CapturePhotoScreen: { surveyId: string, locationId: string, surveyorId: string, photoType: LocationImageType }
     SetupCompleteScreen: { surveyId: string, locationId: string, surveyorId: string }
     SurveyScreen: { surveyId: string, locationId: string, surveyorId: string }
     SelectSpeciesScreen: { surveyId: string, locationId: string, surveyorId: string }
     AddObservationScreen: { surveyId: string, observationId: string, surveyorId: string, locationId: string }
-    SurveySummaryScreen: { surveyId: string, surveyorId: string }
+    SurveySummaryScreen: { surveyId: string, surveyorId: string, locationId: string }
 };
 
 const Stack = createNativeStackNavigator<SurveyorStackParamList>();

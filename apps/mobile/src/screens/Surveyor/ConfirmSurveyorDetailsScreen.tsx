@@ -3,14 +3,14 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { screen } from "@theme/screen";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { BackButton, Button, InlineButton } from "@components/Button";
-import { Title } from "@components/Titles";
+import { BackButton, Button, InlineButton } from "@components/Common/Button";
+import { Title } from "@components/Common/Titles";
 import { useEffect, useState } from "react";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
-import { SummaryGroup } from "@components/SummaryRow";
+import { SummaryGroup } from "@components/Display/SummaryRow";
 import { displayValue } from "@utils/displayValue";
-import { DocumentPreview } from "@components/DocumentPreview";
+import { DocumentPreview } from "@components/Display/DocumentPreview";
 import { textStyles } from "@theme/fonts";
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
@@ -29,6 +29,8 @@ export function ConfirmSurveyorDetailsScreen(): React.JSX.Element {
         : (context?.locations
             .filter((location) => location.id === surveyor?.locationId)
             .flatMap((location) => location.boundaryPosition ?? []) ?? []);
+    const type = "start";
+    const locationId = surveyor?.locationId || "";
 
     useEffect(() => {
         const loadBoundary = async () => {
@@ -91,7 +93,7 @@ export function ConfirmSurveyorDetailsScreen(): React.JSX.Element {
                 </ScrollView>}
             <View style={{ alignItems: "center", gap: 8 }} >
                 <Button label="Continue" variant="light" onPress={() =>
-                    surveyor?.isLead ? navigation.navigate("WeatherConditionsScreen", { surveyId, surveyorId }) :
+                    surveyor?.isLead ? navigation.navigate("WeatherConditionsScreen", { surveyId, surveyorId, locationId, type }) :
                         navigation.navigate("SurveyorConfirmLocationScreen", { surveyId, surveyorId })} />
                 <InlineButton label="Doesn't look right?" onPress={() => navigation.navigate("InputCodeScreen")} />
             </View>

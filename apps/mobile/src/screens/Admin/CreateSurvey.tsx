@@ -1,6 +1,6 @@
-import { BackButton, Button } from "@components/Button";
-import { InputField } from "@components/InputField";
-import { Title } from "@components/Titles";
+import { BackButton, Button } from "@components/Common/Button";
+import { InputField } from "@components/Common/InputField";
+import { Title } from "@components/Common/Titles";
 import { screen } from "@theme/screen";
 import React, { useRef, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
@@ -8,8 +8,8 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { useSurveyService } from "@services/surveyServiceContext";
-import { DatePickerInput } from "@components/DatePickerInput";
-import { TimePickerInput } from "@components/TimePickerInput";
+import { DatePickerInput } from "@components/DateTime/DatePickerInput";
+import { TimePickerInput } from "@components/DateTime/TimePickerInput";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 

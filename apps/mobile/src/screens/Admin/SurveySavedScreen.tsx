@@ -4,7 +4,7 @@ import { screen } from "@theme/screen";
 import { fonts, textStyles } from "@theme/fonts";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { CompositeNavigationProp, useNavigation } from "@react-navigation/native";
-import { BackButton, Button } from "@components/Button";
+import { BackButton, Button } from "@components/Common/Button";
 import { RootStackParamList } from "@navigators/index";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import SavedIllustration from "@assets/illustrations/saved.svg"

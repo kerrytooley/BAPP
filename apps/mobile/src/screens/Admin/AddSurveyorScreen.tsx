@@ -1,6 +1,6 @@
-import { BackButton, ButtonGroup, InlineButton } from "@components/Button";
+import { BackButton, ButtonGroup, InlineButton } from "@components/Common/Button";
 import { SurveyorCard } from "@components/SurveyorCard";
-import { Title } from "@components/Titles";
+import { Title } from "@components/Common/Titles";
 import { screen } from "@theme/screen";
 import { ScrollView, StyleSheet, View } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
@@ -11,7 +11,7 @@ import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { BoundaryPosition, Surveyor } from "@bapp/domain";
-import { AddLocationBottomSheet } from "@components/AddLocationBottomSheet";
+import { AddLocationBottomSheet } from "@components/BottomSheets/AddLocationBottomSheet";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 

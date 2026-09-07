@@ -1,5 +1,5 @@
-import { BackButton, Button, ButtonGroup } from "@components/Button";
-import { Title } from "@components/Titles";
+import { BackButton, Button, ButtonGroup } from "@components/Common/Button";
+import { Title } from "@components/Common/Titles";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { colours } from "@theme/colours";
@@ -9,7 +9,7 @@ import React, { useEffect, useState } from "react";
 import { Image, ImageSourcePropType, StyleSheet, Text, View } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { textStyles } from "@theme/fonts";
-import { Rotate } from "@components/icons"
+import { Rotate } from "@components/Common/Icons"
 import { useSurveyService } from "@services/surveyServiceContext";
 import { createImageBody, getAspectRatio } from "@utils/image";
 

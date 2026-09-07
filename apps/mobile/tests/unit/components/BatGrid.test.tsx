@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { BatGrid } from '@components/BatGrid';
-import { Bat } from '@components/BatItem';
+import { BatGrid } from '@components/Display/BatGrid';
+import { Bat } from '@components/Display/BatItem';
 
 const bats: Bat[] = [
     { id: 'noctule', species: 'Noctule', abr: 'Noc', group: 'Nyctalus', frequencyRange: '20-45 kHz', info: 'A large, fast-flying bat.' },

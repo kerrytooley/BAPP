@@ -2,6 +2,14 @@ import type { MediaAsset } from './media';
 
 export type SurveyStatus = 'draft' | 'active' | 'completed';
 
+export interface Weather {
+  temperature: string,
+  cloudCover: string,
+  humidity: string,
+  wind: string,
+  rain: string
+}
+
 export interface Survey {
   id: string;
   adminCode: string;
@@ -14,7 +22,8 @@ export interface Survey {
   endTime: Date | null;
   boundary: MediaAsset | null;
   status: SurveyStatus;
-  weather: Record<string, unknown>;
+  startWeather: Weather | null;
+  endWeather: Weather | null;
   data: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
@@ -33,7 +42,8 @@ export type CreateSurveyInput = {
   endTime?: Date | null;
   boundary?: MediaAsset | null;
   status?: SurveyStatus;
-  weather?: Record<string, unknown>;
+  startWeather?: Weather | null;
+  endWeather?: Weather | null;
   data?: Record<string, unknown>;
 };
 
@@ -57,7 +67,8 @@ export function applySurveyDefaults(input: CreateSurveyInput): NewSurveyFields {
     endTime: input.endTime ?? null,
     boundary: input.boundary ?? null,
     status: input.status ?? 'draft',
-    weather: input.weather ?? {},
+    startWeather: input.startWeather ?? null,
+    endWeather: input.endWeather ?? null,
     data: input.data ?? {},
   };
 }
@@ -71,6 +82,7 @@ export type UpdateSurveyInput = Partial<{
   endTime: Date | null;
   boundary: MediaAsset | null;
   status: SurveyStatus;
-  weather: Record<string, unknown>;
+  startWeather: Weather | null;
+  endWeather: Weather | null;
   data: Record<string, unknown>;
 }>;

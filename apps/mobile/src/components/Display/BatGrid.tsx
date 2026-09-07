@@ -1,6 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import { BatItem, Bat } from "./BatItem";
-import { Button } from "./Button";
+import { Button } from "../Common/Button";
 
 export interface BatGridProps {
     bats: Array<Bat>,

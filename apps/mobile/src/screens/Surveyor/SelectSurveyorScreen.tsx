@@ -3,8 +3,11 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { screen } from "@theme/screen";
 import { StyleSheet, View } from "react-native";
-import { BackButton, ButtonGroup } from "@components/Button";
-import { Title } from "@components/Titles";
+import { BackButton, ButtonGroup } from "@components/Common/Button";
+import { Title } from "@components/Common/Titles";
+import { Surveyor } from "@bapp/domain";
+import { useEffect, useState } from "react";
+import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import SurveyorIllustration from "@assets/illustrations/surveyors.svg"
 

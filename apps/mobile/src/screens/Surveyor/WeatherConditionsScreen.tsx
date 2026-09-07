@@ -1,6 +1,6 @@
-import { BackButton, Button } from "@components/Button";
-import { InputField } from "@components/InputField";
-import { Title } from "@components/Titles";
+import { BackButton, Button } from "@components/Common/Button";
+import { InputField } from "@components/Common/InputField";
+import { Title } from "@components/Common/Titles";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
@@ -8,7 +8,7 @@ import { screen } from "@theme/screen";
 import { colours } from "@theme/colours";
 import React, { useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Card } from "@components/Card";
+import { Card } from "@components/Common/Card";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { UpdateSurveyInput } from "@bapp/domain";
 import { textStyles } from "@theme/fonts";
@@ -17,7 +17,7 @@ type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
 export function WeatherConditionsScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
-    const { surveyId, surveyorId } = useRoute<RouteProp<SurveyorStackParamList, "WeatherConditionsScreen">>().params;
+    const { surveyId, surveyorId, locationId, type } = useRoute<RouteProp<SurveyorStackParamList, "WeatherConditionsScreen">>().params;
     const service = useSurveyService();
 
     const [temperature, setTemperature] = useState<string>();
@@ -47,7 +47,8 @@ export function WeatherConditionsScreen(): React.JSX.Element {
         try {
             const updatedSurvey = await service.updateSurvey(surveyId, weatherConditions);
             console.log('Survey updated with weather conditions: ', updatedSurvey);
-            navigation.navigate("SurveyorConfirmLocationScreen", { surveyId, surveyorId })
+            type === "start" && navigation.navigate("SurveyorConfirmLocationScreen", { surveyId, surveyorId })
+            type === "end" && navigation.navigate("SurveySummaryScreen", { surveyId, surveyorId, locationId })
         } catch (e) {
             console.error('Failed to save weather conditions', e);
         } finally {
@@ -59,39 +60,44 @@ export function WeatherConditionsScreen(): React.JSX.Element {
         <View style={screen.justifyScreen}>
             <View style={{ width: "100%" }}>
                 <BackButton navigation={navigation} />
-                <Title title="Start Weather Conditions" />
+                <Title title={type === "start" ? "Start Weather Conditions" : "End Weather Conditions"} />
             </View>
             <View style={styles.content} >
                 <InputField testID="weather-temperature-input" value={temperature} variant="unit" fieldLabel="Temperature" placeholderText="Input Temperature" unit="°C" onChangeText={setTemperature} />
                 <InputField value={cloudCover} variant="unit" fieldLabel="Cloud Cover" placeholderText="Input Cloud Cover" unit="%" onChangeText={setCloudCover} />
                 <InputField value={humidity} variant="unit" fieldLabel="Humidity" placeholderText="Input Humidity" unit="%" onChangeText={setHumidity} />
                 <InputField value={wind} variant="unit" fieldLabel="Wind" placeholderText="Input Wind" unit="Beaufort" onChangeText={setWind} />
-                <Card cardLabel="Rain" style={styles.rainCardWrapper} contentStyle={styles.rainCard}>
-                    <View style={styles.rainRow}>
-                        <Text style={styles.rainLabel}>Rain</Text>
-                        <View style={styles.radioGroup} accessibilityRole="radiogroup">
-                            {rainOptions.map((option) => {
-                                const selected = rain === option.label;
-                                return (
-                                    <TouchableOpacity
-                                        key={option.label}
-                                        style={styles.radioOption}
-                                        onPress={() => setRain(option.label)}
-                                        testID={option.label}
-                                        accessibilityLabel={option.label}
-                                        accessibilityRole="radio"
-                                        accessibilityState={{ selected }}
-                                    >
-                                        <Text style={styles.radioLabel}>{option.label}</Text>
-                                        <View style={styles.radioOuter}>
-                                            {selected && <View style={styles.radioInner} />}
-                                        </View>
-                                    </TouchableOpacity>
-                                );
-                            })}
+                {type === "start" &&
+                    <Card cardLabel="Rain" style={styles.rainCardWrapper} contentStyle={styles.rainCard}>
+                        <View style={styles.rainRow}>
+                            <Text style={styles.rainLabel}>Rain</Text>
+                            <View style={styles.radioGroup} accessibilityRole="radiogroup">
+                                {rainOptions.map((option) => {
+                                    const selected = rain === option.label;
+                                    return (
+                                        <TouchableOpacity
+                                            key={option.label}
+                                            style={styles.radioOption}
+                                            onPress={() => setRain(option.label)}
+                                            testID={option.label}
+                                            accessibilityLabel={option.label}
+                                            accessibilityRole="radio"
+                                            accessibilityState={{ selected }}
+                                        >
+                                            <Text style={styles.radioLabel}>{option.label}</Text>
+                                            <View style={styles.radioOuter}>
+                                                {selected && <View style={styles.radioInner} />}
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
                         </View>
-                    </View>
-                </Card>
+                    </Card>
+                }
+                {type === "end" &&
+                    <InputField value={rain} variant="unit" fieldLabel="Rain" placeholderText="Input Rain" unit="Minutes" onChangeText={setRain} />
+                }
             </View>
             <Button label="Continue" variant="light" onPress={() => handleContinue()} />
         </View>

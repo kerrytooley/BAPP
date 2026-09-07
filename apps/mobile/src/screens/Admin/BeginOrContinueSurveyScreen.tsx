@@ -1,5 +1,5 @@
-import { BackButton, ButtonGroup } from "@components/Button";
-import { Title } from "@components/Titles";
+import { BackButton, ButtonGroup } from "@components/Common/Button";
+import { Title } from "@components/Common/Titles";
 import { screen } from "@theme/screen";
 import React from "react";
 import { StyleSheet, View } from "react-native";

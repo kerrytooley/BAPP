@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-native';
 
 import { View } from 'react-native';
 
-import { InputField } from '@components/InputField';
+import { InputField } from '@components/Common/InputField';
 
 const meta = {
     title: 'Components/InputField',

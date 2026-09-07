@@ -6,7 +6,7 @@ import { useActionSheet } from "@expo/react-native-action-sheet";
 import { colours } from "@theme/colours";
 import { textStyles } from "@theme/fonts";
 import { getAspectRatio } from "@utils/image";
-import { Upload as UploadIcon } from "@components/icons"
+import { Upload as UploadIcon } from "@components/Common/Icons"
 
 export interface DocumentUploadProps {
     onChange: (uri: string) => void;

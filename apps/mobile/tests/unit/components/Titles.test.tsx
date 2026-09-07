@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
-import { Title } from '@components/Titles';
+import { Title } from '@components/Common/Titles';
 
 describe('Title', () => {
     it('renders the title', () => {

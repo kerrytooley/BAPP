@@ -1,8 +1,8 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native"
-import { Card } from "./Card"
+import { Card } from "../Common/Card"
 import { colours } from "@theme/colours"
 import { textStyles } from "@theme/fonts"
-import { PlusButton as PlusIcon, MinusButton as MinusIcon } from "@components/icons"
+import { PlusButton as PlusIcon, MinusButton as MinusIcon } from "@components/Common/Icons"
 
 interface CountProps {
     heardCount: number,

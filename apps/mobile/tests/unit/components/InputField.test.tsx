@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { InputField } from '@components/InputField';
+import { InputField } from '@components/Common/InputField';
 
 describe('InputField', () => {
     it('renders the placeholder', () => {

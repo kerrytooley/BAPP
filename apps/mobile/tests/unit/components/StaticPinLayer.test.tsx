@@ -4,7 +4,7 @@ jest.mock('@utils/image', () => ({
 
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Image, View } from 'react-native';
-import { StaticPinLayer } from '@components/StaticPinLayer';
+import { StaticPinLayer } from '@components/Location/StaticPinLayer';
 import { getAspectRatio } from '@utils/image';
 
 const measure = (width = 100, height = 100) =>

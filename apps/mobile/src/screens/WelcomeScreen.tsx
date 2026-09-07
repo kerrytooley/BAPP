@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import Logo from "@assets/illustrations/logo.svg"
 import { textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';
-import { ButtonGroup } from "@components/Button";
+import { ButtonGroup } from "@components/Common/Button";
 import { screen } from "@theme/screen";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";

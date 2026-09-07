@@ -3,7 +3,7 @@ import { textStyles } from "@theme/fonts"
 import { formatTime } from "@utils/dateTimeUtils"
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useState } from "react"
-import { Card } from "./Card"
+import { Card } from "../Common/Card"
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 interface TimeOfObservationProp {

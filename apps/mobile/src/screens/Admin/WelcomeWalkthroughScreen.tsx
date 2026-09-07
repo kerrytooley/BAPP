@@ -1,5 +1,5 @@
-import { BackButton, Button } from "@components/Button";
-import { Title } from "@components/Titles";
+import { BackButton, Button } from "@components/Common/Button";
+import { Title } from "@components/Common/Titles";
 import { screen } from "@theme/screen";
 import React from "react";
 import { ScrollView, View } from "react-native";

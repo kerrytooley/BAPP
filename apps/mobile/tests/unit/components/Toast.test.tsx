@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, act } from '@testing-library/react-native';
-import { Toast } from '@components/Toast';
+import { Toast } from '@components/Common/Toast';
 
 describe('Toast', () => {
     beforeEach(() => {
