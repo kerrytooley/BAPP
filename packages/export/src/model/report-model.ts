@@ -25,7 +25,8 @@ export interface ReportSurvey {
   date: Date | null;
   status: SurveyStatus;
   /** Free-form weather readings captured for the survey (stringified). */
-  weather: ReportWeather;
+  startWeather: ReportWeather;
+  endWeather: ReportWeather;
 }
 
 /** Weather readings surfaced on the Overview sheet. Values are display strings. */
@@ -42,11 +43,20 @@ export interface ReportSurveyor {
   name: string | null;
   isLead: boolean;
   status: SurveyorStatus;
+  locationId: string | null;
 }
 
 export interface ReportLocation {
   id: string;
   name: string | null;
+  equipmentInformation: EquipmentInfo;
+  notes: LocationNotes[];
+}
+
+export interface EquipmentInfo {
+  audioLabel: string;
+  videoLabel: string;
+  otherInfo: string;
 }
 
 /**
@@ -68,6 +78,11 @@ export interface ReportObservation {
   emergence: boolean;
   color: string;
   label: string;
+}
+
+export interface LocationNotes {
+  text: string,
+  time: Date
 }
 
 export type ReportFigureKind = 'boundary' | 'frontView' | 'equipment';

@@ -10,7 +10,7 @@ import React, { useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Card } from "@components/Common/Card";
 import { useSurveyService } from "@services/surveyServiceContext";
-import { UpdateSurveyInput } from "@bapp/domain";
+import { Weather } from "@bapp/domain";
 import { textStyles } from "@theme/fonts";
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
@@ -35,17 +35,17 @@ export function WeatherConditionsScreen(): React.JSX.Element {
     const handleContinue = async () => {
         if (isSubmitting.current) return;
         isSubmitting.current = true;
-        const weatherConditions = {
-            weather: {
+        const weatherConditions =
+            {
                 temperature: temperature,
                 cloudCover: cloudCover,
                 humidity: humidity,
                 wind: wind,
                 rain: rain
-            }
-        } as UpdateSurveyInput;
+            } as Weather;
+        const updateInput = type == "start" ? { startWeather: weatherConditions } : { endWeather: weatherConditions };
         try {
-            const updatedSurvey = await service.updateSurvey(surveyId, weatherConditions);
+            const updatedSurvey = await service.updateSurvey(surveyId, updateInput);
             console.log('Survey updated with weather conditions: ', updatedSurvey);
             type === "start" && navigation.navigate("SurveyorConfirmLocationScreen", { surveyId, surveyorId })
             type === "end" && navigation.navigate("SurveySummaryScreen", { surveyId, surveyorId, locationId })

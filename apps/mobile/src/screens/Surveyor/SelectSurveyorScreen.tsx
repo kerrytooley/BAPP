@@ -5,10 +5,8 @@ import { screen } from "@theme/screen";
 import { StyleSheet, View } from "react-native";
 import { BackButton, ButtonGroup } from "@components/Common/Button";
 import { Title } from "@components/Common/Titles";
-import { Surveyor } from "@bapp/domain";
-import { useEffect, useState } from "react";
-import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
+import { Surveyor } from "@bapp/domain";
 import SurveyorIllustration from "@assets/illustrations/surveyors.svg"
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
@@ -18,6 +16,31 @@ export function SelectSurveyorScreen(): React.JSX.Element {
     const { surveyId } = useRoute<RouteProp<SurveyorStackParamList, 'SelectSurveyorScreen'>>().params;
     const { context } = useActiveSurvey();
     const surveyors = context?.surveyors;
+
+    const handleNavigate = (surveyor: Surveyor) => {
+        if (surveyor.status === "ready" && surveyor.locationId) {
+            navigation.navigate('SurveyScreen',
+                {
+                    surveyId,
+                    locationId: surveyor.locationId,
+                    surveyorId: surveyor.id
+                })
+        } else if (surveyor.status === "confirmed" && surveyor.locationId) {
+            navigation.navigate('CapturePhotoScreen',
+                {
+                    surveyId,
+                    locationId: surveyor.locationId,
+                    surveyorId: surveyor.id,
+                    photoType: 'frontView'
+                })
+        } else {
+            navigation.navigate('ConfirmSurveyorDetailsScreen',
+                {
+                    surveyId,
+                    surveyorId: surveyor.id
+                })
+        }
+    }
 
     return (
         <View style={screen.justifyScreen} >
@@ -33,13 +56,7 @@ export function SelectSurveyorScreen(): React.JSX.Element {
                                 return surveyor.isLead ? `Lead Surveyor: ${name}` : name;
                             })}
                             actions={"right arrow"}
-                            onPress={
-                                surveyors.map((surveyor) => {
-                                    const surveyorId = surveyor.id;
-                                    return () => navigation.navigate('ConfirmSurveyorDetailsScreen', { surveyId, surveyorId })
-                                }
-                                )
-                            }
+                            onPress={surveyors?.map((surveyor) => () => handleNavigate(surveyor)) ?? []}
                         />
                     }
                 </View>

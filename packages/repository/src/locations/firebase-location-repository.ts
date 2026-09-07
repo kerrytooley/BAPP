@@ -42,6 +42,8 @@ export function fromLocationDoc(snap: FirebaseFirestoreTypes.DocumentSnapshot): 
     boundaryPosition: d.boundaryPosition ?? null,
     frontViewImage: d.frontViewImage ?? null,
     equipmentImage: d.equipmentImage ?? null,
+    equipmentInformation: d.equipmentInformation ?? null,
+    notes: d.notes ?? null,
     data: d.data ?? {},
     createdAt: toDateRequired(d.createdAt),
     updatedAt: toDateRequired(d.updatedAt),

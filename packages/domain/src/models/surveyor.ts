@@ -1,4 +1,4 @@
-export type SurveyorStatus = 'pending' | 'ready' | 'done';
+export type SurveyorStatus = 'pending' | 'confirmed' | 'ready' | 'done';
 
 export interface Surveyor {
   id: string;

@@ -10,7 +10,14 @@ function baseModel(overrides: Partial<ReportModel> = {}): ReportModel {
       postcode: 'AB1 2CD',
       date: new Date('2026-01-01T00:00:00.000Z'),
       status: 'completed',
-      weather: {
+      startWeather: {
+        temperature: null,
+        wind: null,
+        humidity: null,
+        rain: null,
+        cloudCover: null,
+      },
+      endWeather: {
         temperature: null,
         wind: null,
         humidity: null,
@@ -18,8 +25,8 @@ function baseModel(overrides: Partial<ReportModel> = {}): ReportModel {
         cloudCover: null,
       },
     },
-    surveyors: [{ id: 'sur_1', name: 'Alex', isLead: true, status: 'done' }],
-    locations: [{ id: 'loc_1', name: 'North elevation' }],
+    surveyors: [{ id: 'sur_1', name: 'Alex', isLead: true, status: 'done', locationId: 'loc_1' }],
+    locations: [{ id: 'loc_1', name: 'North elevation', equipmentInformation: { audioLabel: '', videoLabel: '', otherInfo: '' }, notes: [] }],
     observations: [
       {
         id: 'obs_1',

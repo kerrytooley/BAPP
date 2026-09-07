@@ -29,6 +29,8 @@ export class InMemoryLocationRepository implements LocationRepository {
       sourceRef: 'surveys/1/boundary/DDF8407B-7F6E-4800-BBF9-C1D2C26E3C84.jpg',
       status: 'ready'
     },
+    equipmentInformation: { audioLabel: '1', videoLabel: '1', otherInfo: '1' },
+    notes: [{ time: new Date, text: 'note' }],
     data: {},
     createdAt: new Date,
     updatedAt: new Date,

@@ -2,6 +2,7 @@ import type {
   Location,
   Observation,
   SurveyContext,
+  Weather,
 } from '@bapp/domain';
 import { colorForIndex } from './colors';
 import type {
@@ -110,15 +111,26 @@ export function normalizeReport(context: SurveyContext): ReportModel {
       postcode: survey.postcode,
       date: survey.date,
       status: survey.status,
-      weather: normalizeWeather(survey.weather),
+      startWeather: normalizeWeather(survey.startWeather),
+      endWeather: normalizeWeather(survey.endWeather)
     },
     surveyors: surveyors.map((s) => ({
       id: s.id,
       name: s.name,
       isLead: s.isLead,
       status: s.status,
+      locationId: s.locationId,
     })),
-    locations: locations.map((l) => ({ id: l.id, name: l.name })),
+    locations: locations.map((l) => ({
+      id: l.id,
+      name: l.name,
+      equipmentInformation: {
+        audioLabel: l.equipmentInformation?.audioLabel ?? '',
+        videoLabel: l.equipmentInformation?.videoLabel ?? '',
+        otherInfo: l.equipmentInformation?.otherInfo ?? '',
+      },
+      notes: (l.notes ?? []).map((n) => ({ text: n.text, time: n.time })),
+    })),
     observations: reportObservations,
     figures,
   };
@@ -145,19 +157,18 @@ function formatTime(date: Date | null): string {
   return `${hh}:${mm}`;
 }
 
-/** Pull the known weather readings out of the survey's free-form record. */
-function normalizeWeather(weather: Record<string, unknown>): ReportWeather {
-  const read = (key: string): string | null => {
-    const value = weather[key];
+/** Pull the known weather readings out of the survey's weather record. */
+function normalizeWeather(weather: Weather | null | undefined): ReportWeather {
+  const read = (value: string | null | undefined): string | null => {
     if (value === null || value === undefined || value === '') return null;
     return String(value);
   };
   return {
-    temperature: read('temperature'),
-    wind: read('wind'),
-    humidity: read('humidity'),
-    rain: read('rain'),
-    cloudCover: read('cloudCover'),
+    temperature: read(weather?.temperature),
+    wind: read(weather?.wind),
+    humidity: read(weather?.humidity),
+    rain: read(weather?.rain),
+    cloudCover: read(weather?.cloudCover),
   };
 }
 

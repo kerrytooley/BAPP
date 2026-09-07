@@ -85,7 +85,7 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
                 currentSurveyor = surveyContext.surveyors.find((s) => s.id === surveyorId);
             }
             if (currentSurveyor?.status === 'pending') {
-                await service.updateSurveyor(surveyorId, { status: 'ready' });
+                await service.updateSurveyor(surveyorId, { status: 'confirmed' });
             }
             navigation.navigate("CapturePhotoScreen", { surveyId, locationId: id, surveyorId, photoType: 'frontView' });
         } catch (e) {

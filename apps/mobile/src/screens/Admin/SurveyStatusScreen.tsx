@@ -29,7 +29,8 @@ const surveyStatusLabels: Record<SurveyStatus, string> = {
 
 const surveyorStatusLabels: Record<SurveyorStatus, string> = {
     pending: "Not started",
-    ready: "In progress",
+    confirmed: "Location confirmed",
+    ready: "Ready for survey",
     done: "Completed",
 };
 

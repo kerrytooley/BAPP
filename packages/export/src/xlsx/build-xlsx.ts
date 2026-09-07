@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import type {
   ReportModel,
   ReportObservation,
+  LocationNotes
 } from '../model/report-model';
 
 export interface BuildWorkbookOptions {
@@ -34,6 +35,7 @@ export function buildReportWorkbook(
 
   const surveyorName = new Map(model.surveyors.map((s) => [s.id, s.name ?? s.id]));
   const locationName = new Map(model.locations.map((l) => [l.id, l.name ?? l.id]));
+  const notesByLocation = new Map(model.locations.map((l) => [l.id, l.notes]));
   const figureForObs = buildFigureIndex(model);
 
   const deepLink = (obs: ReportObservation): string | undefined => {
@@ -43,19 +45,28 @@ export function buildReportWorkbook(
   };
 
   // ---- Overview ---------------------------------------------------------
-  const weather = model.survey.weather;
+  const startWeather = model.survey.startWeather;
+  const endWeather = model.survey.endWeather
   const overview = makeSheet([
     ['Survey', model.survey.name ?? ''],
     ['Postcode', model.survey.postcode ?? ''],
     ['Date', model.survey.date ? formatDate(model.survey.date) : ''],
     ['Status', model.survey.status],
     [],
-    ['Weather conditions'],
-    ['Temperature (°C)', weather.temperature ?? ''],
-    ['Wind', weather.wind ?? ''],
-    ['Humidity (%)', weather.humidity ?? ''],
-    ['Rain', weather.rain ?? ''],
-    ['Cloud cover (%)', weather.cloudCover ?? ''],
+    ['Start weather conditions'],
+    ['Temperature (°C)', startWeather.temperature ?? ''],
+    ['Wind', startWeather.wind ?? ''],
+    ['Humidity (%)', startWeather.humidity ?? ''],
+    ['Rain', startWeather.rain ?? ''],
+    ['Cloud cover (%)', startWeather.cloudCover ?? ''],
+    [],
+    [],
+    ['End weather conditions'],
+    ['Temperature (°C)', endWeather.temperature ?? ''],
+    ['Wind', endWeather.wind ?? ''],
+    ['Humidity (%)', endWeather.humidity ?? ''],
+    ['Rain (minutes)', endWeather.rain ?? ''],
+    ['Cloud cover (%)', endWeather.cloudCover ?? ''],
     [],
     ['Surveyors', model.surveyors.length],
     ['Locations', model.locations.length],
@@ -68,7 +79,8 @@ export function buildReportWorkbook(
   const usedNames = new Set<string>(['Overview']);
   model.surveyors.forEach((surveyor, index) => {
     const rows = model.observations.filter((o) => o.surveyorId === surveyor.id);
-    const sheet = observationSheet(rows, {
+    const notes = surveyor.locationId ? notesByLocation.get(surveyor.locationId) ?? [] : [];
+    const sheet = observationSheet(rows, notes, {
       includeSurveyor: false,
       surveyorName,
       locationName,
@@ -82,7 +94,7 @@ export function buildReportWorkbook(
   });
 
   // ---- Chronological (all observations) --------------------------------
-  const chronological = observationSheet(model.observations, {
+  const chronological = observationSheet(model.observations, [], {
     includeSurveyor: true,
     surveyorName,
     locationName,
@@ -103,11 +115,24 @@ interface ObservationSheetContext {
 
 function observationSheet(
   observations: ReportObservation[],
+  notes: LocationNotes[],
   ctx: ObservationSheetContext,
 ): XLSX.WorkSheet {
-  const header: Row = ['#', 'Observation ID', 'First seen', 'Last seen', 'Species'];
-  if (ctx.includeSurveyor) header.push('Surveyor');
-  header.push(
+
+  const rows: Row[] = [];
+
+  // Location notes table, above the observations (surveyor sheets only).
+  // Omitted entirely when the location has no notes so the observation table
+  // stays at the top and its header is row 1.
+  if (notes.length > 0) {
+    rows.push(['Location Notes', 'Time']);
+    notes.forEach((note) => rows.push([note.text, formatTime(note.time)]));
+    rows.push([]);
+  }
+
+  const observationHeader: Row = ['#', 'Observation ID', 'First seen', 'Last seen', 'Species'];
+  if (ctx.includeSurveyor) observationHeader.push('Surveyor');
+  observationHeader.push(
     'Location',
     'Seen',
     'Heard',
@@ -117,8 +142,8 @@ function observationSheet(
     'Notes',
     'Flight paths',
   );
+  rows.push(observationHeader);
 
-  const rows: Row[] = [header];
   observations.forEach((obs, index) => {
     const link = ctx.deepLink(obs);
     const row: Row = [
@@ -145,8 +170,8 @@ function observationSheet(
   });
 
   const sheet = makeSheet(rows);
-  const notesCol = header.indexOf('Notes');
-  sheet['!cols'] = header.map((_, i) => ({ wch: i === notesCol ? 40 : 16 }));
+  const notesCol = observationHeader.indexOf('Notes');
+  sheet['!cols'] = observationHeader.map((_, i) => ({ wch: i === notesCol ? 40 : 16 }));
   return sheet;
 }
 

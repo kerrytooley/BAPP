@@ -37,7 +37,8 @@ describe('InMemorySurveyRepository', () => {
       expect(survey.surveyorCode).toBe('bbb222');
       expect(survey.status).toBe('draft');
       expect(survey.name).toBeNull();
-      expect(survey.weather).toEqual({});
+      expect(survey.startWeather).toEqual({});
+      expect(survey.endWeather).toEqual({});
       expect(survey.data).toEqual({});
       expect(survey.createdAt).toBeInstanceOf(Date);
     });
@@ -49,12 +50,14 @@ describe('InMemorySurveyRepository', () => {
         postcode: 'SW1A 1AA',
         date,
         status: 'active',
-        weather: { temperature: 15 },
+        startWeather: { temperature: '15', wind: '15', cloudCover: '15', humidity: '15', rain: 'yes' },
+        endWeather: { temperature: '15', wind: '15', cloudCover: '15', humidity: '15', rain: 'yes' },
       });
       expect(survey.name).toBe('Bat Survey 1');
       expect(survey.postcode).toBe('SW1A 1AA');
       expect(survey.status).toBe('active');
-      expect(survey.weather).toEqual({ temperature: 15 });
+      expect(survey.startWeather).toEqual({ temperature: '15', wind: '15', cloudCover: '15', humidity: '15', rain: 'yes' });
+      expect(survey.endWeather).toEqual({ temperature: '15', wind: '15', cloudCover: '15', humidity: '15', rain: 'yes' });
     });
 
     it('generates unique IDs', async () => {

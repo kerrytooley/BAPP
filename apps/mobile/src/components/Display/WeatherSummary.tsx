@@ -43,6 +43,7 @@ const styles = StyleSheet.create({
     },
     row: {
         width: "100%",
-        justifyContent: "space-between"
+        justifyContent: "space-between",
+        flexDirection: "row"
     }
 })

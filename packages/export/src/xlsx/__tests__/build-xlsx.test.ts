@@ -30,19 +30,33 @@ function model(overrides: Partial<ReportModel> = {}): ReportModel {
       postcode: 'GL7 5AB',
       date: new Date('2026-08-20T00:00:00Z'),
       status: 'completed',
-      weather: {
+      startWeather: {
         temperature: '15',
         wind: '4',
         humidity: '13',
         rain: 'Wet',
         cloudCover: '40',
       },
+      endWeather: {
+        temperature: '12',
+        wind: '2',
+        humidity: '20',
+        rain: 'Dry',
+        cloudCover: '10',
+      },
     },
     surveyors: [
-      { id: 'sur_1', name: 'Alex Lead', isLead: true, status: 'done' },
-      { id: 'sur_2', name: 'Sam Two', isLead: false, status: 'done' },
+      { id: 'sur_1', name: 'Alex Lead', isLead: true, status: 'done', locationId: 'loc_1' },
+      { id: 'sur_2', name: 'Sam Two', isLead: false, status: 'done', locationId: 'loc_1' },
     ],
-    locations: [{ id: 'loc_1', name: 'North elevation' }],
+    locations: [
+      {
+        id: 'loc_1',
+        name: 'North elevation',
+        equipmentInformation: { audioLabel: '', videoLabel: '', otherInfo: '' },
+        notes: [],
+      },
+    ],
     observations: [
       obs({ id: 'obs_1', surveyorId: 'sur_1', firstSeenAt: new Date('2026-08-20T20:05:00Z') }),
       obs({ id: 'obs_2', surveyorId: 'sur_2', species: 'Common Pipistrelle', label: 'Common Pipistrelle', firstSeenAt: new Date('2026-08-20T20:12:00Z') }),
@@ -101,12 +115,18 @@ describe('buildReportWorkbook', () => {
     const wb = read(buildReportWorkbook(model()));
     const overview = XLSX.utils.sheet_to_json<string[]>(wb.Sheets['Overview'], { header: 1 });
     const flat = overview.map((r) => r.join('|'));
-    expect(flat).toContain('Weather conditions');
+    expect(flat).toContain('Start weather conditions');
+    expect(flat).toContain('End weather conditions');
+    // start weather
     expect(flat).toContain('Temperature (°C)|15');
     expect(flat).toContain('Wind|4');
     expect(flat).toContain('Humidity (%)|13');
     expect(flat).toContain('Rain|Wet');
     expect(flat).toContain('Cloud cover (%)|40');
+    // end weather
+    expect(flat).toContain('Temperature (°C)|12');
+    expect(flat).toContain('Rain (minutes)|Dry');
+    expect(flat).toContain('Cloud cover (%)|10');
   });
 
   it('lists only a surveyor\'s own observations on their sheet', () => {
@@ -115,6 +135,57 @@ describe('buildReportWorkbook', () => {
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[sheetName]);
     expect(rows).toHaveLength(1);
     expect(rows[0].Species).toBe('Common Pipistrelle');
+  });
+
+  it('renders location notes above the observations on a surveyor sheet', () => {
+    const wb = read(
+      buildReportWorkbook(
+        model({
+          locations: [
+            {
+              id: 'loc_1',
+              name: 'North elevation',
+              equipmentInformation: { audioLabel: '', videoLabel: '', otherInfo: '' },
+              notes: [
+                { text: 'Streetlights on at 21:52', time: new Date('2026-08-20T20:52:00Z') },
+              ],
+            },
+          ],
+        }),
+      ),
+    );
+    const sheetName = wb.SheetNames.find((n) => n.includes('Alex Lead'))!;
+    const flat = XLSX.utils
+      .sheet_to_json<string[]>(wb.Sheets[sheetName], { header: 1 })
+      .map((r) => r.join('|'));
+    const notesHeader = flat.findIndex((r) => r.startsWith('Location Notes|Time'));
+    const obsHeader = flat.findIndex((r) => r.startsWith('#|Observation ID'));
+    expect(notesHeader).toBe(0);
+    expect(flat.some((r) => r.startsWith('Streetlights on at 21:52|20:52'))).toBe(true);
+    // notes table sits above the observations table
+    expect(notesHeader).toBeLessThan(obsHeader);
+  });
+
+  it('keeps the notes table off the Chronological sheet', () => {
+    const wb = read(
+      buildReportWorkbook(
+        model({
+          locations: [
+            {
+              id: 'loc_1',
+              name: 'North elevation',
+              equipmentInformation: { audioLabel: '', videoLabel: '', otherInfo: '' },
+              notes: [
+                { text: 'Streetlights on at 21:52', time: new Date('2026-08-20T20:52:00Z') },
+              ],
+            },
+          ],
+        }),
+      ),
+    );
+    const rows = XLSX.utils.sheet_to_json<string[]>(wb.Sheets['Chronological'], { header: 1 });
+    // observation header is the first row; no notes table above it
+    expect(rows[0][0]).toBe('#');
   });
 
   it('lists every observation chronologically', () => {
@@ -174,8 +245,8 @@ describe('buildReportWorkbook', () => {
       buildReportWorkbook(
         model({
           surveyors: [
-            { id: 's1', name: 'Team/A:B', isLead: true, status: 'done' },
-            { id: 's2', name: 'Team/A:B', isLead: false, status: 'done' },
+            { id: 's1', name: 'Team/A:B', isLead: true, status: 'done', locationId: null },
+            { id: 's2', name: 'Team/A:B', isLead: false, status: 'done', locationId: null },
           ],
           observations: [],
         }),

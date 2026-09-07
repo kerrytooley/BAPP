@@ -23,9 +23,11 @@ export function SurveyScreen(): React.JSX.Element {
     const { context } = useActiveSurvey();
 
     const survey = context?.survey;
+    const surveyor = context?.surveyors.find((surveyor) => surveyor.id === surveyorId);
     const observations = context?.observations.filter((observation) => observation.surveyorId === surveyorId) ?? [];
 
     const [toast, setToast] = useState<{ message: string; undo: () => void }>();
+    const [locationNotes, setLocationNotes] = useState<NotesProps[]>([]);
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
 
     const showToast = (message: string, previous: Observation) => {

@@ -106,7 +106,7 @@ export function CapturePhotoScreen(): React.JSX.Element {
             if (photoType === 'frontView') {
                 navigation.push('CapturePhotoScreen', { surveyId, locationId, surveyorId, photoType: 'equipment' })
             } else {
-                navigation.navigate('SetupCompleteScreen', { surveyId, locationId, surveyorId });
+                navigation.navigate('EquipmentDetailsScreen', { surveyId, locationId, surveyorId });
             }
 
         } catch (error) {

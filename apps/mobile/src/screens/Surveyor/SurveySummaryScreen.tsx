@@ -17,7 +17,7 @@ import { textStyles } from "@theme/fonts";
 import { colours } from "@theme/colours";
 import { formatDate } from "@utils/dateTimeUtils";
 import { NoteSummary } from "@components/Observation/NoteSummary";
-import { WeatherSummary } from "@components/Display/Weathersummary";
+import { WeatherSummary } from "@components/Display/WeatherSummary";
 
 type Nav = CompositeNavigationProp<
     NativeStackNavigationProp<SurveyorStackParamList>,
@@ -34,6 +34,7 @@ export function SurveySummaryScreen(): React.JSX.Element {
     const survey = context?.survey;
     const surveyor = context?.surveyors.find((surveyor) => surveyor.id === surveyorId);
     const observations = context?.observations.filter((observation) => observation.surveyorId === surveyorId);
+    const location = context?.locations.find((location) => locationId === location.id);
 
     const handleComplete = async () => {
         setSaving(true);
@@ -75,13 +76,26 @@ export function SurveySummaryScreen(): React.JSX.Element {
                 <Card cardLabel="Date and Time">
                     <Text style={styles.text}>{formatDate(survey?.date)}</Text>
                 </Card>
-                {surveyor?.isLead && survey?.startWeather && survey.endWeather &&
-
+                <Card cardLabel="Equipment Details">
+                    <View style={styles.row}>
+                        <Text style={styles.text}>Audio label: </Text>
+                        <Text style={styles.text}>{location?.equipmentInformation?.audioLabel ?? 'N/A'}</Text>
+                    </View>
+                    <View style={styles.row}>
+                        <Text style={styles.text}>Video label: </Text>
+                        <Text style={styles.text}>{location?.equipmentInformation?.videoLabel ?? 'N/A'}</Text>
+                    </View>
+                    <View style={styles.row}>
+                        <Text style={styles.text}>Other info: </Text>
+                        <Text style={styles.text}>{location?.equipmentInformation?.otherInfo ?? 'N/A'}</Text>
+                    </View>
+                </Card>
+                {surveyor?.isLead && survey?.startWeather &&
                     <WeatherSummary type={"start"} weather={survey?.startWeather} />
-
                 }
-                <WeatherSummary type={"end"} weather={survey?.endWeather} />
-
+                {surveyor?.isLead && survey?.endWeather &&
+                    <WeatherSummary type={"end"} weather={survey?.endWeather} />
+                }
                 <Text style={styles.header}>Bat Observations:</Text>
                 {
                     observations &&
@@ -113,6 +127,11 @@ const styles = StyleSheet.create({
         ...screen.scrollContent,
         paddingVertical: 24,
         gap: 16
+    },
+    row: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        width: "100%"
     },
     text: {
         ...textStyles.inputText,
