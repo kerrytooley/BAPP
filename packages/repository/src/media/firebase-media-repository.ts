@@ -114,12 +114,15 @@ function assertSafeReference(reference: string): void {
 /** Root of the on-device offline cache. Mirrors storage ref paths beneath it so
  *  a reference maps 1:1 to a cache file and survey-scoped clearing is a dir delete.
  *
- *  Under `documentDirectory`, NOT `cacheDirectory`: the OS can evict
- *  `cacheDirectory` under storage pressure, which would silently drop
- *  pre-downloaded images AND the unsent bytes of not-yet-flushed uploads (the
- *  pending manifest lives under here too). Both must survive until an upload
- *  reaches Storage / a survey is cleared, so this is durable app storage. */
-const CACHE_ROOT = `${FileSystem.documentDirectory ?? ''}bapp-media/`;
+ *  Lives under `cacheDirectory` (the OS may evict it under storage pressure).
+ *  That is fine for the re-downloadable display cache: `getDownloadUrl` is
+ *  cache-first, so an evicted image simply re-downloads from Storage when online
+ *  (and degrades to "unavailable" offline). NOTE: unsent-upload bytes + the
+ *  pending manifest also live here, so an eviction before an upload flushes can
+ *  lose that upload — a pre-existing risk (unchanged by this PR). Moving durable
+ *  state to `documentDirectory` and adding LRU eviction for the display cache is
+ *  a deferred follow-up (see FIREBASE_ARCHITECTURE.md). */
+const CACHE_ROOT = `${FileSystem.cacheDirectory ?? ''}bapp-media/`;
 
 /** Durable record of uploads that have not yet reached Storage, persisted next to
  *  the cached bytes so it survives app kills. Kept OUT of the survey-scoped cache
