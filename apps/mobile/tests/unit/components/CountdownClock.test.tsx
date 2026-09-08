@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
-import { CountdownClock } from '@components/CountdownClock';
+import { CountdownClock } from '@components/DateTime/CountdownClock';
 
 describe('CountdownClock', () => {
     beforeEach(() => {

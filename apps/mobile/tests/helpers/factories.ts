@@ -52,6 +52,8 @@ export const buildLocation = (
     boundaryPosition: { x: 0.5, y: 0.5 },
     frontViewImage: null,
     equipmentImage: null,
+    equipmentInformation: { audioLabel: '', videoLabel: '', otherInfo: '' },
+    notes: [{ time: new Date, text: 'note' }],
     data: {},
     createdAt: now,
     updatedAt: now,

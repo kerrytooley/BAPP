@@ -1,4 +1,4 @@
-import { TimeOfObservation } from '@components/TimeOfObservation';
+import { TimeOfObservation } from '@components/DateTime/TimeOfObservation';
 import type { Meta, StoryObj } from '@storybook/react-native';
 import { colours } from '@theme/colours';
 import { useState } from 'react';

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-native';
-import { CountdownClock } from '@components/CountdownClock';
+import { CountdownClock } from '@components/DateTime/CountdownClock';
 import { Image, View } from 'react-native';
 
 const meta = {

@@ -12,13 +12,14 @@ interface PreviousEntriesInterface {
     onAddHeard: (observation: Observation) => void
     onAddSeen: (observation: Observation) => void
     onEdit: (observationId: string) => void
+    onDelete: (observation: Observation) => void
 }
 
 type TimedEntry =
     | { time: Date; type: "observation"; value: Observation }
     | { time: Date; type: "note"; value: NotesProps };
 
-export const PreviousEntriesSection = ({ observations = [], notes = [], onAddHeard, onAddSeen, onEdit }: PreviousEntriesInterface) => {
+export const PreviousEntriesSection = ({ observations = [], notes = [], onAddHeard, onAddSeen, onEdit, onDelete }: PreviousEntriesInterface) => {
 
     const timedObservations: TimedEntry[] = observations.map((observation) => ({
         time: observation.firstSeenAt ?? observation.createdAt,
@@ -53,7 +54,9 @@ export const PreviousEntriesSection = ({ observations = [], notes = [], onAddHea
                                 observation={entry.value}
                                 onAddHeard={() => onAddHeard(entry.value)}
                                 onAddSeen={() => onAddSeen(entry.value)}
-                                onEdit={() => onEdit(entry.value.id)} />
+                                onEdit={() => onEdit(entry.value.id)}
+                                onDelete={() => onDelete(entry.value)}
+                            />
                     ))}
                 </ScrollView>
             </View>

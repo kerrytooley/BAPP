@@ -5,27 +5,35 @@ import { Button } from "../Common/Button";
 export interface BatGridProps {
     bats: Array<Bat>,
     onPress: (species: string) => void;
+    isLoading: boolean;
 }
 const groups = ["Pipistrelle", "Myotis", "Long-eared", "Nyctalus", "Horseshoe", "Other"]
-export const BatGrid = ({ bats, onPress }: BatGridProps) => {
+export const BatGrid = ({ bats, onPress, isLoading }: BatGridProps) => {
     return (
-        groups.map((group) => (
-            <View key={group} >
-                <Button label={group} onPress={() => onPress(group)} action="right arrow" />
-                <View key={group} style={styles.grid}>
-                    {bats
-                        .filter((bat) => bat.group === group)
-                        .map((bat) => (
-                            <View key={bat.id} style={styles.cell}>
-                                <BatItem
-                                    bat={bat}
-                                    onPress={() => onPress(bat.species)}
-                                />
-                            </View>
-                        ))}
-                </View>
-            </View>
-        ))
+        <View>
+            {
+                groups.map((group) => (
+
+                    <View key={group} >
+                        <Button disabled={isLoading} label={group} onPress={() => onPress(group)} action="right arrow" />
+                        <View key={group} style={styles.grid}>
+                            {bats
+                                .filter((bat) => bat.group === group)
+                                .map((bat) => (
+                                    <View key={bat.id} style={styles.cell}>
+                                        <BatItem
+                                            bat={bat}
+                                            onPress={() => onPress(bat.species)}
+                                            disabled={isLoading}
+                                        />
+                                    </View>
+                                ))}
+                        </View>
+
+                    </View>
+                ))}
+            <Button disabled={isLoading} label="Unknown" variant="dark" action="right arrow" onPress={() => onPress("Unknown")} />
+        </View>
     )
 }
 

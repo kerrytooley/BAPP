@@ -13,6 +13,7 @@ export interface InputFieldProps {
     testID?: string;
     onChangeText?: (text: string) => void;
     onEndEditing?: () => void;
+    onFocus?: () => void;
     style?: StyleProp<ViewStyle>;
 }
 
@@ -26,6 +27,7 @@ export const InputField = ({
     testID,
     onChangeText,
     onEndEditing,
+    onFocus,
     style
 }: InputFieldProps) => {
 
@@ -47,13 +49,17 @@ export const InputField = ({
                     style={[styles.inputText, isLarge && styles.inputTextLarge]}
                     value={value}
                     onChangeText={onChangeText}
-                    onFocus={() => setIsFocused(true)}
+                    onFocus={() => {
+                        onFocus
+                        setIsFocused(true)
+                    }}
                     onBlur={() => setIsFocused(false)}
                     onEndEditing={onEndEditing}
                     placeholder={placeholderText}
                     placeholderTextColor={colours.placeholderText}
                     multiline={isLarge}
                     numberOfLines={isLarge ? 4 : 1}
+
                 />
                 {isUnit && <Text style={styles.unit}>{unit}</Text>}
             </View>

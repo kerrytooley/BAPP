@@ -6,9 +6,10 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { screen } from "@theme/screen";
 import React, { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { Alert, StyleSheet, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import PadlockIllustration from "@assets/illustrations/padlock.svg"
+import { colours } from "@theme/colours";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
@@ -18,42 +19,61 @@ export function AdminCodeScreen(): React.JSX.Element {
     const service = useSurveyService();
 
     return (
-        <View style={styles.screen}>
-            <View style={{ width: "100%" }}>
-                <BackButton navigation={navigation} />
-                <PadlockIllustration width={180} height={180} style={styles.illustration} />
-                <Title title="Enter Admin Code" subtitle="Enter the admin code for the survey you want to continue" />
-            </View>
-            <View style={styles.content}>
-                <CodeInput testID="admin-code-input" placeholder="XXXXXX" value={code} onChangeText={setCode} />
-            </View>
-            <Button
-                variant="light"
-                label="Continue"
-                onPress={async () => {
-                    try {
-                        const { survey } = await service.resumeSurvey(code);
-                        navigation.navigate('SurveyStatusScreen', { surveyId: survey.id });
-                    } catch (e) {
-                        console.error("Error resuming survey:", e);
-                        Alert.alert("Survey not found", "No survey matches that admin code. Please check and try again.");
-                    }
-                }}
-            />
+        <View style={screen.justifyScreen} >
+            <KeyboardAvoidingView
+                style={styles.codeView}
+                behavior="height"
+            >
+                <ScrollView
+                    style={screen.scroll}
+                    contentContainerStyle={screen.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode="interactive"
+                >
+                    <View style={styles.content}>
+                        <BackButton navigation={navigation} />
+                        <PadlockIllustration width={180} height={180} style={styles.illustration} />
+                        <Title title="Enter Admin Code" subtitle="Enter the admin code for the survey you want to continue" />
+                        <View >
+                            <CodeInput testID="admin-code-input" placeholder="XXXXXX" value={code} onChangeText={setCode} />
+                        </View>
+                    </View>
+                    <Button
+                        variant="light"
+                        label="Continue"
+                        onPress={async () => {
+                            try {
+                                const { survey } = await service.resumeSurvey(code);
+                                navigation.navigate('SurveyStatusScreen', { surveyId: survey.id });
+                            } catch (e) {
+                                console.error("Error resuming survey:", e);
+                                Alert.alert("Survey not found", "No survey matches that admin code. Please check and try again.");
+                            }
+                        }}
+                    />
+                </ScrollView>
+            </KeyboardAvoidingView >
         </View>
+
     );
 }
 
 const styles = StyleSheet.create({
-    screen: {
-        ...screen.justifyScreen,
-    },
     content: {
         ...screen.content,
-        paddingBottom: 80
+        justifyContent: "flex-start",
+        flex: 1,
+        gap: 48
+    },
+    codeView: {
+        flex: 1,
+        justifyContent: "center",
     },
     illustration: {
         alignSelf: "center",
-        margin: 24
     },
+    scrollContent: {
+        ...screen.scrollContent,
+        height: "100%"
+    }
 });

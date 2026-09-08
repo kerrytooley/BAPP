@@ -5,15 +5,17 @@ import { bats } from "../../data/bats";
 import { formatTime } from "@utils/dateTimeUtils";
 import { PlusButton } from "@components/Common/Icons"
 import { fonts, textStyles } from "@theme/fonts";
+import { SwipeToDeleteRow } from "./SwipeToDeleteRow";
 
 interface ObservationTileProps {
     observation: Observation,
     onAddSeen: () => void,
     onAddHeard: () => void,
-    onEdit: () => void
+    onEdit: () => void,
+    onDelete: () => void
 }
 
-export const ObservationTile = ({ observation, onAddSeen, onAddHeard, onEdit }: ObservationTileProps) => {
+export const ObservationTile = ({ observation, onAddSeen, onAddHeard, onEdit, onDelete }: ObservationTileProps) => {
 
     function getSpeciesAbbreviation(observation: Observation) {
         const species = observation.species?.trim();
@@ -29,28 +31,30 @@ export const ObservationTile = ({ observation, onAddSeen, onAddHeard, onEdit }: 
     }
 
     return (
-        <View style={styles.tile}>
-            <Text style={styles.titleText}>{getSpeciesAbbreviation(observation)}</Text>
+        <SwipeToDeleteRow onDelete={() => onDelete()}>
+            <View style={styles.tile}>
+                <Text style={styles.titleText}>{getSpeciesAbbreviation(observation)}</Text>
 
-            <View style={styles.buttonGroup}>
-                <Text style={styles.text}>S ({observation.seenCount})</Text>
-                <TouchableOpacity accessibilityLabel="Add seen count" onPress={() => onAddSeen()}>
-                    <PlusButton width={24} />
-                </TouchableOpacity>
+                <View style={styles.buttonGroup}>
+                    <Text style={styles.text}>S ({observation.seenCount})</Text>
+                    <TouchableOpacity accessibilityLabel="Add seen count" onPress={() => onAddSeen()}>
+                        <PlusButton width={24} />
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.buttonGroup}>
+                    <Text style={styles.text}>H ({observation.heardCount})</Text>
+                    <TouchableOpacity accessibilityLabel="Add heard count" onPress={() => onAddHeard()}>
+                        <PlusButton width={24} />
+                    </TouchableOpacity>
+                </View>
+                <Text style={styles.text}>{formatTime(observation.firstSeenAt)}</Text>
+                <View >
+                    <TouchableOpacity onPress={() => onEdit()}>
+                        <Text style={[styles.text, { color: colours.placeholderText }]}>Edit</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
-            <View style={styles.buttonGroup}>
-                <Text style={styles.text}>H ({observation.heardCount})</Text>
-                <TouchableOpacity accessibilityLabel="Add heard count" onPress={() => onAddHeard()}>
-                    <PlusButton width={24} />
-                </TouchableOpacity>
-            </View>
-            <Text style={styles.text}>{formatTime(observation.firstSeenAt)}</Text>
-            <View >
-                <TouchableOpacity onPress={() => onEdit()}>
-                    <Text style={[styles.text, { color: colours.placeholderText }]}>Edit</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
+        </SwipeToDeleteRow>
     )
 }
 

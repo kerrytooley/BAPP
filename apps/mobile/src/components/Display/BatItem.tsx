@@ -3,7 +3,7 @@ import { ChevronRight, Info as InfoTooltip } from "@components/Common/Icons"
 import { fonts, textStyles } from "@theme/fonts";
 import { colours } from "@theme/colours";
 import { LinearGradient } from "expo-linear-gradient";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import BatIcon from "@assets/illustrations/bat.svg"
 
 export interface Bat {
@@ -18,13 +18,14 @@ export interface Bat {
 export interface BatItemProps {
     bat: Bat,
     onPress: () => void
+    disabled: boolean
 }
 
-export const BatItem = ({ bat, onPress }: BatItemProps) => {
+export const BatItem = ({ bat, onPress, disabled }: BatItemProps) => {
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
 
     return (
-        <TouchableOpacity onPress={onPress} accessibilityRole="button" testID={bat.species} accessibilityLabel={bat.species} style={styles.container}>
+        <TouchableOpacity disabled={disabled} onPress={onPress} accessibilityRole="button" testID={bat.species} accessibilityLabel={bat.species} style={styles.container}>
             <View style={styles.batItem}>
                 <BatIcon width="50%" height="50%" style={styles.batImage} />
                 <TouchableOpacity accessibilityRole="button" accessibilityLabel="Bat Info" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={styles.infoTooltip} onPress={() => setIsFullScreen(true)}>
@@ -52,7 +53,6 @@ export const BatItem = ({ bat, onPress }: BatItemProps) => {
                     <Text style={styles.speciesLabel}>{bat.species}</Text>
                     <View style={styles.labelRow} >
                         <Text style={styles.frequencyLabel}>{bat.frequencyRange}</Text>
-
                     </View>
                     <ChevronRight style={styles.chevron} />
                 </View>

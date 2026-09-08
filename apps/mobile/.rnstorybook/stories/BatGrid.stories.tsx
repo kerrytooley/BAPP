@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-native';
-import { BatGrid } from '@components/Display/BatGrid';
+import { BatGrid } from '@components/BatGrid';
 import { View } from 'react-native';
 import { bats } from '../../src/data/bats';
 import { colours } from '@theme/colours';

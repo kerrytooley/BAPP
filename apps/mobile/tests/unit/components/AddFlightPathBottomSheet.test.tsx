@@ -44,7 +44,7 @@ jest.mock('@components/FlightPathCanvas', () => {
 });
 
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { AddFlightPathBottomSheet } from '@components/AddFlightPathBottomSheet';
+import { AddFlightPathBottomSheet } from '@components/BottomSheets/AddFlightPathBottomSheet';
 import type { FlightPath } from '@bapp/domain';
 
 const initialPaths = [

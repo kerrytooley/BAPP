@@ -7,13 +7,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 export interface ToastProps {
     visible: boolean;
     message: string;
-    onUndo: () => void;
-    onDone: () => void;
+    onUndo?: () => void;
+    onDone?: () => void;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+    position: number;
     /** Auto-dismiss delay in ms. Defaults to 4000. */
     duration?: number;
 }
 
-export const Toast = ({ visible, message, onUndo, onDone, duration = 4000 }: ToastProps) => {
+export const Toast = ({ visible, message, onUndo, onDone, onConfirm, onCancel, position, duration = 4000 }: ToastProps) => {
     const insets = useSafeAreaInsets();
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(20)).current;
@@ -26,8 +29,10 @@ export const Toast = ({ visible, message, onUndo, onDone, duration = 4000 }: Toa
             Animated.spring(translateY, { toValue: 0, useNativeDriver: true }),
         ]).start();
 
-        const timer = setTimeout(() => onDone(), duration);
-        return () => clearTimeout(timer);
+        if (onDone) {
+            const timer = setTimeout(() => onDone(), duration);
+            return () => clearTimeout(timer);
+        }
     }, [visible, message, duration, onDone, opacity, translateY]);
 
     if (!visible) return null;
@@ -37,18 +42,32 @@ export const Toast = ({ visible, message, onUndo, onDone, duration = 4000 }: Toa
             pointerEvents="box-none"
             style={[
                 styles.wrapper,
-                { bottom: 16 + insets.bottom, opacity, transform: [{ translateY }] },
+                { bottom: position + insets.bottom, opacity, transform: [{ translateY }] },
             ]}
         >
             <View style={styles.toast}>
                 <Text style={styles.message} numberOfLines={2}>{message}</Text>
                 <View style={styles.actions}>
-                    <TouchableOpacity onPress={onUndo} accessibilityRole="button" accessibilityLabel="Undo">
-                        <Text style={styles.undo}>Undo</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={onDone} accessibilityRole="button" accessibilityLabel="Done">
-                        <Text style={styles.done}>Done</Text>
-                    </TouchableOpacity>
+                    {onUndo &&
+                        <TouchableOpacity onPress={onUndo} accessibilityRole="button" accessibilityLabel="Undo">
+                            <Text style={styles.undo}>Undo</Text>
+                        </TouchableOpacity>
+                    }
+                    {onDone &&
+                        <TouchableOpacity onPress={onDone} accessibilityRole="button" accessibilityLabel="Done">
+                            <Text style={styles.done}>Done</Text>
+                        </TouchableOpacity>
+                    }
+                    {onCancel &&
+                        <TouchableOpacity onPress={onCancel} accessibilityRole="button" accessibilityLabel="Cancel">
+                            <Text style={styles.undo}>Cancel</Text>
+                        </TouchableOpacity>
+                    }
+                    {onConfirm &&
+                        <TouchableOpacity onPress={onConfirm} accessibilityRole="button" accessibilityLabel="Confirm">
+                            <Text style={styles.done}>Confirm</Text>
+                        </TouchableOpacity>
+                    }
                 </View>
             </View>
         </Animated.View>
@@ -66,7 +85,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "space-between",
         gap: 16,
-        backgroundColor: colours.cardbackground,
+        backgroundColor: colours.inputBackground,
         borderRadius: 12,
         borderWidth: StyleSheet.hairlineWidth,
         borderColor: colours.buttonBorder,

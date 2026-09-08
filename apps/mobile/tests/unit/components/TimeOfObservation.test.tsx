@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, act } from '@testing-library/react-native';
-import { TimeOfObservation } from '@components/TimeOfObservation';
+import { TimeOfObservation } from '@components/DateTime/TimeOfObservation';
 
 jest.mock('@react-native-community/datetimepicker', () => {
     const React = require('react');

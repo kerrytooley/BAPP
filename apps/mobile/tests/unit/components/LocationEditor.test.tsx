@@ -3,7 +3,7 @@ jest.mock('@utils/image', () => ({
 }));
 
 import { render, screen } from '@testing-library/react-native';
-import { LocationEditor } from '@components/LocationEditor';
+import { LocationEditor } from '@components/Location/LocationEditor';
 import { PressableType } from '../../helpers/rnComponents';
 
 describe('LocationEditor', () => {

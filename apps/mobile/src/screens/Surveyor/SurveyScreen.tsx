@@ -26,15 +26,17 @@ export function SurveyScreen(): React.JSX.Element {
     const surveyor = context?.surveyors.find((surveyor) => surveyor.id === surveyorId);
     const observations = context?.observations.filter((observation) => observation.surveyorId === surveyorId) ?? [];
 
-    const [toast, setToast] = useState<{ message: string; undo: () => void }>();
+    const [addToast, setAddToast] = useState<{ message: string; undo: () => void; }>();
+    const [deleteToast, setDeleteToast] = useState<{ message: string; cancel: () => void; confirm: () => void; }>();
+    const [endToast, setEndToast] = useState<{ message: string; cancel: () => void; confirm: () => void; }>();
     const [locationNotes, setLocationNotes] = useState<NotesProps[]>([]);
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
 
-    const showToast = (message: string, previous: Observation) => {
-        setToast({
+    const showAddToast = (message: string, previous: Observation) => {
+        setAddToast({
             message,
             undo: async () => {
-                setToast(undefined);
+                setAddToast(undefined);
                 try {
                     await service.updateObservation(previous.id, {
                         seenCount: previous.seenCount,
@@ -48,13 +50,31 @@ export function SurveyScreen(): React.JSX.Element {
         });
     };
 
+    const showDeleteToast = (message: string, previous: Observation) => {
+        setDeleteToast({
+            message,
+            cancel: async () => {
+                setDeleteToast(undefined);
+            },
+            confirm: async () => {
+                setDeleteToast(undefined);
+                try {
+                    await service.removeObservation(previous.id);
+                    console.log("Successfully deleted observation: ", [previous.id]);
+                } catch (e) {
+                    console.error("Error deleting observation", e);
+                }
+            }
+        });
+    };
+
     const formatTime = (date: Date) =>
         date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
     const addHeard = async (observation: Observation) => {
         try {
             const updatedObservation = await service.updateObservation(observation.id, { heardCount: observation.heardCount + 1, lastSeenAt: new Date() });
-            showToast(
+            showAddToast(
                 `Heard count updated to ${updatedObservation.heardCount}. Last seen ${updatedObservation.lastSeenAt ? formatTime(updatedObservation.lastSeenAt) : ""}`.trim(),
                 observation,
             );
@@ -66,7 +86,7 @@ export function SurveyScreen(): React.JSX.Element {
     const addSeen = async (observation: Observation) => {
         try {
             const updatedObservation = await service.updateObservation(observation.id, { seenCount: observation.seenCount + 1, lastSeenAt: new Date() })
-            showToast(
+            showAddToast(
                 `Seen count updated to ${updatedObservation.seenCount}. Last seen ${updatedObservation.lastSeenAt ? formatTime(updatedObservation.lastSeenAt) : ""}`.trim(),
                 observation,
             );
@@ -88,6 +108,22 @@ export function SurveyScreen(): React.JSX.Element {
         }
     }
 
+    const showEndToast = (message: string) => {
+        setEndToast({
+            message,
+            cancel: async () => {
+                setEndToast(undefined);
+            },
+            confirm: async () => {
+                setEndToast(undefined);
+                const type = "end";
+                surveyor?.isLead
+                    ? navigation.navigate('WeatherConditionsScreen', { surveyId, surveyorId, locationId, type })
+                    : navigation.navigate('SurveySummaryScreen', { surveyId, surveyorId, locationId })
+            }
+        });
+    };
+
     return (
         <View style={screen.justifyScreen} >
             <View style={{ width: "100%" }} >
@@ -97,16 +133,10 @@ export function SurveyScreen(): React.JSX.Element {
                 {survey?.startTime && survey.endTime &&
                     <CountdownClock startTime={survey?.startTime} endTime={survey?.endTime} />
                 }
-                <View style={{ gap: 16 }}>
-                    <Button
-                        action="add"
-                        label="Add new bat observation"
-                        onPress={() => navigation.push('SelectSpeciesScreen', { surveyId, surveyorId, locationId })} />
-                    <Button
-                        action="add"
-                        label="Add survey note"
-                        onPress={() => setIsFullScreen(true)} />
-                </View>
+                <Button label="End Survey" onPress={() => {
+                    showEndToast(`End Survey?`)
+                }
+                } />
                 <LocationInfoModal
                     isFullScreen={isFullScreen}
                     setIsFullScreen={(is) => setIsFullScreen(is)}
@@ -116,21 +146,44 @@ export function SurveyScreen(): React.JSX.Element {
                     notes={locationNotes}
                     onAddHeard={(observation) => addHeard(observation)}
                     onAddSeen={(observation) => addSeen(observation)}
-                    onEdit={(observationId) => navigation.navigate("AddObservationScreen", { surveyId, locationId, surveyorId, observationId })} />
+                    onEdit={(observationId) => navigation.navigate("AddObservationScreen", { surveyId, locationId, surveyorId, observationId })}
+                    onDelete={(observation) => showDeleteToast(
+                        `Delete observation ${observation.species} ${formatTime(observation.createdAt)} ?`,
+                        observation
+                    )}
+                />
             </View>
-            <Button label="End Survey" onPress={() => {
-                const type = "end";
-                surveyor?.isLead
-                    ? navigation.navigate('WeatherConditionsScreen', { surveyId, surveyorId, locationId, type })
-                    : navigation.navigate('SurveySummaryScreen', { surveyId, surveyorId, locationId })
-
-            }
-            } />
+            <View style={{ gap: 16 }}>
+                <Button
+                    variant="light"
+                    action="add"
+                    label="Add new bat observation"
+                    onPress={() => navigation.navigate('SelectSpeciesScreen', { surveyId, surveyorId, locationId })} />
+                <Button
+                    action="add"
+                    label="Add survey note"
+                    onPress={() => setIsFullScreen(true)} />
+            </View>
             <Toast
-                visible={!!toast}
-                message={toast?.message ?? ""}
-                onUndo={() => toast?.undo()}
-                onDone={() => setToast(undefined)}
+                visible={!!addToast}
+                message={addToast?.message ?? ""}
+                onUndo={() => addToast?.undo()}
+                onDone={() => setAddToast(undefined)}
+                position={16}
+            />
+            <Toast
+                visible={!!deleteToast}
+                message={deleteToast?.message ?? ""}
+                onCancel={() => deleteToast?.cancel()}
+                onConfirm={() => deleteToast?.confirm()}
+                position={360}
+            />
+            <Toast
+                visible={!!endToast}
+                message={endToast?.message ?? ""}
+                onCancel={() => endToast?.cancel()}
+                onConfirm={() => endToast?.confirm()}
+                position={360}
             />
         </View>
     );

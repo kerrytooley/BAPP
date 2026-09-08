@@ -26,12 +26,12 @@ export const HeardAndSeenCount = ({ heardCount, seenCount, onChangeHeard, onChan
             <View style={styles.displayRow} >
                 <Text style={styles.text}>Heard</Text>
                 <View style={styles.countPill}>
-                    <TouchableOpacity accessibilityLabel="Decrease heard count" onPress={() => setHeardCount(heardCount, false)}>
-                        <MinusIcon width={20} />
+                    <TouchableOpacity hitSlop={16} accessibilityLabel="Decrease heard count" onPress={() => setHeardCount(heardCount, false)}>
+                        <MinusIcon width={24} />
                     </TouchableOpacity>
                     <Text style={styles.countText}>{heardCount}</Text>
-                    <TouchableOpacity accessibilityLabel="Increase heard count" onPress={() => setHeardCount(heardCount, true)}>
-                        <PlusIcon width={20} />
+                    <TouchableOpacity hitSlop={16} accessibilityLabel="Increase heard count" onPress={() => setHeardCount(heardCount, true)}>
+                        <PlusIcon width={24} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -40,12 +40,12 @@ export const HeardAndSeenCount = ({ heardCount, seenCount, onChangeHeard, onChan
                 <Text style={styles.text}>Seen</Text>
 
                 <View style={styles.countPill}>
-                    <TouchableOpacity accessibilityLabel="Decrease seen count" onPress={() => setSeenCount(seenCount, false)}>
-                        <MinusIcon width={20} />
+                    <TouchableOpacity hitSlop={16} accessibilityLabel="Decrease seen count" onPress={() => setSeenCount(seenCount, false)}>
+                        <MinusIcon width={24} />
                     </TouchableOpacity>
                     <Text style={styles.countText}>{seenCount}</Text>
-                    <TouchableOpacity accessibilityLabel="Increase seen count" onPress={() => setSeenCount(seenCount, true)}>
-                        <PlusIcon width={20} />
+                    <TouchableOpacity hitSlop={16} accessibilityLabel="Increase seen count" onPress={() => setSeenCount(seenCount, true)}>
+                        <PlusIcon width={24} />
                     </TouchableOpacity>
                 </View>
             </View>

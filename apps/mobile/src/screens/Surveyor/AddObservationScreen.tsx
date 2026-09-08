@@ -1,6 +1,6 @@
 import { BackButton, ButtonGroup } from "@components/Common/Button";
 import { screen } from "@theme/screen";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, Keyboard, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
@@ -112,6 +112,7 @@ export function AddObservationScreen(): React.JSX.Element {
     };
 
     const openFlightPathBottomSheet = (surface: FlightPathSurface) => {
+        Keyboard.dismiss();
         presentFlightPathSheet(surface);
     };
 
@@ -203,6 +204,7 @@ export function AddObservationScreen(): React.JSX.Element {
                                     const selected = emergence === option.value;
                                     return (
                                         <TouchableOpacity
+                                            hitSlop={16}
                                             key={option.label}
                                             style={styles.radioOption}
                                             onPress={() => setEmergence(option.value)}
@@ -228,12 +230,12 @@ export function AddObservationScreen(): React.JSX.Element {
                         unit="Hz"
                         value={frequency}
                         onChangeText={setFrequency} />
-
                     <InputField
                         fieldLabel="Direction of Travel"
                         placeholderText="e.g. N > S"
                         value={direction}
                         onChangeText={setDirection} />
+
                     <InputField
                         fieldLabel="Notes"
                         placeholderText="Add notes"
