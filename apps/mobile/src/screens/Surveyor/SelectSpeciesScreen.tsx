@@ -1,4 +1,4 @@
-import { BackButton, Button } from "@components/Common/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
 import { Title } from "@components/Common/Titles";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -57,7 +57,7 @@ export function SelectSpeciesPage(): React.JSX.Element {
         <View style={screen.justifyScreen}>
             <ScrollView style={screen.scroll} contentContainerStyle={screen.scrollContent} keyboardShouldPersistTaps="handled">
                 <View style={{ width: "100%" }}>
-                    <BackButton navigation={navigation} />
+                    <ScreenHeader navigation={navigation} />
                     <Title title="Add New Bat Type" subtitle="Tap species to continue" />
                 </View>
                 <View style={[screen.content, { marginTop: 16 }]} >

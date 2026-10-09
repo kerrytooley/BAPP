@@ -59,9 +59,7 @@ describe('SelectSpeciesScreen', () => {
         fireEvent.press(screen.getByText('Unknown'));
         await waitFor(() =>
             expect(errorSpy).toHaveBeenCalledWith(
-                'Error creating observation on surveyor: ',
-                'surveyor-1',
-                'Unknown',
+                'Error creating observation',
                 expect.any(Error),
             ),
         );

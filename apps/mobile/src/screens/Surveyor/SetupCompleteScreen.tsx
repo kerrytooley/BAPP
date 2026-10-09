@@ -4,7 +4,8 @@ import React from "react";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { StyleSheet, Text, View } from "react-native";
 import { screen } from "@theme/screen";
-import { BackButton, Button } from "@components/Common/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { Button } from "@components/Common/Button";
 import { fonts, textStyles } from "@theme/fonts";
 
 
@@ -18,7 +19,7 @@ export function SetupCompleteScreen(): React.JSX.Element {
     return (
         <View style={screen.justifyScreen} >
             <View style={{ width: "100%" }} >
-                <BackButton navigation={navigation} />
+                <ScreenHeader navigation={navigation} />
             </View>
             <View style={screen.content} >
                 <Text style={styles.title}>Survey Setup Complete!</Text>

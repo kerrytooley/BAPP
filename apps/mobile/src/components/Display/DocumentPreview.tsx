@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Image, Modal, Pressable, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Image, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { colours } from "@theme/colours";
+import { textStyles } from "@theme/fonts";
 import { Expand } from "@components/Common/Icons";
 import { StaticPinLayer } from "../Location/StaticPinLayer";
 import { BoundaryPosition } from "@bapp/domain";
@@ -8,13 +9,18 @@ import { BoundaryPosition } from "@bapp/domain";
 export interface DocumentPreviewProps {
     imageUri: string | undefined | null,
     values: BoundaryPosition[]
+    /** Shown once loading has finished (`imageUri === null`) and there is no image. */
+    emptyMessage?: string
 }
 
-export const DocumentPreview = ({ imageUri, values }: DocumentPreviewProps) => {
+export const DocumentPreview = ({ imageUri, values, emptyMessage }: DocumentPreviewProps) => {
     const [isFullScreen, setIsFullScreen] = useState(false);
 
     return (
         <View style={styles.container}>
+            {imageUri === null && emptyMessage &&
+                <Text style={styles.emptyMessage}>{emptyMessage}</Text>
+            }
             {imageUri &&
                 <>
                     <TouchableOpacity activeOpacity={0.8} onPress={() => setIsFullScreen(true)}>
@@ -72,5 +78,11 @@ const styles = StyleSheet.create({
     },
     fullScreenImage: {
         maxHeight: "80%",
+    },
+    emptyMessage: {
+        ...textStyles.inputText,
+        color: colours.placeholderText,
+        textAlign: "center",
+        paddingHorizontal: 16,
     }
 });

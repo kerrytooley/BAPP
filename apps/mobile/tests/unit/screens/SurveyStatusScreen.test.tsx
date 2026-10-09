@@ -17,6 +17,7 @@ import {
     renderWithActiveSurvey,
 } from '../../helpers/testUtils';
 import {
+    mockNavigate,
     resetNavigationMock,
     setRouteParams,
 } from '../../helpers/reactNavigationMock';
@@ -39,7 +40,7 @@ beforeEach(() => {
     setRouteParams({ surveyId: 'survey-1' });
     service.subscribeSurveyContext = mockSubscribeContext(contextWith());
     exportMock.mockReset();
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    jest.spyOn(Alert, 'alert').mockImplementation(() => { });
     jest.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
         cb(0);
         return 0 as unknown as number;
@@ -47,6 +48,59 @@ beforeEach(() => {
 });
 
 describe('SurveyStatusScreen', () => {
+    it('shows each surveyor progress label and a setup dot in the header', async () => {
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
+
+        expect(await screen.findByText('Survey ended')).toBeOnTheScreen();
+        expect(screen.getByText('Not started')).toBeOnTheScreen();
+        // Default factory locations are absent, so both surveyors are missing setup.
+        expect(screen.getAllByTestId('status-dot-missing').length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('expands a surveyor to show their setup rows', async () => {
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
+        await screen.findByText('Ben');
+        expect(screen.queryByText('Front view photo')).toBeNull();
+
+        fireEvent.press(screen.getByLabelText('Ben'));
+
+        expect(screen.getByLabelText('Ben').props.accessibilityState).toEqual(expect.objectContaining({ expanded: true }));
+        expect(screen.getByText('Front view photo')).toBeOnTheScreen();
+        expect(screen.queryByText('Start weather')).toBeNull();
+    });
+
+    it('links to the results of a surveyor who has ended their survey', async () => {
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
+        await screen.findByText('Ben');
+
+        fireEvent.press(screen.getByLabelText('Ben'));
+        expect(screen.queryByText('See surveyor results')).toBeNull();
+
+        fireEvent.press(screen.getByLabelText('Lead Surveyor: Ada'));
+        fireEvent.press(screen.getByText('See surveyor results'));
+
+        expect(mockNavigate).toHaveBeenCalledWith('SurveyorResultsScreen', {
+            surveyId: 'survey-1',
+            surveyorId: 'surveyor-1',
+            locationId: '',
+            viewOnly: true,
+        });
+    });
+
+    it('expands survey setup and edits each item', async () => {
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
+        await screen.findByText('Setup details');
+
+        fireEvent.press(screen.getByLabelText('Survey setup'));
+        expect(screen.getByText('Survey details')).toBeOnTheScreen();
+
+        fireEvent.press(screen.getByLabelText('Edit Survey details'));
+        expect(mockNavigate).toHaveBeenLastCalledWith('CreateSurvey', { surveyId: 'survey-1', editing: true });
+        fireEvent.press(screen.getByLabelText('Edit Red line boundary'));
+        expect(mockNavigate).toHaveBeenLastCalledWith('UploadRedLineBoundaryScreen', { surveyId: 'survey-1', editing: true });
+        fireEvent.press(screen.getByLabelText('Edit Surveyors & locations'));
+        expect(mockNavigate).toHaveBeenLastCalledWith('AddSurveyorScreen', { surveyId: 'survey-1', editing: true });
+    });
     it('shows the survey, overall status and each surveyor', async () => {
         renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
@@ -68,7 +122,7 @@ describe('SurveyStatusScreen', () => {
         exportMock.mockResolvedValue({ fileName: 'export.zip', shared: true });
         renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
-        fireEvent.press(await screen.findByText('Export & Share'));
+        fireEvent.press(await screen.findByText(/^Export & Share/));
 
         await waitFor(() => expect(exportMock).toHaveBeenCalledWith(service, 'survey-1'));
         expect(Alert.alert).not.toHaveBeenCalled();
@@ -78,7 +132,7 @@ describe('SurveyStatusScreen', () => {
         exportMock.mockResolvedValue({ fileName: 'export.zip', shared: false });
         renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
-        fireEvent.press(await screen.findByText('Export & Share'));
+        fireEvent.press(await screen.findByText(/^Export & Share/));
 
         await waitFor(() =>
             expect(Alert.alert).toHaveBeenCalledWith(
@@ -92,7 +146,7 @@ describe('SurveyStatusScreen', () => {
         exportMock.mockRejectedValue(new Error('boom'));
         renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
-        fireEvent.press(await screen.findByText('Export & Share'));
+        fireEvent.press(await screen.findByText(/^Export & Share/));
 
         await waitFor(() =>
             expect(Alert.alert).toHaveBeenCalledWith(
@@ -103,13 +157,13 @@ describe('SurveyStatusScreen', () => {
     });
 
     it('shows a loading overlay and disables the button while exporting', async () => {
-        let resolveExport: (value: { fileName: string; shared: boolean }) => void = () => {};
+        let resolveExport: (value: { fileName: string; shared: boolean }) => void = () => { };
         exportMock.mockImplementation(
             () => new Promise((resolve) => { resolveExport = resolve; }),
         );
         renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
-        fireEvent.press(await screen.findByText('Export & Share'));
+        fireEvent.press(await screen.findByText(/^Export & Share/));
 
         expect(await screen.findByText('Generating export…')).toBeOnTheScreen();
         fireEvent.press(screen.getByText('Exporting…'));

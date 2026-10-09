@@ -1,4 +1,4 @@
-import { StyleProp, StyleSheet, ViewStyle, View, Text, TouchableOpacity } from "react-native";
+import { Platform, StyleProp, StyleSheet, ViewStyle, View, Text, TouchableOpacity } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useState } from "react";
 import { textStyles } from "@theme/fonts";
@@ -32,10 +32,9 @@ export const DatePickerInput = ({
     };
 
     const handleChange = (event: DateTimePickerEvent, selected?: Date) => {
-        if (event.type === 'dismissed') {
-            setShow(false);
-            return;
-        }
+        // Android shows a one-shot dialog that re-opens on every render while mounted.
+        if (event.type === 'dismissed' || Platform.OS === 'android') setShow(false);
+        if (event.type === 'dismissed') return;
         if (selected) onChange?.(selected);
     };
 

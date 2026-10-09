@@ -9,21 +9,21 @@ const bats: Bat[] = [
 
 describe('BatGrid', () => {
     it('renders one item per bat', () => {
-        render(<BatGrid bats={bats} onPress={jest.fn()} />);
+        render(<BatGrid bats={bats} isLoading={false} onPress={jest.fn()} />);
         expect(screen.getByText('Noctule')).toBeOnTheScreen();
         expect(screen.getByText('Common Pipistrelle')).toBeOnTheScreen();
     });
 
     it('forwards the bat species when an item is pressed', () => {
         const onPress = jest.fn();
-        render(<BatGrid bats={bats} onPress={onPress} />);
+        render(<BatGrid bats={bats} isLoading={false} onPress={onPress} />);
         fireEvent.press(screen.getByLabelText('Common Pipistrelle'));
         expect(onPress).toHaveBeenCalledWith('Common Pipistrelle');
     });
 
     it('forwards the group name when a group button is pressed', () => {
         const onPress = jest.fn();
-        render(<BatGrid bats={bats} onPress={onPress} />);
+        render(<BatGrid bats={bats} isLoading={false} onPress={onPress} />);
         fireEvent.press(screen.getByText('Pipistrelle'));
         expect(onPress).toHaveBeenCalledWith('Pipistrelle');
     });

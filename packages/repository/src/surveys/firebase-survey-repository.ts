@@ -54,7 +54,7 @@ function fromSurveyDoc(snap: FirebaseFirestoreTypes.DocumentSnapshot): Survey {
     boundary: d.boundary ?? null,
     status: d.status ?? 'draft',
     startWeather: d.startWeather ?? {},
-    endWeather: d.endWEather ?? {},
+    endWeather: d.endWeather ?? {},
     data: d.data ?? {},
     createdAt: toDateRequired(d.createdAt),
     updatedAt: toDateRequired(d.updatedAt),

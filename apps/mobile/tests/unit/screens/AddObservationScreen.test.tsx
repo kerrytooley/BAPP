@@ -12,7 +12,7 @@ jest.mock('@react-native-community/datetimepicker', () => {
     };
 });
 
-jest.mock('@components/AddFlightPathBottomSheet', () => {
+jest.mock('@components/BottomSheets/AddFlightPathBottomSheet', () => {
     const React = require('react');
     const { Text, TouchableOpacity } = require('react-native');
     const AddFlightPathBottomSheet = React.forwardRef(
@@ -322,6 +322,46 @@ describe('AddObservationScreen', () => {
                     direction: null,
                     notes: null,
                 }),
+            ),
+        );
+    });
+
+    it('blocks saving an invalid frequency and shows the error after editing', async () => {
+        const updateObservation = jest.fn().mockResolvedValue(observation);
+        renderWithActiveSurvey(<AddObservationScreen />, buildService({ updateObservation }));
+        await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
+
+        const frequencyInput = screen.getByPlaceholderText('Add reading');
+        fireEvent.changeText(frequencyInput, 'loud');
+        fireEvent(frequencyInput, 'endEditing');
+
+        expect(screen.getByText('Enter a number')).toBeOnTheScreen();
+        expect(screen.getByText('kHz')).toBeOnTheScreen();
+        expect(screen.getByLabelText('Save Observation')).toBeDisabled();
+        fireEvent.press(screen.getByText('Save Observation'));
+        expect(updateObservation).not.toHaveBeenCalled();
+
+        fireEvent.changeText(frequencyInput, ' 45.5 ');
+        fireEvent.press(screen.getByText('Save Observation'));
+        await waitFor(() =>
+            expect(updateObservation).toHaveBeenCalledWith(
+                'obs-1',
+                expect.objectContaining({ frequency: '45.5' }),
+            ),
+        );
+    });
+
+    it('saves blank optional text as null', async () => {
+        const updateObservation = jest.fn().mockResolvedValue(observation);
+        renderWithActiveSurvey(<AddObservationScreen />, buildService({ updateObservation }));
+        await waitFor(() => expect(screen.getByDisplayValue('a nice bat')).toBeOnTheScreen());
+
+        fireEvent.changeText(screen.getByDisplayValue('a nice bat'), '   ');
+        fireEvent.press(screen.getByText('Save Observation'));
+        await waitFor(() =>
+            expect(updateObservation).toHaveBeenCalledWith(
+                'obs-1',
+                expect.objectContaining({ notes: null }),
             ),
         );
     });

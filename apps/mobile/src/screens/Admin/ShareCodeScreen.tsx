@@ -1,4 +1,5 @@
-import { BackButton, Button } from "@components/Common/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { Button } from "@components/Common/Button";
 import { RootStackParamList } from "@navigators/index";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { CompositeNavigationProp, useNavigation } from "@react-navigation/native";
@@ -25,7 +26,7 @@ export function ShareCodeScreen(): React.JSX.Element {
         <View style={screen.justifyScreen} >
             <View style={{ width: "100%" }} >
                 <View style={styles.header}>
-                    <BackButton navigation={navigation} />
+                    <ScreenHeader navigation={navigation} />
                 </View>
                 <SurveyorIllustration width={180} height={180} style={styles.illustration} />
                 <Title title="Share Your Survey Code" subtitle="Share this surveyor code with your team to invite them to the survey." />

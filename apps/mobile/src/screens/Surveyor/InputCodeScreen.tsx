@@ -1,4 +1,5 @@
-import { BackButton, Button } from "@components/Common/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { Button } from "@components/Common/Button";
 import { CodeInput } from "@components/Interactive/CodeInput";
 import { Title } from "@components/Common/Titles";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
@@ -9,6 +10,8 @@ import { useNavigation } from "@react-navigation/native";
 import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from "react-native";
 import { useSurveyService } from "../../services/surveyServiceContext";
 import PadlockIllustration from "@assets/illustrations/padlock.svg"
+import { isBlank, validateSurveyCode } from "@bapp/domain";
+import { recordRecentSurvey } from "@services/recentSurveys";
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
@@ -16,6 +19,9 @@ export function InputCodeScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const [code, setCode] = useState('');
     const service = useSurveyService();
+    const codeError = validateSurveyCode(code);
+    // Only nag once the code is full length or has a character that can never be valid.
+    const showCodeError = !!codeError && (code.trim().length >= 6 || /[^a-z0-9]/i.test(code.trim()));
 
     return (
         <View style={screen.justifyScreen} >
@@ -30,18 +36,20 @@ export function InputCodeScreen(): React.JSX.Element {
                     keyboardDismissMode="interactive"
                 >
                     <View style={styles.content}>
-                        <BackButton navigation={navigation} />
+                        <ScreenHeader navigation={navigation} />
                         <PadlockIllustration width={180} height={180} style={styles.illustration} />
                         <Title title="Input Survey Code" subtitle="Join survey by entering code shared by lead surveyor" />
 
-                        <CodeInput testID="survey-code-input" placeholder="XXXXXX" value={code} onChangeText={setCode} />
+                        <CodeInput testID="survey-code-input" placeholder="XXXXXX" value={code} onChangeText={setCode} error={showCodeError ? codeError : null} />
                     </View>
                     <Button
                         variant="light"
                         label="Continue"
+                        disabled={isBlank(code) || !!codeError}
                         onPress={async () => {
                             try {
                                 const surveyContext = await service.joinSurvey(code);
+                                void recordRecentSurvey(surveyContext.survey, "surveyor");
 
                                 console.log(`Found survey using surveyor code: ${code}. Survey Context:`, surveyContext);
                                 navigation.navigate('CodeConfirmationScreen', { surveyId: surveyContext.survey.id });

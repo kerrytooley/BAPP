@@ -1,4 +1,5 @@
-import { BackButton, ButtonGroup } from "@components/Common/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { ButtonGroup } from "@components/Common/Button";
 import { screen } from "@theme/screen";
 import { Image, Keyboard, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
@@ -8,7 +9,7 @@ import { Title } from "@components/Common/Titles";
 import { TimeOfObservation } from "@components/DateTime/TimeOfObservation";
 import { HeardAndSeenCount } from "@components/Observation/HeardAndSeenCount";
 import React, { useEffect, useRef, useState } from "react";
-import { FlightPath, FlightPathSurface, UpdateObservationInput } from "@bapp/domain";
+import { FlightPath, FlightPathSurface, UpdateObservationInput, validateFrequencyKhz } from "@bapp/domain";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { InputField } from "@components/Common/InputField";
@@ -135,9 +136,12 @@ export function AddObservationScreen(): React.JSX.Element {
     const hasFrontViewPath = flightPaths.some((path) => path.surface === "frontView");
 
     const isSubmitting = useRef(false);
+    const [frequencyTouched, setFrequencyTouched] = useState(false);
+    const frequencyError = validateFrequencyKhz(frequency);
+    const optionalText = (value: string | undefined) => value?.trim() || null;
 
     const updateObservation = async () => {
-        if (isSubmitting.current) return;
+        if (isSubmitting.current || frequencyError) return;
         isSubmitting.current = true;
         try {
             const observationInput = {
@@ -145,9 +149,9 @@ export function AddObservationScreen(): React.JSX.Element {
                 heardCount: heardCount,
                 firstSeenAt: observationTime,
                 lastSeenAt: lastSeenTime,
-                frequency: frequency ?? null,
-                direction: direction ?? null,
-                notes: notes ?? null,
+                frequency: optionalText(frequency),
+                direction: optionalText(direction),
+                notes: optionalText(notes),
                 emergence: emergence,
                 flightPaths,
             } satisfies UpdateObservationInput;
@@ -178,7 +182,7 @@ export function AddObservationScreen(): React.JSX.Element {
     return (
         <View style={[screen.baseScreen, styles.screen]} >
             <View style={styles.header}>
-                <BackButton navigation={navigation} />
+                <ScreenHeader navigation={navigation} />
                 <Title title={observation?.species || "Unknown Species"} />
             </View>
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
@@ -227,15 +231,17 @@ export function AddObservationScreen(): React.JSX.Element {
                         fieldLabel="Frequency reading"
                         placeholderText="Add reading"
                         variant="unit"
-                        unit="Hz"
+                        unit="kHz"
+                        keyboardType="decimal-pad"
                         value={frequency}
-                        onChangeText={setFrequency} />
+                        onChangeText={setFrequency}
+                        onEndEditing={() => setFrequencyTouched(true)}
+                        error={frequencyTouched ? frequencyError : null} />
                     <InputField
                         fieldLabel="Direction of Travel"
                         placeholderText="e.g. N > S"
                         value={direction}
                         onChangeText={setDirection} />
-
                     <InputField
                         fieldLabel="Notes"
                         placeholderText="Add notes"
@@ -271,6 +277,7 @@ export function AddObservationScreen(): React.JSX.Element {
                 <ButtonGroup
                     labels={["Save Observation", "Delete Observation"]}
                     variant="mixed"
+                    disabled={[!!frequencyError, false]}
                     onPress={[() => updateObservation(),
                     () => deleteObservation()]} />
             </ScrollView>

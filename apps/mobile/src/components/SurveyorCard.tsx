@@ -7,8 +7,11 @@ export interface SurveyorCardProps {
     isLead?: boolean;
     name: string;
     onChangeName: (name: string) => void;
-    onEndEditingName: () => void
+    onEndEditingName?: () => void
     onAddLocation?: () => void;
+    /** When false the location button looks disabled and taps call `onLocationUnavailable`. */
+    canAddLocation?: boolean;
+    onLocationUnavailable?: () => void;
     onClose: () => void;
     hasLocation?: boolean;
     testID?: string;
@@ -20,6 +23,8 @@ export const SurveyorCard = ({
     onChangeName,
     onEndEditingName,
     onAddLocation,
+    canAddLocation = true,
+    onLocationUnavailable,
     onClose,
     hasLocation = false,
     testID,
@@ -33,7 +38,13 @@ export const SurveyorCard = ({
                 onChangeText={onChangeName}
                 onEndEditing={onEndEditingName}
             />
-            <Button label={hasLocation ? "Edit Surveyor Location" : "Add Surveyor Location"} action="location" onPress={onAddLocation} />
+            <Button
+                label={hasLocation ? "Edit Surveyor Location" : "Add Surveyor Location"}
+                action="location"
+                disabled={!canAddLocation}
+                onPress={onAddLocation}
+                onDisabledPress={onLocationUnavailable}
+            />
         </Card>
     );
 };

@@ -1,7 +1,7 @@
 import { colours } from "@theme/colours"
 import { textStyles } from "@theme/fonts"
 import { formatTime } from "@utils/dateTimeUtils"
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useState } from "react"
 import { Card } from "../Common/Card"
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
@@ -16,9 +16,15 @@ export function TimeOfObservation({ observationTime, onChange, label = "Time" }:
     const [isOpen, setIsOpen] = useState<boolean>(false);
 
     const handleChange = (event: DateTimePickerEvent, selected?: Date) => {
-        setTimeout(() => {
+        if (Platform.OS === 'android') {
+            // Close straight away: the Android dialog re-opens on any render while mounted.
             setIsOpen(false);
-        }, 150);
+        } else {
+            setTimeout(() => {
+                setIsOpen(false);
+            }, 150);
+        }
+        if (event.type === 'dismissed') return;
         if (selected) onChange?.(selected);
     };
 

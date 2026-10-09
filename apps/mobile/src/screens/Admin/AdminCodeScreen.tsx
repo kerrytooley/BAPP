@@ -1,4 +1,5 @@
-import { BackButton, Button } from "@components/Common/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { Button } from "@components/Common/Button";
 import { CodeInput } from "@components/Interactive/CodeInput";
 import { Title } from "@components/Common/Titles";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
@@ -6,10 +7,11 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { screen } from "@theme/screen";
 import React, { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, KeyboardAvoidingView, ScrollView, StyleSheet, View } from "react-native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import PadlockIllustration from "@assets/illustrations/padlock.svg"
-import { colours } from "@theme/colours";
+import { isBlank, validateSurveyCode } from "@bapp/domain";
+import { recordRecentSurvey } from "@services/recentSurveys";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
@@ -17,6 +19,9 @@ export function AdminCodeScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const [code, setCode] = useState('');
     const service = useSurveyService();
+    const codeError = validateSurveyCode(code);
+    // Only nag once the code is full length or has a character that can never be valid.
+    const showCodeError = !!codeError && (code.trim().length >= 6 || /[^a-z0-9]/i.test(code.trim()));
 
     return (
         <View style={screen.justifyScreen} >
@@ -31,19 +36,21 @@ export function AdminCodeScreen(): React.JSX.Element {
                     keyboardDismissMode="interactive"
                 >
                     <View style={styles.content}>
-                        <BackButton navigation={navigation} />
+                        <ScreenHeader navigation={navigation} />
                         <PadlockIllustration width={180} height={180} style={styles.illustration} />
                         <Title title="Enter Admin Code" subtitle="Enter the admin code for the survey you want to continue" />
                         <View >
-                            <CodeInput testID="admin-code-input" placeholder="XXXXXX" value={code} onChangeText={setCode} />
+                            <CodeInput testID="admin-code-input" placeholder="XXXXXX" value={code} onChangeText={setCode} error={showCodeError ? codeError : null} />
                         </View>
                     </View>
                     <Button
                         variant="light"
                         label="Continue"
+                        disabled={isBlank(code) || !!codeError}
                         onPress={async () => {
                             try {
                                 const { survey } = await service.resumeSurvey(code);
+                                void recordRecentSurvey(survey, "admin");
                                 navigation.navigate('SurveyStatusScreen', { surveyId: survey.id });
                             } catch (e) {
                                 console.error("Error resuming survey:", e);

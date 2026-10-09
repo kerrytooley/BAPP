@@ -19,15 +19,31 @@ export const LocationEditor = ({ boundaryImageUri, position, setPosition }: Loca
                         imageUri={boundaryImageUri}
                         value={position || null}
                         onChange={setPosition}
+                        footer={
+                            // Always mounted (just hidden) so the image doesn't resize when the first pin drops.
+                            <Text
+                                style={[styles.hint, !position && styles.hidden]}
+                                accessibilityElementsHidden={!position}
+                                importantForAccessibility={position ? "auto" : "no-hide-descendants"}
+                            >
+                                Tap again to move pin
+                            </Text>
+                        }
                     />
                 }
             </View>
-            {position && <Text style={textStyles.subtitle}>Tap again to move pin</Text>}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
+    hint: {
+        ...textStyles.subtitle,
+        textAlign: "center",
+    },
+    hidden: {
+        opacity: 0,
+    },
     imageContainer: {
         flex: 1,
         minHeight: 0,

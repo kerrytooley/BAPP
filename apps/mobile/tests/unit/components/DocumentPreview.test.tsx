@@ -18,6 +18,13 @@ describe('DocumentPreview', () => {
         expect(screen.UNSAFE_queryByType(Image)).toBeNull();
     });
 
+    it('shows the empty message once there is known to be no image', () => {
+        const { rerender } = render(<DocumentPreview imageUri={undefined} values={[]} emptyMessage="No boundary" />);
+        expect(screen.queryByText('No boundary')).toBeNull();
+        rerender(<DocumentPreview imageUri={null} values={[]} emptyMessage="No boundary" />);
+        expect(screen.getByText('No boundary')).toBeOnTheScreen();
+    });
+
     it('renders the preview image when a value is provided', () => {
         render(<DocumentPreview imageUri="file://boundary.png" values={[]} />);
         expect(screen.UNSAFE_getAllByType(Image)[0].props.source).toEqual({

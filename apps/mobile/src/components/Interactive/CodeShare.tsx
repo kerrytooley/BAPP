@@ -20,7 +20,7 @@ export const CodeShare = ({
                 `Download or open the BAPP app and join my survey as a surveyor. \n\n` +
                 `Enter this code to join: ${code} \n\n` +
                 `Download the BAPP app: https://example.com`
-                : `${code}`
+                : `Here is your BAPP admin code: ${code}`
             await Share.share({ message })
         } catch (e) {
             console.error("Failed to share code", e);

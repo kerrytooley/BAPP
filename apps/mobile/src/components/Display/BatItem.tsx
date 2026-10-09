@@ -3,7 +3,7 @@ import { ChevronRight, Info as InfoTooltip } from "@components/Common/Icons"
 import { fonts, textStyles } from "@theme/fonts";
 import { colours } from "@theme/colours";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import BatIcon from "@assets/illustrations/bat.svg"
 
 export interface Bat {

@@ -1,6 +1,6 @@
 import { BoundaryPosition } from "@bapp/domain"
 import { GestureResponderEvent, LayoutChangeEvent, View } from "react-native"
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { Image, Pressable, StyleSheet } from "react-native"
 import { MapPin } from "@components/Common/Icons"
 import { colours } from "@theme/colours"
@@ -10,14 +10,18 @@ interface PressablePinLayerProps {
     imageUri: string
     value: BoundaryPosition | null
     onChange: (position: BoundaryPosition) => void
+    /** Rendered directly beneath the image; its height is reserved when fitting the image. */
+    footer?: ReactNode
 }
 
 const PIN_WIDTH = 24;
 const PIN_HEIGHT = 24;
+const FOOTER_GAP = 8;
 
-export const PressablePinLayer = ({ imageUri, value, onChange }: PressablePinLayerProps) => {
+export const PressablePinLayer = ({ imageUri, value, onChange, footer }: PressablePinLayerProps) => {
     const [layout, setLayout] = useState({ width: 0, height: 0 });
     const [available, setAvailable] = useState({ width: 0, height: 0 });
+    const [footerHeight, setFooterHeight] = useState(0);
     const [aspectRatio, setAspectRatio] = useState<number>(0.5);
 
     useEffect(() => {
@@ -46,14 +50,15 @@ export const PressablePinLayer = ({ imageUri, value, onChange }: PressablePinLay
     // Fit the image inside the available area while preserving its aspect ratio,
     // so tall (portrait) images shrink to fit rather than overflowing.
     const fitted = (() => {
-        if (!available.width || !available.height) {
+        const availableHeight = footer ? available.height - footerHeight - FOOTER_GAP : available.height;
+        if (!available.width || !availableHeight || availableHeight <= 0) {
             return { width: available.width || undefined, aspectRatio };
         }
         const heightFromWidth = available.width / aspectRatio;
-        if (heightFromWidth <= available.height) {
+        if (heightFromWidth <= availableHeight) {
             return { width: available.width, height: heightFromWidth };
         }
-        return { width: available.height * aspectRatio, height: available.height };
+        return { width: availableHeight * aspectRatio, height: availableHeight };
     })();
 
     const handlePress = (event: GestureResponderEvent) => {
@@ -84,6 +89,11 @@ export const PressablePinLayer = ({ imageUri, value, onChange }: PressablePinLay
                     </View>
                 )}
             </Pressable>
+            {footer &&
+                <View style={styles.footer} onLayout={(e) => setFooterHeight(e.nativeEvent.layout.height)}>
+                    {footer}
+                </View>
+            }
         </View>
     );
 }
@@ -107,6 +117,10 @@ const styles = StyleSheet.create({
         position: "absolute",
         width: PIN_WIDTH,
         height: PIN_HEIGHT
+    },
+    footer: {
+        width: "100%",
+        marginTop: FOOTER_GAP,
     },
     container: {
         width: "100%",

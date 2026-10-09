@@ -26,8 +26,8 @@ export const Card = ({
             <View style={styles.labelRow}>
                 <Text style={textStyles.inputTitleText}>{cardLabel}</Text>
                 {removable &&
-                    <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Remove ${cardLabel}`} onPress={onClose}>
-                        <Close width={12} color={colours.light} />
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Remove ${cardLabel}`} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} onPress={onClose}>
+                        <Close width={16} color={colours.light} />
                     </TouchableOpacity>
                 }
             </View>

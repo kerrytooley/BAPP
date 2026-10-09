@@ -11,6 +11,8 @@ export interface ButtonProps {
   label: string;
   disabled?: boolean;
   onPress?: () => void;
+  /** Called when tapped while disabled, e.g. to explain why it's unavailable. */
+  onDisabledPress?: () => void;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -30,6 +32,7 @@ export const Button = ({
   style,
   disabled,
   onPress,
+  onDisabledPress,
 }: ButtonProps) => {
   const modeStyle = disabled ? styles.disabled : styles[variant];
   const textModeStyle = disabled ? styles.disabledText : styles[`${variant}Text` as keyof typeof styles];
@@ -37,8 +40,9 @@ export const Button = ({
   const textSizeStyle = textSizeStyles[size];
 
   return (
-    <TouchableOpacity testID={label} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} activeOpacity={disabled ? 1 : 0.6} onPress={onPress}>
-      <View style={[styles.button, modeStyle, sizeStyle, style]} >
+    <TouchableOpacity testID={label} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled && !onDisabledPress} activeOpacity={disabled ? 1 : 0.6} onPress={disabled ? onDisabledPress : onPress}>
+      {/* Keyed remount: Android doesn't always repaint style changes inside TouchableOpacity. */}
+      <View key={disabled ? "disabled" : "enabled"} style={[styles.button, modeStyle, sizeStyle, style]} >
         <Text style={[textStyles.buttonLabel, textModeStyle, textSizeStyle]}>{label}</Text>
         {action === "add" && <Plus style={styles.actionItem} />}
         {action === "right arrow" && <RightArrow style={styles.actionItem} />}
@@ -88,7 +92,6 @@ export const BackButton = ({
   return (
     <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={styles.backButton}
       onPress={() => {
-        console.log("<--- GO BACK");
         navigation.goBack();
       }}
     >

@@ -1,4 +1,5 @@
-import { BackButton, ButtonGroup } from "@components/Common/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { ButtonGroup } from "@components/Common/Button";
 import { Title } from "@components/Common/Titles";
 import { screen } from "@theme/screen";
 import React from "react";
@@ -16,7 +17,7 @@ export function BeginOrContinueSurveyScreen(): React.JSX.Element {
     return (
         <View style={screen.justifyScreen}>
             <View >
-                <BackButton navigation={navigation} />
+                <ScreenHeader navigation={navigation} />
                 <View style={styles.content}>
                     <ClipboardIllustration width={180} height={180} style={styles.illustration} />
                     <Title title="Begin or continue a survey" subtitle="Start a new survey or pick up where you left with an existing one" />

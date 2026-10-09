@@ -3,18 +3,72 @@ jest.mock('@react-navigation/native', () =>
 );
 
 import { View } from 'react-native';
+import type { ReactElement } from 'react';
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { CreateSurvey } from '@screens/Admin/CreateSurvey';
-import { createMockService, renderWithService } from '../../helpers/testUtils';
+import { loadRecentSurveys } from '@services/recentSurveys';
+import {
+    createMockService,
+    mockSubscribeContext,
+    renderWithActiveSurvey,
+    type MockSurveyService,
+} from '../../helpers/testUtils';
+import { buildContext, buildSurvey } from '../../helpers/factories';
 import {
     mockNavigate,
+    mockPopTo,
     resetNavigationMock,
     setRouteParams,
 } from '../../helpers/reactNavigationMock';
 
+const renderWithService = (ui: ReactElement, service: MockSurveyService) =>
+    renderWithActiveSurvey(ui, service, undefined);
+
 beforeEach(() => {
     resetNavigationMock();
     setRouteParams({ surveyId: 'survey-1' });
+});
+
+describe('CreateSurvey in edit mode', () => {
+    const existing = buildSurvey({ name: 'Dusk count', postcode: 'SW1A 1AA' });
+    const editService = () => createMockService({
+        subscribeSurveyContext: mockSubscribeContext(buildContext({ survey: existing })),
+    });
+
+    beforeEach(() => setRouteParams({ surveyId: 'survey-1', editing: true }));
+
+    it('prefills the existing details', async () => {
+        renderWithActiveSurvey(<CreateSurvey />, editService());
+        expect(screen.getByText('Edit Survey Details')).toBeOnTheScreen();
+        await waitFor(() => expect(screen.getByDisplayValue('Dusk count')).toBeOnTheScreen());
+        expect(screen.getByDisplayValue('SW1A 1AA')).toBeOnTheScreen();
+    });
+
+    it('saves to the existing survey and returns to survey status', async () => {
+        const service = editService();
+        renderWithActiveSurvey(<CreateSurvey />, service);
+        await waitFor(() => expect(screen.getByDisplayValue('Dusk count')).toBeOnTheScreen());
+
+        fireEvent.changeText(screen.getByDisplayValue('Dusk count'), 'Dawn count');
+        fireEvent.press(screen.getByText('Save'));
+
+        await waitFor(() =>
+            expect(service.updateSurvey).toHaveBeenCalledWith('survey-1', expect.objectContaining({ name: 'Dawn count' })),
+        );
+        expect(service.createSurvey).not.toHaveBeenCalled();
+        expect(mockPopTo).toHaveBeenCalledWith('SurveyStatusScreen', { surveyId: 'survey-1' });
+    });
+
+    it('cancels back to survey status without saving', async () => {
+        const service = editService();
+        renderWithActiveSurvey(<CreateSurvey />, service);
+        await waitFor(() => expect(screen.getByDisplayValue('Dusk count')).toBeOnTheScreen());
+
+        fireEvent.press(screen.getByText('Cancel'));
+
+        expect(service.updateSurvey).not.toHaveBeenCalled();
+        expect(mockPopTo).toHaveBeenCalledWith('SurveyStatusScreen', { surveyId: 'survey-1' });
+    });
 });
 
 describe('CreateSurvey', () => {
@@ -32,7 +86,7 @@ describe('CreateSurvey', () => {
         renderWithService(<CreateSurvey />, service);
         fireEvent.changeText(
             screen.getByPlaceholderText('Input survey name'),
-            'Dusk count',
+            '  Dusk count ',
         );
         fireEvent.changeText(
             screen.getByPlaceholderText('Input survey postcode'),
@@ -52,6 +106,11 @@ describe('CreateSurvey', () => {
         expect(mockNavigate).toHaveBeenCalledWith('SaveAdminCodeScreen', {
             surveyId: 'survey-1',
         });
+        await waitFor(async () =>
+            expect(await loadRecentSurveys()).toEqual([
+                expect.objectContaining({ surveyId: 'survey-1', role: 'admin' }),
+            ]),
+        );
     });
 
     it('does not navigate when the update fails', async () => {
@@ -60,9 +119,40 @@ describe('CreateSurvey', () => {
             updateSurvey: jest.fn().mockRejectedValue(new Error('nope')),
         });
         renderWithService(<CreateSurvey />, service);
+        fireEvent.changeText(screen.getByPlaceholderText('Input survey name'), 'Dusk count');
         fireEvent.press(screen.getByText('Continue'));
         await waitFor(() => expect(errorSpy).toHaveBeenCalled());
         expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('requires a survey name before continuing', () => {
+        const service = createMockService();
+        renderWithService(<CreateSurvey />, service);
+        expect(screen.getByLabelText('Continue')).toBeDisabled();
+
+        const nameInput = screen.getByPlaceholderText('Input survey name');
+        fireEvent.changeText(nameInput, '   ');
+        fireEvent(nameInput, 'endEditing');
+        expect(screen.getByText('Survey name is required')).toBeOnTheScreen();
+        fireEvent.press(screen.getByText('Continue'));
+        expect(service.createSurvey).not.toHaveBeenCalled();
+
+        fireEvent.changeText(nameInput, 'Dusk count');
+        expect(screen.getByLabelText('Continue')).toBeEnabled();
+        expect(screen.queryByText('Survey name is required')).toBeNull();
+    });
+
+    it('saves an empty postcode as null', async () => {
+        const service = createMockService();
+        renderWithService(<CreateSurvey />, service);
+        fireEvent.changeText(screen.getByPlaceholderText('Input survey name'), 'Dusk count');
+        fireEvent.press(screen.getByText('Continue'));
+        await waitFor(() =>
+            expect(service.updateSurvey).toHaveBeenCalledWith(
+                'survey-1',
+                expect.objectContaining({ postcode: null }),
+            ),
+        );
     });
 
     it('reuses a created survey after an update failure', async () => {
@@ -76,6 +166,7 @@ describe('CreateSurvey', () => {
                 .mockResolvedValueOnce({}),
         });
         renderWithService(<CreateSurvey />, service);
+        fireEvent.changeText(screen.getByPlaceholderText('Input survey name'), 'Dusk count');
 
         fireEvent.press(screen.getByText('Continue'));
         await waitFor(() => expect(errorSpy).toHaveBeenCalled());

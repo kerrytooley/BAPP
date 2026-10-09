@@ -136,7 +136,7 @@ function observationSheet(
     'Location',
     'Seen',
     'Heard',
-    'Frequency',
+    'Frequency (kHz)',
     'Direction',
     'Emergence',
     'Notes',

@@ -1,6 +1,6 @@
-import { StyleProp, StyleSheet, ViewStyle, View, Text, TextInput } from "react-native";
+import { KeyboardTypeOptions, StyleProp, StyleSheet, TextInputProps, ViewStyle, View, Text, TextInput } from "react-native";
 import { useState } from 'react';
-import { textStyles } from '@theme/fonts';
+import { fonts, textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';
 
 export interface InputFieldProps {
@@ -11,6 +11,9 @@ export interface InputFieldProps {
     value?: string;
     unit?: string;
     testID?: string;
+    error?: string | null;
+    keyboardType?: KeyboardTypeOptions;
+    autoCapitalize?: TextInputProps['autoCapitalize'];
     onChangeText?: (text: string) => void;
     onEndEditing?: () => void;
     onFocus?: () => void;
@@ -25,6 +28,9 @@ export const InputField = ({
     value,
     unit,
     testID,
+    error,
+    keyboardType,
+    autoCapitalize,
     onChangeText,
     onEndEditing,
     onFocus,
@@ -42,15 +48,16 @@ export const InputField = ({
                     <Text style={styles.inputTitleText}>{fieldLabel}</Text>
                 </View>
             }
-            <View style={[styles.inputBox, isFocused && styles.inputBoxFocused, isLarge && styles.large, isLarge && styles.topAlign]}>
+            <View style={[styles.inputBox, isFocused && styles.inputBoxFocused, !!error && styles.inputBoxError, isLarge && styles.large, isLarge && styles.topAlign]}>
                 <TextInput
                     testID={testID}
                     accessibilityLabel={testID}
+                    accessibilityHint={error ?? undefined}
                     style={[styles.inputText, isLarge && styles.inputTextLarge]}
                     value={value}
                     onChangeText={onChangeText}
                     onFocus={() => {
-                        onFocus
+                        onFocus?.()
                         setIsFocused(true)
                     }}
                     onBlur={() => setIsFocused(false)}
@@ -59,10 +66,12 @@ export const InputField = ({
                     placeholderTextColor={colours.placeholderText}
                     multiline={isLarge}
                     numberOfLines={isLarge ? 4 : 1}
-
+                    keyboardType={keyboardType}
+                    autoCapitalize={autoCapitalize}
                 />
                 {isUnit && <Text style={styles.unit}>{unit}</Text>}
             </View>
+            {!!error && <Text style={styles.errorText}>{error}</Text>}
         </View>
     );
 }
@@ -100,6 +109,16 @@ const styles = StyleSheet.create({
     },
     inputBoxFocused: {
         borderColor: colours.light,
+    },
+    inputBoxError: {
+        borderColor: colours.red,
+    },
+    errorText: {
+        ...textStyles.inputText,
+        fontSize: fonts.size.sm,
+        color: colours.red,
+        paddingTop: 6,
+        textAlign: "left",
     },
     inputText: {
         ...textStyles.inputText,

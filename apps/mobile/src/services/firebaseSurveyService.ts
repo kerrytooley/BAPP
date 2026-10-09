@@ -1,4 +1,4 @@
-import { NoOpValidator, SurveyService } from '@bapp/domain';
+import { FieldValidator, SurveyService } from '@bapp/domain';
 
 /**
  * Firebase (react-native-firebase) backend wiring. Kept in its own module so the
@@ -63,6 +63,6 @@ export async function createFirebaseSurveyService(): Promise<SurveyService> {
         surveyorRepo,
         observationRepo,
         mediaRepo,
-        new NoOpValidator()
+        new FieldValidator()
     );
 }

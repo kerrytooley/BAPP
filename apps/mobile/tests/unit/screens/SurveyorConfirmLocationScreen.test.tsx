@@ -6,7 +6,7 @@ jest.mock('@utils/image', () => ({
     getAspectRatio: jest.fn(() => Promise.resolve(1)),
 }));
 
-jest.mock('@components/AddLocationBottomSheet', () => {
+jest.mock('@components/BottomSheets/AddLocationBottomSheet', () => {
     const React = require('react');
     const { Pressable, Text } = require('react-native');
     return {

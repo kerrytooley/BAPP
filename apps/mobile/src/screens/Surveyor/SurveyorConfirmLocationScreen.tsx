@@ -9,7 +9,8 @@ import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { BoundaryPosition } from "@bapp/domain";
 
 import { StyleSheet, View } from "react-native";
-import { BackButton, ButtonGroup } from "@components/Common/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { ButtonGroup } from "@components/Common/Button";
 import { Title } from "@components/Common/Titles";
 import { StaticPinLayer } from "@components/Location/StaticPinLayer";
 import { AddLocationBottomSheet } from "@components/BottomSheets/AddLocationBottomSheet";
@@ -96,7 +97,7 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
     return (
         <View style={screen.justifyScreen}>
             <View style={{ width: "100%" }} >
-                <BackButton navigation={navigation} />
+                <ScreenHeader navigation={navigation} />
                 <Title title="Confirm Location" subtitle="Confirm your location is correct on the map" />
             </View>
             <View style={[screen.content, styles.imageArea]}>

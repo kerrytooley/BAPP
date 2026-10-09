@@ -46,6 +46,15 @@ describe('Button', () => {
         expect(screen.getByRole('button')).toBeDisabled();
     });
 
+    it('calls onDisabledPress instead of onPress when tapped while disabled', () => {
+        const onPress = jest.fn();
+        const onDisabledPress = jest.fn();
+        render(<Button label="Locate" disabled onPress={onPress} onDisabledPress={onDisabledPress} />);
+        fireEvent.press(screen.getByText('Locate'));
+        expect(onDisabledPress).toHaveBeenCalledTimes(1);
+        expect(onPress).not.toHaveBeenCalled();
+    });
+
     it('renders the light variant', () => {
         render(<Button label="Light" variant="light" />);
         expect(screen.getByText('Light')).toBeOnTheScreen();

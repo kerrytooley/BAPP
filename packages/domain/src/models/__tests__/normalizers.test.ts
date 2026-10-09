@@ -21,8 +21,8 @@ describe('applySurveyDefaults', () => {
       endTime: null,
       boundary: null,
       status: 'draft',
-      startWeather: { temperature: '1', humidity: '1', wind: '1', cloudCover: '1', rain: '1' },
-      endWeather: { temperature: '1', humidity: '1', wind: '1', cloudCover: '1', rain: '1' },
+      startWeather: null,
+      endWeather: null,
       data: {},
     });
   });
@@ -44,7 +44,7 @@ describe('applySurveyDefaults', () => {
     expect(fields.postcode).toBe('SW1A 1AA');
     expect(fields.date).toBe(date);
     expect(fields.status).toBe('active');
-    expect(fields.startTime).toEqual({ temperature: '1', humidity: '1', wind: '1', cloudCover: '1', rain: '1' });
+    expect(fields.startWeather).toEqual({ temperature: '1', humidity: '1', wind: '1', cloudCover: '1', rain: '1' });
     expect(fields.data).toEqual({ note: 'x' });
   });
 
@@ -64,6 +64,8 @@ describe('applyLocationDefaults', () => {
       boundaryPosition: null,
       frontViewImage: null,
       equipmentImage: null,
+      equipmentInformation: null,
+      notes: null,
       data: {},
     });
   });

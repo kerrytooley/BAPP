@@ -1,9 +1,10 @@
-import { BackButton, ButtonGroup } from "@components/Common/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { ButtonGroup } from "@components/Common/Button";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { screen } from "@theme/screen"
-import React, { useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { View, StyleSheet } from "react-native"
 import { useSurveyService } from "@services/surveyServiceContext";
 import { Title } from "@components/Common/Titles";
@@ -14,10 +15,22 @@ type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
 export function UploadRedLineBoundaryScreen(): React.JSX.Element {
     const service = useSurveyService();
-    const { surveyId } = useRoute<RouteProp<AdminStackParamList, 'UploadRedLineBoundaryScreen'>>().params;
+    const { surveyId, editing = false } = useRoute<RouteProp<AdminStackParamList, 'UploadRedLineBoundaryScreen'>>().params;
     const navigation = useNavigation<Nav>();
     const [imageUri, setImageUri] = useState<string | undefined>();
+    const [existingUri, setExistingUri] = useState<string | undefined>();
     const isSubmitting = useRef(false);
+
+    useEffect(() => {
+        if (!editing) return;
+        service.getBoundaryImage(surveyId)
+            .then((result) => { if (result.status === 'ready') setExistingUri(result.url); })
+            .catch((e) => console.error("Failed to fetch boundary image", e));
+    }, [editing, service, surveyId]);
+
+    const goNext = () => editing
+        ? navigation.popTo('SurveyStatusScreen', { surveyId })
+        : navigation.navigate('AddSurveyorScreen', { surveyId });
 
     const handleContinue = async () => {
         if (isSubmitting.current) return;
@@ -27,7 +40,7 @@ export function UploadRedLineBoundaryScreen(): React.JSX.Element {
             const imageBody = await createImageBody(imageUri as string);
             await service.setBoundaryImage(surveyId, imageBody.fileName, imageBody.bytes);
             console.log('Red line boundary uploaded:', imageBody.fileName);
-            navigation.navigate('AddSurveyorScreen', { surveyId })
+            goNext();
         } catch (e) {
             console.log("Error uploading red line boundary: ", e)
         } finally {
@@ -37,19 +50,19 @@ export function UploadRedLineBoundaryScreen(): React.JSX.Element {
 
     const handleSkip = async () => {
         console.log('Skipped red line boundary upload');
-        navigation.navigate('AddSurveyorScreen', { surveyId })
+        goNext();
     }
 
     return (
         <View style={screen.justifyScreen}>
             <View>
-                <BackButton navigation={navigation} />
-                <Title title="Upload Red Line Boundary" subtitle="Upload an image of the red line boundary of the property" />
+                <ScreenHeader navigation={navigation} />
+                <Title title={editing ? "Edit Red Line Boundary" : "Upload Red Line Boundary"} subtitle="Upload an image of the red line boundary of the property" />
             </View>
             <View style={styles.content} >
-                <DocumentUpload value={imageUri} onChange={setImageUri} />
+                <DocumentUpload value={imageUri ?? existingUri} onChange={setImageUri} />
             </View>
-            <ButtonGroup labels={["Continue", "Skip"]}
+            <ButtonGroup labels={editing ? ["Save", "Cancel"] : ["Continue", "Skip"]}
                 onPress={[handleContinue, handleSkip]}
                 disabled={imageUri ? [false, false] : [true, false]}
                 variant={"mixed"} />

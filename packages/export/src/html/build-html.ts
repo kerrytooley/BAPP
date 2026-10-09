@@ -1,4 +1,4 @@
-import type { ReportModel } from '../model/report-model';
+import type { ReportFigure, ReportModel } from '../model/report-model';
 import { renderRuntime } from './runtime';
 
 /**
@@ -15,13 +15,16 @@ export interface ResolvedImage {
 }
 
 /**
- * Build the single, self-contained interactive `flight-paths.html`.
+ * Build the single, self-contained interactive report HTML.
  *
  * Pure and synchronous: all image bytes are resolved beforehand by the platform
- * adapter and handed in via `images` (keyed by `ReportFigure.imageRef`). The
- * emitted document embeds the {@link ReportModel} plus the image map as a JSON
- * blob and drives everything (figure switcher, per-observation checklist, SVG
- * overlay, legend, deep-linking, copy-to-PNG) from that single source of truth.
+ * adapter and handed in via `images` (keyed by `ReportFigure.imageRef`).
+ *
+ * The document is rendered twice over: a static version (header, every figure
+ * with its image + overlay, and a legend) that works with JavaScript disabled —
+ * phone file previewers such as iOS Quick Look never run scripts — and a hidden
+ * interactive version that the runtime reveals when scripts do run. Base images
+ * are inlined once, in the static `<img>`s; the runtime reuses those sources.
  */
 export function buildReportHtml(
   model: ReportModel,
@@ -33,14 +36,18 @@ export function buildReportHtml(
     figures: model.figures.filter((figure) => figure.kind !== 'equipment'),
   };
 
-  const imageMap: Record<string, ResolvedImage> = {};
+  const mediaPaths: Record<string, { mediaPath: string }> = {};
   for (const figure of shownModel.figures) {
     const resolved = images.get(figure.imageRef);
-    if (resolved) imageMap[figure.imageRef] = resolved;
+    if (resolved) mediaPaths[figure.imageRef] = { mediaPath: resolved.mediaPath };
   }
 
-  const payload = serializeForScript({ model: shownModel, images: imageMap });
+  const payload = serializeForScript({ model: shownModel, images: mediaPaths });
   const title = escapeHtml(model.survey.name ?? 'Survey report');
+  const meta = escapeHtml(surveyMeta(model));
+  const staticFigures = shownModel.figures
+    .map((figure) => renderStaticFigure(figure, shownModel, images.get(figure.imageRef)))
+    .join('\n');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -52,19 +59,23 @@ export function buildReportHtml(
 </head>
 <body>
 <header id="report-header">
-  <h1 id="survey-title"></h1>
-  <p id="survey-meta"></p>
+  <h1 id="survey-title">${title}</h1>
+  <p id="survey-meta">${meta}</p>
 </header>
-<main id="report-main">
+<div id="static-report">
+  <p class="static-note">Showing every flight path. Open this file in a web browser to filter paths and copy images.</p>
+${staticFigures || '  <p class="static-note">No figures in this report.</p>'}
+</div>
+<main id="report-main" hidden>
   <nav id="figure-nav" aria-label="Figures"></nav>
   <section id="figure-panel">
     <div id="figure-toolbar">
       <h2 id="figure-title"></h2>
       <button id="copy-image" type="button">Copy image</button>
     </div>
-    <div id="figure-stage">
+    <div id="figure-stage" class="figure-stage">
       <img id="figure-image" alt="" />
-      <svg id="figure-overlay" viewBox="0 0 1 1" preserveAspectRatio="none"></svg>
+      <svg id="figure-overlay" class="figure-overlay" viewBox="0 0 1 1" preserveAspectRatio="none"></svg>
     </div>
     <p id="copy-status" role="status" aria-live="polite"></p>
   </section>
@@ -83,6 +94,71 @@ export function buildReportHtml(
 <script>${renderRuntime()}</script>
 </body>
 </html>`;
+}
+
+const PIN_COLOR = '#ff5252';
+// Keep in sync with PIN_SVG in runtime.ts (that copy ships inside the stringified runtime).
+const PIN_SVG = `<svg viewBox="-1 -1 26 26" aria-hidden="true"><path d="M12 0C7.03 0 3 4.03 3 9c0 6.75 9 15 9 15s9-8.25 9-15c0-4.97-4.03-9-9-9z" fill="${PIN_COLOR}" stroke="#ffffff" stroke-width="1.5"/><circle cx="12" cy="9" r="3.2" fill="#ffffff"/></svg>`;
+
+function surveyMeta(model: ReportModel): string {
+  const bits: string[] = [];
+  if (model.survey.postcode) bits.push(model.survey.postcode);
+  if (model.survey.date) {
+    const d = model.survey.date;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    bits.push(`${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`);
+  }
+  bits.push(model.survey.status);
+  return bits.join(' \u2022 ');
+}
+
+/** One figure as plain HTML/SVG: base image, every path and pin, and a legend. */
+function renderStaticFigure(
+  figure: ReportFigure,
+  model: ReportModel,
+  image: ResolvedImage | undefined,
+): string {
+  const title = escapeHtml(figure.title);
+  const img = image
+    ? `<img data-figure-id="${escapeHtml(figure.figureId)}" src="${escapeHtml(image.dataUri)}" alt="${title}" />`
+    : '';
+
+  const polylines = figure.paths
+    .map((path) => {
+      const points = path.points.map((p) => `${p.x},${p.y}`).join(' ');
+      return `<polyline points="${points}" stroke="${escapeHtml(path.color)}" stroke-width="2.5" vector-effect="non-scaling-stroke" />`;
+    })
+    .join('');
+  const pins = figure.pins
+    .map((pin) => {
+      const who = pin.surveyorNames.length ? ` (${pin.surveyorNames.join(', ')})` : '';
+      return `<span class="pin-marker" style="left:${pin.x * 100}%;top:${pin.y * 100}%" title="${escapeHtml(pin.label + who)}">${PIN_SVG}</span>`;
+    })
+    .join('');
+
+  const pinItems = figure.pins.map((pin) => {
+    const who = pin.surveyorNames.length ? ` \u2014 ${pin.surveyorNames.join(', ')}` : '';
+    return `<li class="check-item"><span class="pin-swatch">${PIN_SVG}</span><span class="check-label">${escapeHtml(pin.label + who)}</span></li>`;
+  });
+
+  const counts = new Map<string, number>();
+  for (const path of figure.paths) counts.set(path.observationId, (counts.get(path.observationId) ?? 0) + 1);
+  const pathItems = [...counts].map(([obsId, count]) => {
+    const obs = model.observations.find((o) => o.id === obsId);
+    const color = escapeHtml(obs?.color ?? '#888');
+    return `<li class="check-item"><span class="swatch" style="background:${color}"></span><span class="check-label">${escapeHtml(obs?.label ?? obsId)}</span><span class="check-count">${count}</span></li>`;
+  });
+
+  const items = [...pinItems, ...pathItems];
+  const legend = items.length
+    ? items.join('')
+    : '<li class="check-item empty">No flight paths on this figure.</li>';
+
+  return `  <section class="static-figure">
+    <h2>${title}</h2>
+    <div class="figure-stage">${img}<svg class="figure-overlay" viewBox="0 0 1 1" preserveAspectRatio="none">${polylines}</svg>${pins}</div>
+    <ul class="legend">${legend}</ul>
+  </section>`;
 }
 
 /** Serialize JSON safely for inlining inside a `<script>` element. */
@@ -113,6 +189,7 @@ const STYLES = `
   --accent: #4f8cff;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
   margin: 0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
@@ -147,7 +224,7 @@ body {
 #figure-panel { min-width: 0; }
 #figure-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 #figure-toolbar h2 { margin: 0; font-size: 16px; }
-#figure-stage {
+.figure-stage {
   position: relative;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -155,9 +232,13 @@ body {
   background: #000;
   line-height: 0;
 }
-#figure-image { display: block; width: 100%; height: auto; }
-#figure-overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
-#figure-overlay polyline { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.figure-stage img { display: block; width: 100%; height: auto; }
+.figure-overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+.figure-overlay polyline { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+#static-report { padding: 16px 20px; display: flex; flex-direction: column; gap: 24px; max-width: 900px; }
+.static-note { margin: 0; color: var(--muted); font-size: 13px; }
+.static-figure h2 { margin: 0 0 10px; font-size: 16px; }
+.legend { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 button {
   border: 1px solid var(--border);
   background: var(--panel-2);
@@ -179,7 +260,10 @@ button:hover { border-color: var(--accent); }
 .check-item.highlight { outline: 1px solid var(--accent); }
 .check-item.empty { color: var(--muted); cursor: default; }
 .swatch { width: 14px; height: 14px; border-radius: 3px; flex: none; }
-.pin-swatch { display: inline-flex; align-items: center; justify-content: center; font-size: 10px; line-height: 1; border-radius: 50%; }
+.pin-swatch { width: 16px; height: 16px; flex: none; line-height: 0; }
+.pin-swatch svg { width: 100%; height: 100%; }
+.pin-marker { position: absolute; width: 28px; height: 28px; transform: translate(-50%, -100%); line-height: 0; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)); }
+.pin-marker svg { width: 100%; height: 100%; }
 .check-label { flex: 1; font-size: 13px; }
 .check-count { font-size: 11px; color: var(--muted); }
 @media (max-width: 900px) {

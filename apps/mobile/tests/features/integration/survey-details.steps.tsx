@@ -7,7 +7,7 @@ import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { CreateSurvey } from '@screens/Admin/CreateSurvey';
 import {
   createMockService,
-  renderWithService,
+  renderWithActiveSurvey,
   type MockSurveyService,
 } from '../../helpers/testUtils';
 import {
@@ -29,7 +29,7 @@ defineFeature(feature, (test) => {
 
   const openCreateSurvey = (given: (text: string, fn: () => void) => void) => {
     given('the create survey screen is open', () => {
-      renderWithService(<CreateSurvey />, service);
+      renderWithActiveSurvey(<CreateSurvey />, service, undefined);
     });
   };
 
@@ -81,12 +81,34 @@ defineFeature(feature, (test) => {
       jest.spyOn(console, 'error').mockImplementation(() => { });
     });
 
-    when('the admin continues', () => {
+    when(/^the admin enters the survey name "(.*)"$/, (name: string) => {
+      fireEvent.changeText(screen.getByPlaceholderText('Input survey name'), name);
+    });
+
+    and('the admin continues', () => {
       fireEvent.press(screen.getByText('Continue'));
     });
 
     then('the admin stays on the create survey screen', async () => {
       await waitFor(() => expect(service.updateSurvey).toHaveBeenCalled());
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+  });
+
+  test('Admin cannot continue without a survey name', ({ given, when, and, then }) => {
+    openCreateSurvey(given);
+
+    when(/^the admin enters the postcode "(.*)"$/, (postcode: string) => {
+      fireEvent.changeText(screen.getByPlaceholderText('Input survey postcode'), postcode);
+    });
+
+    and('the admin continues', () => {
+      fireEvent.press(screen.getByText('Continue'));
+    });
+
+    then('nothing is saved and the admin stays on the create survey screen', () => {
+      expect(service.createSurvey).not.toHaveBeenCalled();
+      expect(service.updateSurvey).not.toHaveBeenCalled();
       expect(mockNavigate).not.toHaveBeenCalled();
     });
   });

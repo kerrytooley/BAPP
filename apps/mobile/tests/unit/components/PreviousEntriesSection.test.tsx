@@ -12,6 +12,7 @@ const setup = (observations = [buildObservation()]) => {
             onAddHeard={onAddHeard}
             onAddSeen={onAddSeen}
             onEdit={onEdit}
+            onDelete={jest.fn()}
         />,
     );
     return { onAddHeard, onAddSeen, onEdit };

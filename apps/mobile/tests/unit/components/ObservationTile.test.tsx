@@ -12,6 +12,7 @@ const setup = (observationOverrides = {}) => {
             onAddSeen={onAddSeen}
             onAddHeard={onAddHeard}
             onEdit={onEdit}
+            onDelete={jest.fn()}
         />,
     );
     return { onAddSeen, onAddHeard, onEdit };

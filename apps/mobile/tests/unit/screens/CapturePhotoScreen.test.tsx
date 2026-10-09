@@ -117,7 +117,7 @@ describe('CapturePhotoScreen', () => {
         });
     });
 
-    it('navigates to the setup-complete screen after saving the equipment photo', async () => {
+    it('navigates to equipment details after saving the equipment photo', async () => {
         setRouteParams({ ...baseParams, photoType: 'equipment' });
         const service = createMockService();
         renderWithService(<CapturePhotoScreen />, service);
@@ -130,12 +130,42 @@ describe('CapturePhotoScreen', () => {
         fireEvent.press(screen.getByText('Save photo and continue'));
 
         await waitFor(() =>
-            expect(mockNavigate).toHaveBeenCalledWith('SetupCompleteScreen', {
+            expect(mockNavigate).toHaveBeenCalledWith('EquipmentDetailsScreen', {
                 surveyId: 'survey-1',
                 locationId: 'location-1',
                 surveyorId: 'surveyor-1',
             }),
         );
+    });
+
+    it('skips the front-view photo to the equipment photo without saving', () => {
+        const service = createMockService();
+        renderWithService(<CapturePhotoScreen />, service);
+
+        fireEvent.press(screen.getByText('Skip'));
+
+        expect(mockPush).toHaveBeenCalledWith('CapturePhotoScreen', {
+            surveyId: 'survey-1',
+            locationId: 'location-1',
+            surveyorId: 'surveyor-1',
+            photoType: 'equipment',
+        });
+        expect(service.setLocationImage).not.toHaveBeenCalled();
+    });
+
+    it('skips the equipment photo to equipment details without saving', () => {
+        setRouteParams({ ...baseParams, photoType: 'equipment' });
+        const service = createMockService();
+        renderWithService(<CapturePhotoScreen />, service);
+
+        fireEvent.press(screen.getByText('Skip'));
+
+        expect(mockNavigate).toHaveBeenCalledWith('EquipmentDetailsScreen', {
+            surveyId: 'survey-1',
+            locationId: 'location-1',
+            surveyorId: 'surveyor-1',
+        });
+        expect(service.setLocationImage).not.toHaveBeenCalled();
     });
 
     it('re-launches the camera when retaking a photo', async () => {

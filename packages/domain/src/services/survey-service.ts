@@ -112,7 +112,7 @@ export class SurveyService {
   }
 
   async updateSurvey(surveyId: string, input: UpdateSurveyInput): Promise<Survey> {
-    await this.withContext(surveyId, { type: 'survey', surveyId }, (ctx) => {
+    await this.withContext(surveyId, { type: 'survey', surveyId, fields: Object.keys(input) }, (ctx) => {
       ctx.survey = { ...ctx.survey, ...input };
     });
     return this.surveyRepository.update(surveyId, input);
@@ -311,7 +311,7 @@ export class SurveyService {
 
   async updateLocation(locationId: string, input: UpdateLocationInput): Promise<Location> {
     const surveyId = await this.findSurveyId(this.locationRepository, locationId);
-    await this.withContext(surveyId, { type: 'location', locationId }, (ctx) => {
+    await this.withContext(surveyId, { type: 'location', locationId, fields: Object.keys(input) }, (ctx) => {
       const idx = ctx.locations.findIndex(l => l.id === locationId);
       ctx.locations[idx] = { ...ctx.locations[idx], ...input };
     });
@@ -346,7 +346,7 @@ export class SurveyService {
 
   async updateSurveyor(surveyorId: string, input: UpdateSurveyorInput): Promise<Surveyor> {
     const surveyId = await this.findSurveyId(this.surveyorRepository, surveyorId);
-    await this.withContext(surveyId, { type: 'surveyor', surveyorId }, (ctx) => {
+    await this.withContext(surveyId, { type: 'surveyor', surveyorId, fields: Object.keys(input) }, (ctx) => {
       const idx = ctx.surveyors.findIndex(s => s.id === surveyorId);
       ctx.surveyors[idx] = { ...ctx.surveyors[idx], ...input };
     });
@@ -381,7 +381,7 @@ export class SurveyService {
 
   async updateObservation(observationId: string, input: UpdateObservationInput): Promise<Observation> {
     const surveyId = await this.findSurveyId(this.observationRepository, observationId);
-    await this.withContext(surveyId, { type: 'observation', observationId }, (ctx) => {
+    await this.withContext(surveyId, { type: 'observation', observationId, fields: Object.keys(input) }, (ctx) => {
       const idx = ctx.observations.findIndex(o => o.id === observationId);
       ctx.observations[idx] = { ...ctx.observations[idx], ...input };
     });

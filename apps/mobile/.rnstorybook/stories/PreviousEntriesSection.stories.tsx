@@ -28,6 +28,7 @@ export const Default: Story = {
         observations: [],
         onAddHeard: () => { },
         onAddSeen: () => { },
-        onEdit: () => { }
+        onEdit: () => { },
+        onDelete: () => { }
     }
 }

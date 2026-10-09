@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
+import { Platform } from 'react-native';
 import { TimePickerInput } from '@components/DateTime/TimePickerInput';
 
 jest.mock('@react-native-community/datetimepicker', () => {
@@ -86,5 +87,17 @@ describe('TimePickerInput', () => {
         onChange.mockClear();
         fireEvent(screen.getByTestId('time-picker'), 'change', { type: 'set' }, undefined);
         expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('closes the Android dialog once a time is chosen', () => {
+        jest.replaceProperty(Platform, 'OS', 'android');
+        const onChange = jest.fn();
+        render(<TimePickerInput fieldLabel="Start" onChange={onChange} />);
+        fireEvent.press(screen.getByText('HH:MM'));
+        const selected = new Date(2026, 0, 1, 18, 30);
+        fireEvent(screen.getByTestId('time-picker'), 'change', { type: 'set' }, selected);
+        expect(onChange).toHaveBeenLastCalledWith(selected);
+        expect(screen.queryByTestId('time-picker')).toBeNull();
+        jest.restoreAllMocks();
     });
 });

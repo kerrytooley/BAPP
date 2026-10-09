@@ -7,7 +7,7 @@ jest.mock('expo-file-system/legacy', () => ({
     EncodingType: { Base64: 'base64' },
 }));
 
-jest.mock('@components/DocumentUpload', () => {
+jest.mock('@components/Interactive/DocumentUpload', () => {
     const React = require('react');
     const { Text } = require('react-native');
     return {
@@ -26,6 +26,7 @@ import { UploadRedLineBoundaryScreen } from '@screens/Admin/UploadRedLineBoundar
 import { createMockService, renderWithService } from '../../helpers/testUtils';
 import {
     mockNavigate,
+    mockPopTo,
     resetNavigationMock,
     setRouteParams,
 } from '../../helpers/reactNavigationMock';
@@ -37,6 +38,48 @@ beforeEach(() => {
     setRouteParams({ surveyId: 'survey-1' });
     readAsStringAsync.mockReset();
     readAsStringAsync.mockResolvedValue('AAAA');
+});
+
+describe('UploadRedLineBoundaryScreen in edit mode', () => {
+    beforeEach(() => setRouteParams({ surveyId: 'survey-1', editing: true }));
+
+    it('shows the current boundary and only enables save once a new one is picked', async () => {
+        const service = createMockService({
+            getBoundaryImage: jest.fn().mockResolvedValue({ status: 'ready', url: 'file:///current.png' }),
+        });
+        renderWithService(<UploadRedLineBoundaryScreen />, service);
+
+        expect(screen.getByText('Edit Red Line Boundary')).toBeOnTheScreen();
+        expect(await screen.findByText('file:///current.png')).toBeOnTheScreen();
+        expect(screen.getByLabelText('Save')).toBeDisabled();
+
+        fireEvent.press(screen.getByText('file:///current.png'));
+        fireEvent.press(screen.getByText('Save'));
+
+        await waitFor(() => expect(service.setBoundaryImage).toHaveBeenCalled());
+        expect(mockPopTo).toHaveBeenCalledWith('SurveyStatusScreen', { surveyId: 'survey-1' });
+    });
+
+    it('cancels back to survey status without uploading', async () => {
+        const service = createMockService();
+        renderWithService(<UploadRedLineBoundaryScreen />, service);
+        await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
+
+        fireEvent.press(screen.getByText('Cancel'));
+
+        await waitFor(() => expect(mockPopTo).toHaveBeenCalledWith('SurveyStatusScreen', { surveyId: 'survey-1' }));
+        expect(service.setBoundaryImage).not.toHaveBeenCalled();
+    });
+
+    it('logs an error when the current boundary fails to load', async () => {
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+        renderWithService(
+            <UploadRedLineBoundaryScreen />,
+            createMockService({ getBoundaryImage: jest.fn().mockRejectedValue(new Error('offline')) }),
+        );
+        await waitFor(() => expect(errorSpy).toHaveBeenCalledWith('Failed to fetch boundary image', expect.any(Error)));
+        errorSpy.mockRestore();
+    });
 });
 
 describe('UploadRedLineBoundaryScreen', () => {

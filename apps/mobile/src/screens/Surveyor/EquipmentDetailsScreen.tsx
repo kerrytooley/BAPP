@@ -1,4 +1,5 @@
-import { BackButton, Button } from "@components/Common/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { ButtonGroup } from "@components/Common/Button";
 import { InputField } from "@components/Common/InputField";
 import { Title } from "@components/Common/Titles";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
@@ -8,7 +9,7 @@ import { screen } from "@theme/screen";
 import React, { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useSurveyService } from "@services/surveyServiceContext";
-import { EquipmentInformation } from "@bapp/domain";
+import { EquipmentInformation, isBlank } from "@bapp/domain";
 
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
@@ -24,19 +25,22 @@ export function EquipmentDetailsScreen(): React.JSX.Element {
 
     const isSubmitting = useRef(false);
 
+    const equipmentInformation: EquipmentInformation = {
+        audioLabel: audioEquipmentLabel?.trim() ?? "",
+        videoLabel: videoEquipmentLabel?.trim() ?? "",
+        otherInfo: otherEquipmentInfo?.trim() ?? "",
+    };
+    const hasInput = Object.values(equipmentInformation).some((value) => !isBlank(value));
+
+    const goNext = () => navigation.navigate('SetupCompleteScreen', { surveyId, locationId, surveyorId });
 
     const handleContinue = async () => {
-        if (isSubmitting.current) return;
+        if (isSubmitting.current || !hasInput) return;
         isSubmitting.current = true;
-        const equipmentInformation = {
-            audioLabel: audioEquipmentLabel,
-            videoLabel: videoEquipmentLabel,
-            otherInfo: otherEquipmentInfo
-        } as EquipmentInformation
         try {
             await service.updateLocation(locationId, { equipmentInformation: equipmentInformation });
             console.log('Location updated with equipment information: ', equipmentInformation);
-            navigation.navigate('SetupCompleteScreen', { surveyId, locationId, surveyorId });
+            goNext();
         } catch (e) {
             console.error('Failed to save equipment information', e);
         } finally {
@@ -47,7 +51,7 @@ export function EquipmentDetailsScreen(): React.JSX.Element {
     return (
         <View style={screen.justifyScreen}>
             <View style={{ width: "100%" }}>
-                <BackButton navigation={navigation} />
+                <ScreenHeader navigation={navigation} />
                 <Title title="Add Equipment Details" subtitle="Tell your survey admin which equipment you are using at your location." />
             </View>
             <View style={styles.content} >
@@ -55,7 +59,12 @@ export function EquipmentDetailsScreen(): React.JSX.Element {
                 <InputField testID="video-equipment-input" value={videoEquipmentLabel} fieldLabel="Video Equipment Label" placeholderText="Input video equipment label" onChangeText={setVideoEquipmentLabel} />
                 <InputField testID="other-equipment-input" value={otherEquipmentInfo} fieldLabel="Other Equipment Information" placeholderText="Input any other equipment info" size="large" onChangeText={setOtherEquipmentInfo} />
             </View>
-            <Button label="Continue" variant="light" onPress={() => handleContinue()} />
+            <ButtonGroup
+                variant="mixed"
+                labels={["Continue", "Skip"]}
+                disabled={[!hasInput, false]}
+                onPress={[handleContinue, goNext]}
+            />
         </View>
     )
 }

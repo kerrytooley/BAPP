@@ -37,8 +37,8 @@ describe('InMemorySurveyRepository', () => {
       expect(survey.surveyorCode).toBe('bbb222');
       expect(survey.status).toBe('draft');
       expect(survey.name).toBeNull();
-      expect(survey.startWeather).toEqual({});
-      expect(survey.endWeather).toEqual({});
+      expect(survey.startWeather).toBeNull();
+      expect(survey.endWeather).toBeNull();
       expect(survey.data).toEqual({});
       expect(survey.createdAt).toBeInstanceOf(Date);
     });

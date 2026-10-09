@@ -216,7 +216,7 @@ describe('buildReportWorkbook', () => {
     );
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets['Chronological']);
     expect(rows[0]['Last seen']).toBe('20:09');
-    expect(rows[0].Frequency).toBe('45');
+    expect(rows[0]['Frequency (kHz)']).toBe('45');
     expect(rows[0].Direction).toBe('N-S');
     expect(rows[0].Emergence).toBe('Yes');
     expect(rows[0].Notes).toBe('batty');

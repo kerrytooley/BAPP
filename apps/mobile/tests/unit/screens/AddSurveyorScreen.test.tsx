@@ -12,6 +12,8 @@ jest.mock('@components/SurveyorCard', () => {
             onChangeName,
             onEndEditingName,
             onAddLocation,
+            canAddLocation,
+            onLocationUnavailable,
             onClose,
         }: {
             isLead: boolean;
@@ -19,6 +21,8 @@ jest.mock('@components/SurveyorCard', () => {
             onChangeName: (text: string) => void;
             onEndEditingName: () => void;
             onAddLocation: () => void;
+            canAddLocation: boolean;
+            onLocationUnavailable: () => void;
             onClose: () => void;
         }) => {
             const suffix = isLead ? 'lead' : name || 'blank';
@@ -30,7 +34,7 @@ jest.mock('@components/SurveyorCard', () => {
                         onChangeText={onChangeName}
                     />
                     <Text onPress={onEndEditingName}>{`save-${suffix}`}</Text>
-                    <Text onPress={onAddLocation}>{`add-location-${suffix}`}</Text>
+                    <Text onPress={canAddLocation ? onAddLocation : onLocationUnavailable}>{`add-location-${suffix}`}</Text>
                     <Text onPress={onClose}>{`close-${suffix}`}</Text>
                 </>
             );
@@ -38,7 +42,7 @@ jest.mock('@components/SurveyorCard', () => {
     };
 });
 
-jest.mock('@components/AddLocationBottomSheet', () => {
+jest.mock('@components/BottomSheets/AddLocationBottomSheet', () => {
     const React = require('react');
     const { Text } = require('react-native');
     return {
@@ -66,6 +70,7 @@ import {
 } from '../../helpers/testUtils';
 import {
     mockNavigate,
+    mockPopTo,
     resetNavigationMock,
     setRouteParams,
 } from '../../helpers/reactNavigationMock';
@@ -80,6 +85,8 @@ const leadOnlyContext = () =>
         surveyors: [buildSurveyor({ id: 'lead-1', isLead: true, name: 'Alice' })],
         locations: [],
     });
+
+const readyBoundary = () => jest.fn().mockResolvedValue({ status: 'ready', url: 'file://boundary.png' });
 
 describe('AddSurveyorScreen', () => {
     it('creates a lead surveyor when the survey has none', async () => {
@@ -264,14 +271,17 @@ describe('AddSurveyorScreen', () => {
         logSpy.mockRestore();
     });
 
-    it('saves a surveyor name from the edit buffer on end editing', async () => {
+    it('does not save a name when editing ends, only on continue (trimmed)', async () => {
         const service = createMockService({
             subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
         });
         renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-lead')).toBeOnTheScreen());
-        fireEvent.changeText(screen.getByTestId('name-lead'), 'Alicia');
+        fireEvent.changeText(screen.getByTestId('name-lead'), '  Alicia  ');
         fireEvent.press(screen.getByText('save-lead'));
+        expect(service.updateSurveyor).not.toHaveBeenCalled();
+
+        fireEvent.press(screen.getByText('Continue'));
         await waitFor(() =>
             expect(service.updateSurveyor).toHaveBeenCalledWith('lead-1', {
                 name: 'Alicia',
@@ -279,33 +289,17 @@ describe('AddSurveyorScreen', () => {
         );
     });
 
-    it('logs an error when saving a name fails', async () => {
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
-        const service = createMockService({
-            subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
-            updateSurveyor: jest.fn().mockRejectedValue(new Error('save failed')),
-        });
-        renderWithActiveSurvey(<AddSurveyorScreen />, service);
-        await waitFor(() => expect(screen.getByText('save-lead')).toBeOnTheScreen());
-        fireEvent.press(screen.getByText('save-lead'));
-        await waitFor(() =>
-            expect(logSpy).toHaveBeenCalledWith(
-                'Error saving surveyor name',
-                expect.any(Error),
-            ),
-        );
-        logSpy.mockRestore();
-    });
-
     it('adds a new location for a surveyor without one', async () => {
         const service = createMockService({
             subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
+            getBoundaryImage: readyBoundary(),
             addLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'loc-new' })),
         });
         renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() =>
             expect(screen.getByText('add-location-lead')).toBeOnTheScreen(),
         );
+        await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
         fireEvent.press(screen.getByText('add-location-lead'));
         fireEvent.press(screen.getByText('submit-location'));
         await waitFor(() =>
@@ -329,11 +323,13 @@ describe('AddSurveyorScreen', () => {
                 }),
             ),
             updateLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'loc-1' })),
+            getBoundaryImage: readyBoundary(),
         });
         renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() =>
             expect(screen.getByText('add-location-lead')).toBeOnTheScreen(),
         );
+        await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
         fireEvent.press(screen.getByText('add-location-lead'));
         fireEvent.press(screen.getByText('submit-location'));
         await waitFor(() =>
@@ -341,6 +337,22 @@ describe('AddSurveyorScreen', () => {
                 boundaryPosition: { x: 1, y: 2 },
             }),
         );
+    });
+
+    it('explains that a red line boundary is needed when there is none', async () => {
+        const service = createMockService({
+            subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
+        });
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
+        await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
+
+        fireEvent.press(screen.getByText('add-location-lead'));
+        expect(screen.getByText('Red line boundary needed')).toBeOnTheScreen();
+        expect(screen.getByText('Upload a red line boundary to add surveyor locations.')).toBeOnTheScreen();
+
+        fireEvent.press(screen.getByText('OK'));
+        await waitFor(() => expect(screen.queryByText('Red line boundary needed')).toBeNull());
+        expect(service.addLocation).not.toHaveBeenCalled();
     });
 
     it('ignores a location submission when no surveyor is active', async () => {
@@ -408,16 +420,19 @@ describe('AddSurveyorScreen', () => {
         logSpy.mockRestore();
     });
 
-    it('skips straight to review', async () => {
+    it('skips straight to review without saving name drafts', async () => {
         const service = createMockService({
             subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
         });
         renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-lead')).toBeOnTheScreen());
+        fireEvent.changeText(screen.getByTestId('name-lead'), 'Alicia');
         fireEvent.press(screen.getByText('Skip'));
         expect(mockNavigate).toHaveBeenCalledWith('ReviewSurveyDetailsScreen', {
             surveyId: 'survey-1',
         });
+        expect(service.updateSurveyor).not.toHaveBeenCalled();
+        expect(service.removeSurveyor).not.toHaveBeenCalled();
     });
 
     it('updates and adds locations across multiple surveyors', async () => {
@@ -434,9 +449,11 @@ describe('AddSurveyorScreen', () => {
             ),
             updateLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'loc-1' })),
             addLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'loc-new' })),
+            getBoundaryImage: readyBoundary(),
         });
         renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('add-location-Bob')).toBeOnTheScreen());
+        await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
 
         fireEvent.press(screen.getByText('add-location-Bob'));
         fireEvent.press(screen.getByText('submit-location'));
@@ -501,24 +518,37 @@ describe('AddSurveyorScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('saves a null surveyor name as an empty string', async () => {
+    it('in edit mode saves names and returns to survey status', async () => {
+        setRouteParams({ surveyId: 'survey-1', editing: true });
         const service = createMockService({
-            subscribeSurveyContext: mockSubscribeContext(
-                buildContext({
-                    surveyors: [
-                        buildSurveyor({ id: 'lead-1', isLead: true, name: 'Alice' }),
-                        buildSurveyor({ id: 's-null', isLead: false, name: null }),
-                    ],
-                    locations: [],
-                }),
-            ),
+            subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
         });
         renderWithActiveSurvey(<AddSurveyorScreen />, service);
-        await waitFor(() => expect(screen.getByText('save-blank')).toBeOnTheScreen());
-        fireEvent.press(screen.getByText('save-blank'));
+        await waitFor(() => expect(screen.getByText('save-lead')).toBeOnTheScreen());
+        expect(screen.getByText('Edit Surveyors')).toBeOnTheScreen();
+
+        fireEvent.changeText(screen.getByTestId('name-lead'), 'Alicia');
+        fireEvent.press(screen.getByText('Save'));
+
         await waitFor(() =>
-            expect(service.updateSurveyor).toHaveBeenCalledWith('s-null', { name: '' }),
+            expect(mockPopTo).toHaveBeenCalledWith('SurveyStatusScreen', { surveyId: 'survey-1' }),
         );
+        expect(service.updateSurveyor).toHaveBeenCalledWith('lead-1', { name: 'Alicia' });
+    });
+
+    it('in edit mode cancels back to survey status without saving names', async () => {
+        setRouteParams({ surveyId: 'survey-1', editing: true });
+        const service = createMockService({
+            subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
+        });
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
+        await waitFor(() => expect(screen.getByText('save-lead')).toBeOnTheScreen());
+
+        fireEvent.changeText(screen.getByTestId('name-lead'), 'Alicia');
+        fireEvent.press(screen.getByText('Cancel'));
+
+        expect(mockPopTo).toHaveBeenCalledWith('SurveyStatusScreen', { surveyId: 'survey-1' });
+        expect(service.updateSurveyor).not.toHaveBeenCalled();
     });
 
     it('disables continue when there is no lead surveyor', async () => {

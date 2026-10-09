@@ -23,4 +23,14 @@ describe('CodeInput', () => {
         render(<CodeInput placeholder="Code" />);
         expect(screen.getByPlaceholderText('Code').props.autoCapitalize).toBe('none');
     });
+
+    it('limits input to 6 characters', () => {
+        render(<CodeInput placeholder="Code" />);
+        expect(screen.getByPlaceholderText('Code').props.maxLength).toBe(6);
+    });
+
+    it('shows an error message when given', () => {
+        render(<CodeInput placeholder="Code" error="Codes are 6 letters or numbers" />);
+        expect(screen.getByText('Codes are 6 letters or numbers')).toBeOnTheScreen();
+    });
 });

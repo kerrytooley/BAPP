@@ -1,4 +1,5 @@
-import { BackButton, Button, ButtonGroup } from "@components/Common/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { ButtonGroup } from "@components/Common/Button";
 import { Title } from "@components/Common/Titles";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -96,19 +97,21 @@ export function CapturePhotoScreen(): React.JSX.Element {
         }
     }
 
+    const goNext = () => {
+        if (photoType === 'frontView') {
+            navigation.push('CapturePhotoScreen', { surveyId, locationId, surveyorId, photoType: 'equipment' })
+        } else {
+            navigation.navigate('EquipmentDetailsScreen', { surveyId, locationId, surveyorId });
+        }
+    }
+
     const saveAndContinue = async () => {
         console.log('saveImage called with uri:', imageUri);
         try {
             const imageBody = await createImageBody(imageUri as string);
             const updatedLocation = await service.setLocationImage(locationId, imageBody.fileName, imageBody.bytes, photoType);
             console.log('Image saved for ', pageTitles?.title, updatedLocation)
-
-            if (photoType === 'frontView') {
-                navigation.push('CapturePhotoScreen', { surveyId, locationId, surveyorId, photoType: 'equipment' })
-            } else {
-                navigation.navigate('EquipmentDetailsScreen', { surveyId, locationId, surveyorId });
-            }
-
+            goNext();
         } catch (error) {
             console.error('saveImage failed:', error);
         }
@@ -117,7 +120,7 @@ export function CapturePhotoScreen(): React.JSX.Element {
     return (
         <View style={screen.justifyScreen}>
             <View style={{ width: "100%" }} >
-                <BackButton navigation={navigation} />
+                <ScreenHeader navigation={navigation} />
                 {pageTitles && <Title title={pageTitles.title} subtitle={pageTitles.subtitle} />}
             </View>
             <View style={[screen.content, { gap: 48 }]} >
@@ -133,7 +136,7 @@ export function CapturePhotoScreen(): React.JSX.Element {
             </View>
             {
                 !imageUri &&
-                <Button label="Take Photo" variant="light" onPress={() => launchCamera()} />
+                <ButtonGroup variant="mixed" labels={["Take Photo", "Skip"]} onPress={[() => launchCamera(), goNext]} />
             }
             {imageUri &&
                 <ButtonGroup variant="mixed" labels={["Save photo and continue", "Retake photo"]} onPress={[() => saveAndContinue(), () => launchCamera()]} />

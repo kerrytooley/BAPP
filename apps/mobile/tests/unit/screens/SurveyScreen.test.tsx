@@ -2,7 +2,7 @@ jest.mock('@react-navigation/native', () =>
     require('../../helpers/reactNavigationMock'),
 );
 
-import { screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { act, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { SurveyScreen } from '@screens/Surveyor/SurveyScreen';
 import {
     createContextSubscription,
@@ -10,10 +10,9 @@ import {
     mockSubscribeContext,
     renderWithActiveSurvey,
 } from '../../helpers/testUtils';
-import { buildContext, buildObservation } from '../../helpers/factories';
+import { buildContext, buildObservation, buildSurvey, buildSurveyor } from '../../helpers/factories';
 import {
     mockNavigate,
-    mockPush,
     resetNavigationMock,
     setRouteParams,
 } from '../../helpers/reactNavigationMock';
@@ -42,6 +41,137 @@ beforeEach(() => {
 });
 
 describe('SurveyScreen', () => {
+    describe('started status', () => {
+        const withSurveyor = (status: 'confirmed' | 'ready', updateSurveyor = jest.fn().mockResolvedValue({})) => {
+            const service = serviceWith(jest.fn(), buildContext({
+                surveyors: [buildSurveyor({ id: 'surveyor-1', status })],
+                observations: [observation],
+            }));
+            (service as unknown as { updateSurveyor: jest.Mock }).updateSurveyor = updateSurveyor;
+            return service;
+        };
+
+        it('marks a surveyor as started on reaching the survey', async () => {
+            const service = withSurveyor('confirmed');
+            renderWithActiveSurvey(<SurveyScreen />, service);
+            await waitFor(() =>
+                expect(service.updateSurveyor).toHaveBeenCalledWith('surveyor-1', { status: 'ready' }),
+            );
+        });
+
+        it('does not update a surveyor who has already started', async () => {
+            const service = withSurveyor('ready');
+            renderWithActiveSurvey(<SurveyScreen />, service);
+            await waitFor(() => expect(screen.getByText('End Survey')).toBeOnTheScreen());
+            expect(service.updateSurveyor).not.toHaveBeenCalled();
+        });
+
+        it('logs an error when marking the surveyor as started fails', async () => {
+            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+            renderWithActiveSurvey(<SurveyScreen />, withSurveyor('confirmed', jest.fn().mockRejectedValue(new Error('offline'))));
+            await waitFor(() =>
+                expect(errorSpy).toHaveBeenCalledWith('Error marking surveyor as started', expect.any(Error)),
+            );
+            errorSpy.mockRestore();
+        });
+    });
+
+    describe('survey timing', () => {
+        const fromNow = (ms: number) => new Date(Date.now() + ms);
+        const timedService = (startInMs: number, endInMs: number) =>
+            serviceWith(jest.fn(), buildContext({
+                survey: buildSurvey({ startTime: fromNow(startInMs), endTime: fromNow(endInMs) }),
+                observations: [observation],
+            }));
+
+        beforeEach(() => jest.useFakeTimers());
+        afterEach(() => jest.useRealTimers());
+
+        it('warns that time remains when ending before the end time', async () => {
+            renderWithActiveSurvey(<SurveyScreen />, timedService(-60_000, 60 * 60_000));
+            await waitFor(() => expect(screen.getByText('End Survey')).toBeOnTheScreen());
+
+            fireEvent.press(screen.getByText('End Survey'));
+
+            expect(screen.getByText('This survey still has time remaining. Are you sure you want to end it?')).toBeOnTheScreen();
+        });
+
+        it('prompts once the start time is reached with a single Okay', async () => {
+            renderWithActiveSurvey(<SurveyScreen />, timedService(60_000, 120 * 60_000));
+            await waitFor(() => expect(screen.getByText('End Survey')).toBeOnTheScreen());
+            expect(screen.queryByText('Time to begin the survey')).toBeNull();
+
+            act(() => jest.advanceTimersByTime(60_000));
+
+            expect(screen.getByText('Time to begin the survey')).toBeOnTheScreen();
+            expect(screen.queryByText('Cancel')).toBeNull();
+            fireEvent.press(screen.getByText('Okay'));
+            await waitFor(() => expect(screen.queryByText('Time to begin the survey')).toBeNull());
+        });
+
+        it('prompts at the end time and ends the survey on request', async () => {
+            renderWithActiveSurvey(<SurveyScreen />, timedService(-60_000, 60_000));
+            await waitFor(() => expect(screen.getByText('End Survey')).toBeOnTheScreen());
+
+            act(() => jest.advanceTimersByTime(60_000));
+
+            expect(screen.getByText('Survey end time reached')).toBeOnTheScreen();
+            fireEvent.press(screen.getByText('End survey'));
+            expect(mockNavigate).toHaveBeenCalledWith('SurveySummaryScreen', {
+                surveyId: 'survey-1',
+                surveyorId: 'surveyor-1',
+                locationId: 'location-1',
+            });
+        });
+
+        it('lets the surveyor keep recording past the end time', async () => {
+            renderWithActiveSurvey(<SurveyScreen />, timedService(-60_000, 60_000));
+            await waitFor(() => expect(screen.getByText('End Survey')).toBeOnTheScreen());
+
+            act(() => jest.advanceTimersByTime(60_000));
+            fireEvent.press(screen.getByText('Okay'));
+
+            await waitFor(() => expect(screen.queryByText('Survey end time reached')).toBeNull());
+            expect(mockNavigate).not.toHaveBeenCalled();
+        });
+
+        it('does not prompt for times that have already passed', async () => {
+            renderWithActiveSurvey(<SurveyScreen />, timedService(-120_000, -60_000));
+            await waitFor(() => expect(screen.getByText('End Survey')).toBeOnTheScreen());
+
+            act(() => jest.advanceTimersByTime(24 * 60 * 60_000));
+
+            expect(screen.queryByText('Time to begin the survey')).toBeNull();
+            expect(screen.queryByText('Survey end time reached')).toBeNull();
+        });
+
+        it('returns home after a short pause without ending the survey', async () => {
+            const service = timedService(-60_000, 60 * 60_000);
+            renderWithActiveSurvey(<SurveyScreen />, service);
+            await waitFor(() => expect(screen.getByText('End Survey')).toBeOnTheScreen());
+
+            fireEvent.press(screen.getByLabelText('Return home'));
+            expect(screen.getByText('Saving your results')).toBeOnTheScreen();
+            expect(mockNavigate).not.toHaveBeenCalled();
+
+            act(() => jest.advanceTimersByTime(2500));
+
+            expect(mockNavigate).toHaveBeenCalledWith('Welcome');
+            expect(service.completeSurveyor).not.toHaveBeenCalled();
+        });
+
+        it('stays on the survey when returning home is cancelled', async () => {
+            renderWithActiveSurvey(<SurveyScreen />, timedService(-60_000, 60 * 60_000));
+            await waitFor(() => expect(screen.getByText('End Survey')).toBeOnTheScreen());
+
+            fireEvent.press(screen.getByLabelText('Return home'));
+            fireEvent.press(screen.getByText('Cancel'));
+            act(() => jest.advanceTimersByTime(10_000));
+
+            expect(mockNavigate).not.toHaveBeenCalled();
+            expect(screen.queryByText('Saving your results')).toBeNull();
+        });
+    });
     it('renders the observation entry from the live context', async () => {
         renderWithActiveSurvey(<SurveyScreen />, serviceWith());
         await waitFor(() => expect(screen.getByText('Noc')).toBeOnTheScreen());
@@ -167,21 +297,36 @@ describe('SurveyScreen', () => {
     it('navigates to the species screen when adding a new observation', async () => {
         renderWithActiveSurvey(<SurveyScreen />, serviceWith());
         fireEvent.press(screen.getByText('Add new bat observation'));
-        expect(mockPush).toHaveBeenCalledWith('SelectSpeciesScreen', {
+        expect(mockNavigate).toHaveBeenCalledWith('SelectSpeciesScreen', {
             surveyId: 'survey-1',
             surveyorId: 'surveyor-1',
             locationId: 'location-1',
         });
     });
 
-    it('navigates to the survey summary when ending the survey', async () => {
+    it('navigates to the survey summary after confirming end survey', async () => {
         renderWithActiveSurvey(<SurveyScreen />, serviceWith());
         await waitFor(() => expect(screen.getByText('End Survey')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('End Survey'));
+        expect(mockNavigate).not.toHaveBeenCalled();
+
+        fireEvent.press(screen.getByText('End survey'));
         expect(mockNavigate).toHaveBeenCalledWith('SurveySummaryScreen', {
             surveyId: 'survey-1',
             surveyorId: 'surveyor-1',
+            locationId: 'location-1',
         });
+    });
+
+    it('stays on the survey when end survey is cancelled', async () => {
+        renderWithActiveSurvey(<SurveyScreen />, serviceWith());
+        await waitFor(() => expect(screen.getByText('End Survey')).toBeOnTheScreen());
+        fireEvent.press(screen.getByText('End Survey'));
+        expect(screen.getByText('End survey?')).toBeOnTheScreen();
+
+        fireEvent.press(screen.getByText('Cancel'));
+        await waitFor(() => expect(screen.queryByText('End survey?')).toBeNull());
+        expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it('logs an error when a count update fails', async () => {

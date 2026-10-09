@@ -1,4 +1,5 @@
-import { BackButton, ButtonGroup } from "@components/Common/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { Button } from "@components/Common/Button";
 import { SummaryGroup } from "@components/Display/SummaryRow";
 import { Title } from "@components/Common/Titles";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
@@ -50,7 +51,7 @@ export function ReviewSurveyDetailsScreen(): React.JSX.Element {
     return (
         <View style={screen.justifyScreen}>
             <View style={{ width: "100%" }}>
-                <BackButton navigation={navigation} />
+                <ScreenHeader navigation={navigation} />
                 <Title title="Review Survey Details" />
             </View>
 
@@ -98,13 +99,10 @@ export function ReviewSurveyDetailsScreen(): React.JSX.Element {
                 <Text style={styles.summaryTitle}>Red Line Boundary</Text>
                 <DocumentPreview imageUri={boundaryImage} values={positions} />
             </ScrollView>
-            <ButtonGroup variant="mixed" labels={[
-                "Complete Survey Setup",
-                "Save for Later"]}
-                onPress={[
-                    () => navigation.navigate("ShareCodeScreen", { surveyId }),
-                    () => navigation.navigate("SurveySavedScreen")
-                ]} />
+            <Button
+                variant="light"
+                label="Complete Survey Setup"
+                onPress={() => navigation.navigate("ShareCodeScreen", { surveyId })} />
         </View>
     )
 }

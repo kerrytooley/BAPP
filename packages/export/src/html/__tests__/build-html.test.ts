@@ -80,9 +80,47 @@ describe('buildReportHtml', () => {
   it('produces a self-contained HTML document', () => {
     const html = buildReportHtml(baseModel(), images());
     expect(html.startsWith('<!DOCTYPE html>')).toBe(true);
-    expect(html).toContain('<svg id="figure-overlay" viewBox="0 0 1 1"');
+    expect(html).toContain('<svg id="figure-overlay" class="figure-overlay" viewBox="0 0 1 1"');
     expect(html).toContain('id="report-data"');
     expect(html).toContain('id="checklist"');
+  });
+
+  it('renders a static report that works without JavaScript', () => {
+    const html = buildReportHtml(baseModel(), images());
+    const staticReport = html.split('<div id="static-report">')[1].split('<main')[0];
+
+    expect(html).toContain('<h1 id="survey-title">Bat survey &lt;Alpha&gt;</h1>');
+    expect(html).toContain('AB1 2CD \u2022 01/01/2026 \u2022 completed');
+    expect(staticReport).toContain('<h2>Boundary (birds-eye)</h2>');
+    expect(staticReport).toContain('<img data-figure-id="boundary" src="data:image/png;base64,AAAA"');
+    expect(staticReport).toContain('<polyline points="0.1,0.2 0.3,0.4" stroke="#ff0000"');
+    expect(staticReport).toMatch(/class="check-label">Noctule<\/span><span class="check-count">1</);
+    expect(html).toContain('<main id="report-main" hidden>');
+  });
+
+  it('inlines each base image only once', () => {
+    const html = buildReportHtml(baseModel(), images());
+    expect(html.split('data:image/png;base64,AAAA')).toHaveLength(2);
+  });
+
+  it('lists pins and notes figures without paths in the static legend', () => {
+    const model = baseModel();
+    model.figures[0] = {
+      ...model.figures[0],
+      paths: [],
+      pins: [{ locationId: 'loc_1', label: 'North elevation', x: 0.5, y: 0.5, surveyorNames: ['Alex'] }],
+    };
+    const html = buildReportHtml(model, images());
+    expect(html).toContain('<span class="pin-marker" style="left:50%;top:50%" title="North elevation (Alex)">');
+    expect(html).toContain('North elevation \u2014 Alex');
+
+    model.figures[0] = { ...model.figures[0], pins: [] };
+    expect(buildReportHtml(model, images())).toContain('No flight paths on this figure.');
+  });
+
+  it('says so when there are no figures', () => {
+    const html = buildReportHtml(baseModel({ figures: [] }), images());
+    expect(html).toContain('No figures in this report.');
   });
 
   it('embeds the model and image map as a JSON blob', () => {
@@ -94,8 +132,7 @@ describe('buildReportHtml', () => {
     );
     expect(parsed.model.figures[0].figureId).toBe('boundary');
     expect(parsed.model.figures[0].paths[0].points).toHaveLength(2);
-    expect(parsed.images['boundary/render.png'].dataUri).toBe('data:image/png;base64,AAAA');
-    expect(parsed.images['boundary/render.png'].mediaPath).toBe('media/boundary.png');
+    expect(parsed.images['boundary/render.png']).toEqual({ mediaPath: 'media/boundary.png' });
   });
 
   it('escapes angle brackets so embedded data cannot break out of the script tag', () => {

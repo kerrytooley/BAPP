@@ -4,7 +4,7 @@ import { Modal, Pressable, StyleSheet } from "react-native"
 import { InputField } from "../Common/InputField";
 import { Button } from "../Common/Button";
 import { useEffect, useState } from "react";
-import { NotesProps } from "@bapp/domain";
+import { isBlank, NotesProps } from "@bapp/domain";
 
 interface LocationInfoModalProps {
     isFullScreen: boolean
@@ -39,10 +39,10 @@ export const LocationInfoModal = ({ isFullScreen, setIsFullScreen, saveNote }: L
                         value={note}
                         onChangeText={setNote} />
                     <Button
-                        disabled={note ? false : true}
+                        disabled={isBlank(note)}
                         label="Save note"
                         onPress={() => {
-                            saveNote({ text: note, time: new Date } as NotesProps)
+                            saveNote({ text: (note as string).trim(), time: new Date() })
                             setIsFullScreen(false)
                         }} />
                 </Pressable>

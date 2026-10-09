@@ -29,6 +29,7 @@ const bat = {
 export const Default: Story = {
     args: {
         bat,
+        disabled: false,
         onPress: () => { }
     }
 }
