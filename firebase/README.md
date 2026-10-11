@@ -195,3 +195,7 @@ fail-clear).
 uploads across app kills is now implemented — `FirebaseMediaRepository` persists
 a pending-uploads manifest and `resumePendingUploads()` (called at startup from
 `firebaseSurveyService.ts`) re-sends anything that hadn't reached Storage.
+Unsent bytes and the manifest live under `documentDirectory/bapp-pending-uploads/`
+(never OS-evicted, never touched by `clearCache`); `cacheDirectory/bapp-media/`
+holds only re-downloadable display copies. A manifest left in the old cache
+location by an earlier build is adopted on the next launch.

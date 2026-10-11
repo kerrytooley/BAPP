@@ -5,7 +5,12 @@ jest.mock('@react-navigation/native', () =>
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import type { Survey } from '@bapp/domain';
 import { WeatherConditionsScreen } from '@screens/Surveyor/WeatherConditionsScreen';
-import { createMockService, renderWithService } from '../../helpers/testUtils';
+import {
+    createContextSubscription,
+    createMockService,
+    mockSubscribeContext,
+    renderWithActiveSurvey,
+} from '../../helpers/testUtils';
 import { buildContext, buildLocation, buildSurvey, buildSurveyor } from '../../helpers/factories';
 import {
     mockGoBack,
@@ -34,7 +39,7 @@ beforeEach(() => {
 describe('WeatherConditionsScreen', () => {
     it('saves the trimmed start conditions and continues to confirm location', async () => {
         const service = locatedService();
-        renderWithService(<WeatherConditionsScreen />, service);
+        renderWithActiveSurvey(<WeatherConditionsScreen />, service);
 
         fireEvent.changeText(screen.getByPlaceholderText('Input Temperature'), ' -2.5 ');
         fireEvent.press(screen.getByText('Wet'));
@@ -56,7 +61,7 @@ describe('WeatherConditionsScreen', () => {
     it('saves end conditions with rain minutes and continues to the summary', async () => {
         setRouteParams(endParams);
         const service = createMockService();
-        renderWithService(<WeatherConditionsScreen />, service);
+        renderWithActiveSurvey(<WeatherConditionsScreen />, service);
 
         expect(screen.queryByText('Wet')).toBeNull();
         fireEvent.changeText(screen.getByPlaceholderText('Input Rain'), '15');
@@ -75,7 +80,7 @@ describe('WeatherConditionsScreen', () => {
     });
 
     it('disables continue until something is entered', () => {
-        renderWithService(<WeatherConditionsScreen />, createMockService());
+        renderWithActiveSurvey(<WeatherConditionsScreen />, createMockService());
         expect(screen.getByLabelText('Continue')).toBeDisabled();
         fireEvent.changeText(screen.getByPlaceholderText('Input Wind'), '3');
         expect(screen.getByLabelText('Continue')).toBeEnabled();
@@ -83,7 +88,7 @@ describe('WeatherConditionsScreen', () => {
 
     it('shows field errors after editing and blocks continue while invalid', () => {
         const service = createMockService();
-        renderWithService(<WeatherConditionsScreen />, service);
+        renderWithActiveSurvey(<WeatherConditionsScreen />, service);
 
         const cloudCover = screen.getByPlaceholderText('Input Cloud Cover');
         fireEvent.changeText(cloudCover, '150');
@@ -103,7 +108,7 @@ describe('WeatherConditionsScreen', () => {
 
     it('skips without saving anything', async () => {
         const service = locatedService();
-        renderWithService(<WeatherConditionsScreen />, service);
+        renderWithActiveSurvey(<WeatherConditionsScreen />, service);
 
         fireEvent.changeText(screen.getByPlaceholderText('Input Temperature'), '12');
         fireEvent.press(screen.getByText('Skip'));
@@ -124,7 +129,7 @@ describe('WeatherConditionsScreen', () => {
             ),
             addLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'placeholder' })),
         });
-        renderWithService(<WeatherConditionsScreen />, service);
+        renderWithActiveSurvey(<WeatherConditionsScreen />, service);
 
         fireEvent.press(screen.getByText('Skip'));
 
@@ -143,7 +148,7 @@ describe('WeatherConditionsScreen', () => {
         const service = createMockService({
             getSurveyContext: jest.fn().mockRejectedValue(new Error('offline')),
         });
-        renderWithService(<WeatherConditionsScreen />, service);
+        renderWithActiveSurvey(<WeatherConditionsScreen />, service);
 
         fireEvent.press(screen.getByText('Skip'));
 
@@ -155,7 +160,7 @@ describe('WeatherConditionsScreen', () => {
     });
 
     it('marks the chosen rain option as selected', () => {
-        renderWithService(<WeatherConditionsScreen />, createMockService());
+        renderWithActiveSurvey(<WeatherConditionsScreen />, createMockService());
         fireEvent.press(screen.getByText('Dry'));
         const states = screen
             .getAllByRole('radio')
@@ -169,7 +174,7 @@ describe('WeatherConditionsScreen', () => {
         const service = createMockService({
             updateSurvey: jest.fn().mockRejectedValue(new Error('save failed')),
         });
-        renderWithService(<WeatherConditionsScreen />, service);
+        renderWithActiveSurvey(<WeatherConditionsScreen />, service);
 
         fireEvent.press(screen.getByText('Dry'));
         fireEvent.press(screen.getByText('Continue'));
@@ -192,7 +197,7 @@ describe('WeatherConditionsScreen', () => {
                 resolveUpdate = resolve;
             }),
         );
-        renderWithService(<WeatherConditionsScreen />, service);
+        renderWithActiveSurvey(<WeatherConditionsScreen />, service);
 
         fireEvent.press(screen.getByText('Dry'));
         fireEvent.press(screen.getByText('Continue'));
@@ -217,7 +222,7 @@ describe('WeatherConditionsScreen', () => {
                 locations: [buildLocation({ id: 'location-1' })],
             })),
         });
-        renderWithService(<WeatherConditionsScreen />, service);
+        renderWithActiveSurvey(<WeatherConditionsScreen />, service);
 
         fireEvent.changeText(screen.getByPlaceholderText('Input Temperature'), '12');
         fireEvent.press(screen.getByText('Wet'));
@@ -231,17 +236,17 @@ describe('WeatherConditionsScreen', () => {
 
     describe('opened from the survey summary to edit', () => {
         const saved = { temperature: '14', cloudCover: '20', humidity: '60', wind: '1', rain: '5' };
-        const editService = () => createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(buildContext({ survey: buildSurvey({ endWeather: saved }) })),
-        });
+        const savedContext = () => buildContext({ survey: buildSurvey({ endWeather: saved }) });
+        const editService = () => createMockService({ subscribeSurveyContext: mockSubscribeContext(savedContext()) });
 
         beforeEach(() => setRouteParams({ ...endParams, mode: 'edit' }));
 
         it('shows the saved readings and saves changes back to the summary', async () => {
             const service = editService();
-            renderWithService(<WeatherConditionsScreen />, service);
+            renderWithActiveSurvey(<WeatherConditionsScreen />, service);
 
             expect(await screen.findByDisplayValue('14')).toBeOnTheScreen();
+            expect(service.getSurveyContext).not.toHaveBeenCalled();
             fireEvent.changeText(screen.getByDisplayValue('60'), '65');
             fireEvent.press(screen.getByText('Save'));
 
@@ -252,13 +257,25 @@ describe('WeatherConditionsScreen', () => {
 
         it('cancels without saving', async () => {
             const service = editService();
-            renderWithService(<WeatherConditionsScreen />, service);
+            renderWithActiveSurvey(<WeatherConditionsScreen />, service);
             await screen.findByDisplayValue('14');
 
             fireEvent.press(screen.getByText('Cancel'));
 
             expect(mockGoBack).toHaveBeenCalled();
             expect(service.updateSurvey).not.toHaveBeenCalled();
+        });
+
+        it('keeps edits in progress when the live context re-emits', async () => {
+            const subscription = createContextSubscription(savedContext());
+            renderWithActiveSurvey(<WeatherConditionsScreen />, createMockService({ subscribeSurveyContext: subscription.subscribe }));
+            await screen.findByDisplayValue('14');
+
+            fireEvent.changeText(screen.getByDisplayValue('60'), '65');
+            subscription.emit(buildContext({ survey: buildSurvey({ endWeather: { ...saved, humidity: '99' } }) }));
+
+            expect(screen.getByDisplayValue('65')).toBeOnTheScreen();
+            expect(screen.queryByDisplayValue('99')).toBeNull();
         });
     });
 });

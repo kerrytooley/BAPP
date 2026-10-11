@@ -4,7 +4,12 @@ jest.mock('@react-navigation/native', () =>
 
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { EquipmentDetailsScreen } from '@screens/Surveyor/EquipmentDetailsScreen';
-import { createMockService, renderWithService } from '../../helpers/testUtils';
+import {
+    createContextSubscription,
+    createMockService,
+    mockSubscribeContext,
+    renderWithActiveSurvey,
+} from '../../helpers/testUtils';
 import { buildContext, buildLocation, buildSurveyor } from '../../helpers/factories';
 import {
     mockGoBack,
@@ -22,7 +27,7 @@ beforeEach(() => {
 
 describe('EquipmentDetailsScreen', () => {
     it('disables continue until a field has text', () => {
-        renderWithService(<EquipmentDetailsScreen />, createMockService());
+        renderWithActiveSurvey(<EquipmentDetailsScreen />, createMockService());
         expect(screen.getByLabelText('Continue')).toBeDisabled();
 
         fireEvent.changeText(screen.getByPlaceholderText('Input audio equipment label'), '   ');
@@ -34,7 +39,7 @@ describe('EquipmentDetailsScreen', () => {
 
     it('saves trimmed equipment details and continues', async () => {
         const service = createMockService();
-        renderWithService(<EquipmentDetailsScreen />, service);
+        renderWithActiveSurvey(<EquipmentDetailsScreen />, service);
 
         fireEvent.changeText(screen.getByPlaceholderText('Input audio equipment label'), ' A1 ');
         fireEvent.changeText(screen.getByPlaceholderText('Input video equipment label'), 'V2');
@@ -50,7 +55,7 @@ describe('EquipmentDetailsScreen', () => {
 
     it('skips without saving anything', () => {
         const service = createMockService();
-        renderWithService(<EquipmentDetailsScreen />, service);
+        renderWithActiveSurvey(<EquipmentDetailsScreen />, service);
 
         fireEvent.changeText(screen.getByPlaceholderText('Input audio equipment label'), 'A1');
         fireEvent.press(screen.getByText('Skip'));
@@ -64,7 +69,7 @@ describe('EquipmentDetailsScreen', () => {
         const service = createMockService({
             updateLocation: jest.fn().mockRejectedValue(new Error('save failed')),
         });
-        renderWithService(<EquipmentDetailsScreen />, service);
+        renderWithActiveSurvey(<EquipmentDetailsScreen />, service);
 
         fireEvent.changeText(screen.getByPlaceholderText('Input audio equipment label'), 'A1');
         fireEvent.press(screen.getByText('Continue'));
@@ -78,19 +83,19 @@ describe('EquipmentDetailsScreen', () => {
 
     describe('opened from the survey summary to edit', () => {
         const saved = { audioLabel: 'A1', videoLabel: 'V1', otherInfo: 'Tripod' };
-        const editService = () => createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(buildContext({
-                locations: [buildLocation({ id: 'location-1', equipmentInformation: saved })],
-            })),
+        const savedContext = (equipmentInformation = saved) => buildContext({
+            locations: [buildLocation({ id: 'location-1', equipmentInformation })],
         });
+        const editService = () => createMockService({ subscribeSurveyContext: mockSubscribeContext(savedContext()) });
 
         beforeEach(() => setRouteParams({ ...params, mode: 'edit' }));
 
         it('shows the saved details and saves changes back to the summary', async () => {
             const service = editService();
-            renderWithService(<EquipmentDetailsScreen />, service);
+            renderWithActiveSurvey(<EquipmentDetailsScreen />, service);
 
             expect(await screen.findByDisplayValue('Tripod')).toBeOnTheScreen();
+            expect(service.getSurveyContext).not.toHaveBeenCalled();
             fireEvent.changeText(screen.getByDisplayValue('V1'), 'V9');
             fireEvent.press(screen.getByText('Save'));
 
@@ -103,13 +108,25 @@ describe('EquipmentDetailsScreen', () => {
 
         it('cancels without saving', async () => {
             const service = editService();
-            renderWithService(<EquipmentDetailsScreen />, service);
+            renderWithActiveSurvey(<EquipmentDetailsScreen />, service);
             await screen.findByDisplayValue('Tripod');
 
             fireEvent.press(screen.getByText('Cancel'));
 
             expect(mockGoBack).toHaveBeenCalled();
             expect(service.updateLocation).not.toHaveBeenCalled();
+        });
+
+        it('keeps edits in progress when the live context re-emits', async () => {
+            const subscription = createContextSubscription(savedContext());
+            renderWithActiveSurvey(<EquipmentDetailsScreen />, createMockService({ subscribeSurveyContext: subscription.subscribe }));
+            await screen.findByDisplayValue('Tripod');
+
+            fireEvent.changeText(screen.getByDisplayValue('V1'), 'V9');
+            subscription.emit(savedContext({ ...saved, videoLabel: 'V5' }));
+
+            expect(screen.getByDisplayValue('V9')).toBeOnTheScreen();
+            expect(screen.queryByDisplayValue('V5')).toBeNull();
         });
     });
 
@@ -121,7 +138,7 @@ describe('EquipmentDetailsScreen', () => {
                 locations: [buildLocation({ id: 'location-1', equipmentInformation: null })],
             })),
         });
-        renderWithService(<EquipmentDetailsScreen />, service);
+        renderWithActiveSurvey(<EquipmentDetailsScreen />, service);
 
         fireEvent.press(screen.getByText('Skip'));
 

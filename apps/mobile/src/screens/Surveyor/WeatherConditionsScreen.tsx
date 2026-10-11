@@ -11,6 +11,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Card } from "@components/Common/Card";
 import { useSurveyService } from "@services/surveyServiceContext";
+import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { goToLocationStep } from "@services/locationStep";
 import { continueResumedSetup } from "@services/setupResume";
 import { isBlank, START_RAIN_OPTIONS, validateWeather, Weather } from "@bapp/domain";
@@ -22,6 +23,7 @@ export function WeatherConditionsScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const { surveyId, surveyorId, locationId, type, mode } = useRoute<RouteProp<SurveyorStackParamList, "WeatherConditionsScreen">>().params;
     const service = useSurveyService();
+    const { context } = useActiveSurvey();
 
     const [temperature, setTemperature] = useState<string>();
     const [cloudCover, setCloudCover] = useState<string>();
@@ -30,24 +32,21 @@ export function WeatherConditionsScreen(): React.JSX.Element {
     const [rain, setRain] = useState<string>();
     const [touched, setTouched] = useState<Partial<Record<keyof Weather, boolean>>>({});
     const isSubmitting = useRef(false);
+    const prefilled = useRef(false);
 
-    // Returning to this step (resume/edit) shows what was saved before.
+    // Returning to this step (resume/edit) shows what was saved before. Filled once
+    // from the live context; later re-emits and anything already typed are kept.
     useEffect(() => {
-        if (!mode) return;
-        let cancelled = false;
-        service.getSurveyContext(surveyId)
-            .then(({ survey }) => {
-                const saved = type === "start" ? survey.startWeather : survey.endWeather;
-                if (cancelled || !saved) return;
-                setTemperature(saved.temperature);
-                setCloudCover(saved.cloudCover);
-                setHumidity(saved.humidity);
-                setWind(saved.wind);
-                setRain(saved.rain);
-            })
-            .catch((e) => console.error('Failed to load saved weather', e));
-        return () => { cancelled = true; };
-    }, [mode, service, surveyId, type]);
+        if (!mode || !context || prefilled.current) return;
+        prefilled.current = true;
+        const saved = type === "start" ? context.survey.startWeather : context.survey.endWeather;
+        if (!saved) return;
+        setTemperature((current) => current ?? saved.temperature);
+        setCloudCover((current) => current ?? saved.cloudCover);
+        setHumidity((current) => current ?? saved.humidity);
+        setWind((current) => current ?? saved.wind);
+        setRain((current) => current ?? saved.rain);
+    }, [mode, context, type]);
 
     const rainOptions = START_RAIN_OPTIONS.map((label) => ({ label }));
 
