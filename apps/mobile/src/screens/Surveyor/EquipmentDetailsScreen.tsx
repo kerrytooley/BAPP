@@ -9,6 +9,7 @@ import { screen } from "@theme/screen";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useSurveyService } from "@services/surveyServiceContext";
+import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { continueResumedSetup } from "@services/setupResume";
 import { EquipmentInformation, isBlank } from "@bapp/domain";
 
@@ -19,28 +20,26 @@ export function EquipmentDetailsScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const { surveyId, surveyorId, locationId, mode } = useRoute<RouteProp<SurveyorStackParamList, "EquipmentDetailsScreen">>().params;
     const service = useSurveyService();
+    const { context } = useActiveSurvey();
 
     const [audioEquipmentLabel, setAudioEquipmentLabel] = useState<string>();
     const [videoEquipmentLabel, setVideoEquipmentLabel] = useState<string>();
     const [otherEquipmentInfo, setOtherEquipmentInfo] = useState<string>();
 
     const isSubmitting = useRef(false);
+    const prefilled = useRef(false);
 
-    // Returning to this step (resume/edit) shows what was saved before.
+    // Returning to this step (resume/edit) shows what was saved before. Filled once
+    // from the live context; later re-emits and anything already typed are kept.
     useEffect(() => {
-        if (!mode) return;
-        let cancelled = false;
-        service.getSurveyContext(surveyId)
-            .then(({ locations }) => {
-                const saved = locations.find((l) => l.id === locationId)?.equipmentInformation;
-                if (cancelled || !saved) return;
-                setAudioEquipmentLabel(saved.audioLabel);
-                setVideoEquipmentLabel(saved.videoLabel);
-                setOtherEquipmentInfo(saved.otherInfo);
-            })
-            .catch((e) => console.error('Failed to load saved equipment details', e));
-        return () => { cancelled = true; };
-    }, [mode, service, surveyId, locationId]);
+        if (!mode || !context || prefilled.current) return;
+        prefilled.current = true;
+        const saved = context.locations.find((l) => l.id === locationId)?.equipmentInformation;
+        if (!saved) return;
+        setAudioEquipmentLabel((current) => current ?? saved.audioLabel);
+        setVideoEquipmentLabel((current) => current ?? saved.videoLabel);
+        setOtherEquipmentInfo((current) => current ?? saved.otherInfo);
+    }, [mode, context, locationId]);
 
     const equipmentInformation: EquipmentInformation = {
         audioLabel: audioEquipmentLabel?.trim() ?? "",
