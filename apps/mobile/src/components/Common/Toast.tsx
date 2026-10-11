@@ -21,6 +21,13 @@ export const Toast = ({ visible, message, onUndo, onDone, onConfirm, onCancel, p
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(20)).current;
 
+    // Parents usually pass an inline onDone, so it changes on every parent render.
+    // Read it through a ref: the dismiss timer must restart for a new message, not
+    // whenever the parent re-renders (e.g. on each live survey update).
+    const onDoneRef = useRef(onDone);
+    onDoneRef.current = onDone;
+    const autoDismiss = !!onDone;
+
     useEffect(() => {
         if (!visible) return;
 
@@ -29,11 +36,11 @@ export const Toast = ({ visible, message, onUndo, onDone, onConfirm, onCancel, p
             Animated.spring(translateY, { toValue: 0, useNativeDriver: true }),
         ]).start();
 
-        if (onDone) {
-            const timer = setTimeout(() => onDone(), duration);
+        if (autoDismiss) {
+            const timer = setTimeout(() => onDoneRef.current?.(), duration);
             return () => clearTimeout(timer);
         }
-    }, [visible, message, duration, onDone, opacity, translateY]);
+    }, [visible, message, duration, autoDismiss, opacity, translateY]);
 
     if (!visible) return null;
 
