@@ -4,7 +4,7 @@ import type { Location, CreateLocationInput, UpdateLocationInput } from '../mode
 import type { Surveyor, CreateSurveyorInput, UpdateSurveyorInput } from '../models/surveyor';
 import type { Observation, CreateObservationInput, UpdateObservationInput } from '../models/observation';
 import type { SurveyContext } from '../survey-context';
-import type { SurveyRepository } from '../repositories/survey-repository';
+import type { SurveyRepository, Unsubscribe } from '../repositories/survey-repository';
 import type { LocationRepository } from '../repositories/location-repository';
 import type { SurveyorRepository } from '../repositories/surveyor-repository';
 import type { ObservationRepository } from '../repositories/observation-repository';
@@ -70,6 +70,34 @@ export class SurveyService {
 
   async getSurveyContext(surveyId: string): Promise<SurveyContext> {
     return this.surveyRepository.getSurveyContext(surveyId);
+  }
+
+  /**
+   * Live counterpart to `getSurveyContext`: pushes a fresh `SurveyContext` to the
+   * callback whenever the survey or any of its children change. Thin passthrough
+   * to the repository, which owns the subscription mechanics.
+   */
+  subscribeSurveyContext(surveyId: string, callback: (context: SurveyContext) => void): Unsubscribe {
+    return this.surveyRepository.subscribeSurveyContext(surveyId, callback);
+  }
+
+  /**
+   * Warm the local media cache for a whole context up front (fire-and-forget) so
+   * images render instantly and offline once the surveyor navigates to them. Only
+   * `ready` assets with a real `renderRef` are worth fetching; others have nothing
+   * displayable yet. Failures are swallowed — this is a best-effort prefetch, not
+   * a load-bearing read (that is `getBoundaryImage`/`getLocationImage`).
+   */
+  prefetchMedia(context: SurveyContext): void {
+    const assets: (MediaAsset | null | undefined)[] = [
+      context.survey.boundary,
+      ...context.locations.flatMap((l) => [l.frontViewImage, l.equipmentImage]),
+    ];
+    for (const asset of assets) {
+      if (asset && asset.status === 'ready' && asset.renderRef) {
+        void this.mediaRepository.getDownloadUrl(asset.renderRef).catch(() => {});
+      }
+    }
   }
 
   /**

@@ -11,7 +11,11 @@ import { Alert } from 'react-native';
 import { SurveyStatusScreen } from '@screens/Admin/SurveyStatusScreen';
 import { exportSurvey } from '@services/export/exportSurvey';
 import { buildContext, buildSurvey, buildSurveyor } from '../../helpers/factories';
-import { createMockService, renderWithService } from '../../helpers/testUtils';
+import {
+    createMockService,
+    mockSubscribeContext,
+    renderWithActiveSurvey,
+} from '../../helpers/testUtils';
 import {
     resetNavigationMock,
     setRouteParams,
@@ -28,14 +32,12 @@ const contextWith = (survey = buildSurvey({ name: 'Dusk count' })) =>
         ],
     });
 
-const service = createMockService({
-    getSurveyContext: jest.fn().mockResolvedValue(contextWith()),
-});
+const service = createMockService();
 
 beforeEach(() => {
     resetNavigationMock();
     setRouteParams({ surveyId: 'survey-1' });
-    service.getSurveyContext.mockReset().mockResolvedValue(contextWith());
+    service.subscribeSurveyContext = mockSubscribeContext(contextWith());
     exportMock.mockReset();
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     jest.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
@@ -46,7 +48,7 @@ beforeEach(() => {
 
 describe('SurveyStatusScreen', () => {
     it('shows the survey, overall status and each surveyor', async () => {
-        renderWithService(<SurveyStatusScreen />, service);
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
         expect(await screen.findByText('Dusk count - SW1A 1AA')).toBeOnTheScreen();
         expect(screen.getByText('1 of 2 surveyors completed')).toBeOnTheScreen();
@@ -55,16 +57,16 @@ describe('SurveyStatusScreen', () => {
     });
 
     it('omits the postcode when the survey has none', async () => {
-        service.getSurveyContext.mockResolvedValue(
+        service.subscribeSurveyContext = mockSubscribeContext(
             contextWith(buildSurvey({ name: 'No postcode', postcode: '' })),
         );
-        renderWithService(<SurveyStatusScreen />, service);
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
         expect(await screen.findByText('No postcode')).toBeOnTheScreen();
     });
 
     it('exports and shares the survey without alerting', async () => {
         exportMock.mockResolvedValue({ fileName: 'export.zip', shared: true });
-        renderWithService(<SurveyStatusScreen />, service);
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
         fireEvent.press(await screen.findByText('Export & Share'));
 
@@ -74,7 +76,7 @@ describe('SurveyStatusScreen', () => {
 
     it('alerts when sharing is unavailable', async () => {
         exportMock.mockResolvedValue({ fileName: 'export.zip', shared: false });
-        renderWithService(<SurveyStatusScreen />, service);
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
         fireEvent.press(await screen.findByText('Export & Share'));
 
@@ -88,7 +90,7 @@ describe('SurveyStatusScreen', () => {
 
     it('alerts when the export fails', async () => {
         exportMock.mockRejectedValue(new Error('boom'));
-        renderWithService(<SurveyStatusScreen />, service);
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
         fireEvent.press(await screen.findByText('Export & Share'));
 
@@ -105,7 +107,7 @@ describe('SurveyStatusScreen', () => {
         exportMock.mockImplementation(
             () => new Promise((resolve) => { resolveExport = resolve; }),
         );
-        renderWithService(<SurveyStatusScreen />, service);
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
         fireEvent.press(await screen.findByText('Export & Share'));
 
@@ -120,18 +122,5 @@ describe('SurveyStatusScreen', () => {
         await waitFor(() =>
             expect(screen.queryByText('Generating export…')).toBeNull(),
         );
-    });
-
-    it('logs an error when the survey status fails to load', async () => {
-        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        service.getSurveyContext.mockRejectedValue(new Error('load failed'));
-        renderWithService(<SurveyStatusScreen />, service);
-        await waitFor(() =>
-            expect(errorSpy).toHaveBeenCalledWith(
-                'failed to load survey status',
-                expect.any(Error),
-            ),
-        );
-        errorSpy.mockRestore();
     });
 });

@@ -8,7 +8,7 @@ import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { useSurveyService } from "@services/surveyServiceContext";
-import { Survey, Surveyor, BoundaryPosition } from "@bapp/domain";
+import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { DocumentPreview } from "@components/DocumentPreview";
 import { textStyles } from "@theme/fonts";
 import { displayValue } from "@utils/displayValue";
@@ -20,27 +20,23 @@ export function ReviewSurveyDetailsScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const { surveyId } = useRoute<RouteProp<AdminStackParamList, "ReviewSurveyDetailsScreen">>().params;
     const service = useSurveyService();
+    const { context } = useActiveSurvey();
 
-    const [survey, setSurvey] = useState<Survey>();
-    const [surveyors, setSurveyors] = useState<Surveyor[]>();
+    const survey = context?.survey;
+    const surveyors = context?.surveyors;
+    const positions = context?.locations.flatMap((location) => location.boundaryPosition ?? []) ?? [];
     const [boundaryImage, setBoundaryImage] = useState<string | null>();
-    const [positions, setPositions] = useState<BoundaryPosition[]>([]);
 
     useEffect(() => {
-        const loadSurvey = async () => {
+        const loadBoundary = async () => {
             try {
-                const surveyContext = await service.getSurveyContext(surveyId);
-                setSurvey(surveyContext.survey);
-                setSurveyors(surveyContext.surveyors);
-                const boundaryPositions = surveyContext.locations.flatMap((location) => location.boundaryPosition ?? []);
-                setPositions(boundaryPositions);
                 const boundary = await service.getBoundaryImage(surveyId)
                 setBoundaryImage(boundary.status === 'ready' ? boundary.url : null);
             } catch (e) {
                 console.error('failed to fetch survey', e)
             }
         };
-        loadSurvey();
+        loadBoundary();
     }, [service, surveyId])
 
     const getSurveyorArray = () => {

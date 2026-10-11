@@ -6,7 +6,11 @@ import { screen, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import type { Surveyor } from '@bapp/domain';
 import { SurveySummaryScreen } from '@screens/Surveyor/SurveySummaryScreen';
-import { createMockService, renderWithService } from '../../helpers/testUtils';
+import {
+    createMockService,
+    mockSubscribeContext,
+    renderWithActiveSurvey,
+} from '../../helpers/testUtils';
 import {
     mockNavigate,
     resetNavigationMock,
@@ -15,7 +19,7 @@ import {
 import { buildContext, buildObservation, buildSurvey, buildSurveyor } from '../../helpers/factories';
 
 const service = createMockService({
-    getSurveyContext: jest.fn().mockResolvedValue(
+    subscribeSurveyContext: mockSubscribeContext(
         buildContext({
             survey: buildSurvey({ name: 'Dusk count' }),
             surveyors: [buildSurveyor({ id: 'surveyor-1', name: 'Ada' })],
@@ -34,12 +38,12 @@ beforeEach(() => {
 
 describe('SurveySummaryScreen', () => {
     it('shows the summary title', async () => {
-        renderWithService(<SurveySummaryScreen />, service);
+        renderWithActiveSurvey(<SurveySummaryScreen />, service);
         expect(await screen.findByText('Survey Summary')).toBeOnTheScreen();
     });
 
     it('completes the surveyor and survey then confirms results were sent', async () => {
-        renderWithService(<SurveySummaryScreen />, service);
+        renderWithActiveSurvey(<SurveySummaryScreen />, service);
 
         fireEvent.press(await screen.findByText('Complete and Save Survey'));
 
@@ -55,7 +59,7 @@ describe('SurveySummaryScreen', () => {
     });
 
     it('navigates to Welcome when confirming the results dialog', async () => {
-        renderWithService(<SurveySummaryScreen />, service);
+        renderWithActiveSurvey(<SurveySummaryScreen />, service);
 
         fireEvent.press(await screen.findByText('Complete and Save Survey'));
 
@@ -67,7 +71,7 @@ describe('SurveySummaryScreen', () => {
 
     it('still confirms results when the survey cannot be completed yet', async () => {
         service.completeSurvey.mockRejectedValue(new Error('not all surveyors done'));
-        renderWithService(<SurveySummaryScreen />, service);
+        renderWithActiveSurvey(<SurveySummaryScreen />, service);
 
         fireEvent.press(await screen.findByText('Complete and Save Survey'));
 
@@ -82,7 +86,7 @@ describe('SurveySummaryScreen', () => {
 
     it('alerts when completing the surveyor fails', async () => {
         service.completeSurveyor.mockRejectedValue(new Error('boom'));
-        renderWithService(<SurveySummaryScreen />, service);
+        renderWithActiveSurvey(<SurveySummaryScreen />, service);
 
         fireEvent.press(await screen.findByText('Complete and Save Survey'));
 
@@ -99,7 +103,7 @@ describe('SurveySummaryScreen', () => {
         service.completeSurveyor.mockImplementation(
             () => new Promise((resolve) => { resolveComplete = resolve; }),
         );
-        renderWithService(<SurveySummaryScreen />, service);
+        renderWithActiveSurvey(<SurveySummaryScreen />, service);
 
         fireEvent.press(await screen.findByText('Complete and Save Survey'));
 
@@ -119,7 +123,7 @@ describe('SurveySummaryScreen', () => {
         service.completeSurveyor.mockImplementation(
             () => new Promise((resolve) => { resolveComplete = resolve; }),
         );
-        renderWithService(<SurveySummaryScreen />, service);
+        renderWithActiveSurvey(<SurveySummaryScreen />, service);
 
         fireEvent.press(await screen.findByText('Complete and Save Survey'));
         fireEvent.press(await screen.findByText('Saving…'));

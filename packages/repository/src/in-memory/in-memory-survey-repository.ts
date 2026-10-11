@@ -108,6 +108,34 @@ export class InMemorySurveyRepository implements SurveyRepository {
     return { survey: clone(survey), locations, surveyors, observations };
   }
 
+  subscribeSurveyContext(surveyId: string, callback: (context: SurveyContext) => void): Unsubscribe {
+    // Composed live read: the survey doc plus each child collection, merged and
+    // re-emitted on any change — the in-memory mirror of the Firebase repo's
+    // four-listener fan-out. Requires the child repos (same guard as
+    // getSurveyContext); without them there is no context to compose.
+    if (!this.locationRepository || !this.surveyorRepository || !this.observationRepository) {
+      throw new Error('subscribeSurveyContext requires location, surveyor, and observation repositories');
+    }
+    let survey: Survey | null = null;
+    let locations: SurveyContext['locations'] = [];
+    let surveyors: SurveyContext['surveyors'] = [];
+    let observations: SurveyContext['observations'] = [];
+
+    const emit = () => {
+      if (!survey) return; // wait for the survey itself before emitting a context
+      callback({ survey: clone(survey), locations, surveyors, observations });
+    };
+
+    const unsubscribes = [
+      this.subscribeById(surveyId, (s) => { survey = s; emit(); }),
+      this.locationRepository.subscribeBySurveyId(surveyId, (l) => { locations = l; emit(); }),
+      this.surveyorRepository.subscribeBySurveyId(surveyId, (s) => { surveyors = s; emit(); }),
+      this.observationRepository.subscribeBySurveyId(surveyId, (o) => { observations = o; emit(); }),
+    ];
+
+    return () => { for (const unsubscribe of unsubscribes) unsubscribe(); };
+  }
+
   private notify(id: string): void {
     const cbs = this.listeners.get(id);
     if (!cbs) return;

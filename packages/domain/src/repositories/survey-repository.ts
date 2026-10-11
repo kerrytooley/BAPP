@@ -12,4 +12,5 @@ export interface SurveyRepository {
   delete(id: string): Promise<void>;
   subscribeById(id: string, callback: (survey: Survey | null) => void): Unsubscribe;
   getSurveyContext(surveyId: string): Promise<SurveyContext>;
+  subscribeSurveyContext(surveyId: string, callback: (context: SurveyContext) => void): Unsubscribe;
 }

@@ -8,8 +8,9 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { useSurveyService } from "@services/surveyServiceContext";
+import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
-import { BoundaryPosition, Location, Surveyor } from "@bapp/domain";
+import { BoundaryPosition, Surveyor } from "@bapp/domain";
 import { AddLocationBottomSheet } from "@components/AddLocationBottomSheet";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
@@ -18,28 +19,32 @@ export function AddSurveyorScreen(): React.JSX.Element {
     const { surveyId } = useRoute<RouteProp<AdminStackParamList, 'AddSurveyorScreen'>>().params;
     const service = useSurveyService();
     const navigation = useNavigation<Nav>();
+    const { context } = useActiveSurvey();
 
-    const [surveyors, setSurveyors] = useState<Surveyor[]>([]);
-    const [locations, setLocations] = useState<Location[]>([]);
+    const surveyors = context?.surveyors ?? [];
+    const locations = context?.locations ?? [];
+
     const [activeSurveyorId, setActiveSurveyorId] = useState<string | null>(null);
     const [boundaryImageUrl, setBoundaryImageUrl] = useState<string | null>(null);
+    // Local edit buffer keyed by surveyor id, so typing isn't clobbered by
+    // subscription re-emits. Render the buffer value if present, else context.
+    const [nameDrafts, setNameDrafts] = useState<Record<string, string>>({});
     const sheetRef = useRef<BottomSheetModal>(null);
+    // Guards the lead-surveyor auto-create so a subscription re-emit (while the
+    // write is still catching up) can't fire it twice — the root cause of the
+    // duplicate / linked lead surveyor boxes.
+    const leadCreated = useRef(false);
 
-    //retrieve data
+    // Auto-create a single empty lead when the survey has none yet. The created
+    // lead appears via the subscription; we never setState it here.
     useEffect(() => {
-        const load = async () => {
-            const context = await service.getSurveyContext(surveyId);
-            setLocations(context.locations);
-            if (context.surveyors.length === 0) {
-                const lead = await service.addSurveyor(surveyId, { name: "", isLead: true });
-                setSurveyors([lead]);
-            } else {
-                setSurveyors(context.surveyors)
-            }
-
-        };
-        load().catch((e) => console.error("Failed to load surveyors", e));
-    }, [service, surveyId])
+        if (!context || leadCreated.current) return;
+        if (context.surveyors.length === 0) {
+            leadCreated.current = true;
+            service.addSurveyor(surveyId, { name: "", isLead: true })
+                .catch((e) => console.error("Failed to create lead surveyor", e));
+        }
+    }, [context, service, surveyId]);
 
     useEffect(() => {
         service.getBoundaryImage(surveyId)
@@ -47,6 +52,8 @@ export function AddSurveyorScreen(): React.JSX.Element {
             .catch((e) => console.error("Failed to fetch boundary image", e));
     }, [service, surveyId]);
 
+    const displayName = (surveyor: Surveyor) =>
+        nameDrafts[surveyor.id] ?? surveyor.name ?? "";
 
     // set selected surveyor when tapping between cards
     const activeSurveyor = surveyors.find((surveyor) => surveyor.id === activeSurveyorId);
@@ -57,23 +64,24 @@ export function AddSurveyorScreen(): React.JSX.Element {
         sheetRef.current?.present();
     };
 
-    // add, remove and save actions
+    // add, remove and save actions — the list itself re-emits via the subscription
     const addSurveyor = async () => {
-        const newSurveyor = await service.addSurveyor(surveyId, { name: "", isLead: false });
-        console.log('Surveyor added:', newSurveyor);
-        setSurveyors((prevSurveyorList) => [...prevSurveyorList, newSurveyor]);
+        try {
+            const newSurveyor = await service.addSurveyor(surveyId, { name: "", isLead: false });
+            console.log('Surveyor added:', newSurveyor);
+        } catch (e) {
+            console.log("Error adding surveyor", e);
+        }
     };
 
     const removeSurveyor = async (id: string) => {
         const locationId = surveyors.find((s) => s.id === id)?.locationId ?? null;
         await service.removeSurveyor(id);
         console.log('Surveyor removed:', id);
-        setSurveyors((prevSurveyorList) => prevSurveyorList.filter((surveyor) => surveyor.id !== id));
         if (locationId) {
             try {
                 await service.removeLocation(locationId);
                 console.log('Surveyor location removed:', locationId);
-                setLocations((prev) => prev.filter((location) => location.id !== locationId));
             } catch (e) {
                 console.log("Error removing surveyor location", e);
             }
@@ -81,50 +89,53 @@ export function AddSurveyorScreen(): React.JSX.Element {
     }
 
     const updateName = (id: string, name: string) => {
-        setSurveyors((prev) => prev.map((surveyor) => (
-            surveyor.id === id ? { ...surveyor, name } : surveyor
-        )));
+        setNameDrafts((prev) => ({ ...prev, [id]: name }));
     }
 
-    const saveName = (id: string, name: string) => service.updateSurveyor(id, { name })
-        .then((surveyor) => console.log('Surveyor name saved:', surveyor))
-        .catch((e) => console.log("Error saving surveyor name", e))
+    const saveName = (id: string) => {
+        const name = nameDrafts[id] ?? surveyors.find((s) => s.id === id)?.name ?? "";
+        return service.updateSurveyor(id, { name })
+            .then((surveyor) => console.log('Surveyor name saved:', surveyor))
+            .catch((e) => console.log("Error saving surveyor name", e));
+    }
 
     const saveLocation = async (position: BoundaryPosition) => {
         const surveyor = surveyors.find((s) => s.id === activeSurveyorId);
         if (!surveyor) return;
 
-        if (surveyor.locationId) {
-            const updatedLocation = await service.updateLocation(surveyor.locationId, { boundaryPosition: position });
-            console.log('Surveyor location updated:', updatedLocation);
-            setLocations((prev) => prev.map((location) => (location.id === updatedLocation.id ? updatedLocation : location)));
-        } else {
-            const location = await service.addLocation(surveyId, { boundaryPosition: position });
-            await service.updateSurveyor(surveyor.id, { locationId: location.id });
-            console.log('Surveyor location saved:', location);
-            setSurveyors((prev) => prev.map((s) => (s.id === surveyor.id ? { ...s, locationId: location.id } : s)));
-            setLocations((prev) => [...prev, location]);
+        try {
+            if (surveyor.locationId) {
+                const updatedLocation = await service.updateLocation(surveyor.locationId, { boundaryPosition: position });
+                console.log('Surveyor location updated:', updatedLocation);
+            } else {
+                const location = await service.addLocation(surveyId, { boundaryPosition: position });
+                await service.updateSurveyor(surveyor.id, { locationId: location.id });
+                console.log('Surveyor location saved:', location);
+            }
+        } catch (e) {
+            console.log("Error saving surveyor location", e);
+        } finally {
+            sheetRef.current?.dismiss();
         }
-        sheetRef.current?.dismiss();
     }
 
 
     // continue checks
     const isLead = (surveyor: Surveyor) => surveyor.isLead
     const leadSurveyor = surveyors.find((surveyor) => surveyor.isLead);
-    const canContinue = (leadSurveyor?.name ?? "").trim().length > 0;
+    const canContinue = (leadSurveyor ? displayName(leadSurveyor) : "").trim().length > 0;
 
     const continueToReview = async () => {
-        const isBlank = (s: Surveyor) => !s.isLead && (s.name ?? "").trim() === "" && !s.locationId;
+        const nameOf = (s: Surveyor) => nameDrafts[s.id] ?? s.name ?? "";
+        const isBlank = (s: Surveyor) => !s.isLead && nameOf(s).trim() === "" && !s.locationId;
         const blank = surveyors.filter(isBlank);
         const remaining = surveyors.filter((s) => !isBlank(s));
 
         try {
             await Promise.all(blank.map((s) => service.removeSurveyor(s.id)));
             if (blank.length) console.log('Removed blank surveyors:', blank.map((s) => s.id));
-            const saved = await Promise.all(remaining.map((s) => service.updateSurveyor(s.id, { name: s.name ?? "" })));
+            const saved = await Promise.all(remaining.map((s) => service.updateSurveyor(s.id, { name: nameOf(s) })));
             console.log('Surveyor names saved:', saved);
-            setSurveyors(remaining);
 
             navigation.navigate('ReviewSurveyDetailsScreen', { surveyId });
         } catch (e) {
@@ -146,9 +157,9 @@ export function AddSurveyorScreen(): React.JSX.Element {
                             key={surveyor.id}
                             isLead={isLead(surveyor)}
                             testID={isLead(surveyor) ? "lead-surveyor-name-input" : "surveyor-name-input"}
-                            name={surveyor.name ?? ""}
+                            name={displayName(surveyor)}
                             onChangeName={(text) => updateName(surveyor.id, text)}
-                            onEndEditingName={() => saveName(surveyor.id, surveyor.name ?? "")}
+                            onEndEditingName={() => saveName(surveyor.id)}
                             onAddLocation={() => openLocationSheet(surveyor.id)}
                             onClose={() => removeSurveyor(surveyor.id)}
                             hasLocation={surveyor.locationId != null}

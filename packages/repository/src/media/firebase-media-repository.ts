@@ -112,7 +112,16 @@ function assertSafeReference(reference: string): void {
 }
 
 /** Root of the on-device offline cache. Mirrors storage ref paths beneath it so
- *  a reference maps 1:1 to a cache file and survey-scoped clearing is a dir delete. */
+ *  a reference maps 1:1 to a cache file and survey-scoped clearing is a dir delete.
+ *
+ *  Lives under `cacheDirectory` (the OS may evict it under storage pressure).
+ *  That is fine for the re-downloadable display cache: `getDownloadUrl` is
+ *  cache-first, so an evicted image simply re-downloads from Storage when online
+ *  (and degrades to "unavailable" offline). NOTE: unsent-upload bytes + the
+ *  pending manifest also live here, so an eviction before an upload flushes can
+ *  lose that upload — a pre-existing risk (unchanged by this PR). Moving durable
+ *  state to `documentDirectory` and adding LRU eviction for the display cache is
+ *  a deferred follow-up (see FIREBASE_ARCHITECTURE.md). */
 const CACHE_ROOT = `${FileSystem.cacheDirectory ?? ''}bapp-media/`;
 
 /** Durable record of uploads that have not yet reached Storage, persisted next to
@@ -164,6 +173,12 @@ export class FirebaseMediaRepository implements MediaRepository {
 
   /** Serializes read-modify-write access to the pending-uploads manifest. */
   private manifestLock: Promise<unknown> = Promise.resolve();
+
+  /** De-dupes concurrent `getDownloadUrl` calls for the same reference: the first
+   *  starts the network fetch, the rest await the same promise instead of each
+   *  firing their own getDownloadURL + download. Cleared on settle so a later
+   *  call (e.g. after a cache clear) fetches afresh. */
+  private inFlightDownloads = new Map<string, Promise<string>>();
 
   async upload(
     path: string,
@@ -350,14 +365,29 @@ export class FirebaseMediaRepository implements MediaRepository {
   async getDownloadUrl(reference: string): Promise<string> {
     const cachePath = cachePathFor(reference);
     const info = await FileSystem.getInfoAsync(cachePath);
-    if (info.exists) return info.uri;
+    if (info.exists) return info.uri; // cache hit — instant, no network
 
-    // Cache miss: resolve the remote URL, download into the cache, return the
-    // local file:// URI so the caller can render it offline afterwards.
-    const url = await getDownloadURL(storageRef(getFirebaseStorage(), reference));
-    await FileSystem.makeDirectoryAsync(parentDir(cachePath), { intermediates: true });
-    const result = await FileSystem.downloadAsync(url, cachePath);
-    return result.uri;
+    // Cache miss: hit the network. De-dupe concurrent callers for the same
+    // reference behind a single in-flight promise so we run one getDownloadURL +
+    // download, not N. The network path fails fast offline (rather than hanging
+    // ~2 min) because Storage's retry times are lowered in firebase-app.ts.
+    const existing = this.inFlightDownloads.get(reference);
+    if (existing) return existing;
+
+    const download = (async () => {
+      // Resolve the remote URL, download into the cache, return the local file://
+      // URI so the caller can render it offline afterwards.
+      const url = await getDownloadURL(storageRef(getFirebaseStorage(), reference));
+      await FileSystem.makeDirectoryAsync(parentDir(cachePath), { intermediates: true });
+      const result = await FileSystem.downloadAsync(url, cachePath);
+      return result.uri;
+    })();
+    this.inFlightDownloads.set(reference, download);
+    try {
+      return await download;
+    } finally {
+      this.inFlightDownloads.delete(reference);
+    }
   }
 
   async delete(reference: string): Promise<void> {

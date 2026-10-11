@@ -3,11 +3,12 @@ import { Title } from "@components/Titles";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { screen } from "@theme/screen";
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { ScrollView, StyleSheet, Text, View, Alert, Modal, ActivityIndicator } from "react-native";
 import { useSurveyService } from "../../services/surveyServiceContext";
-import { Observation, Survey, Surveyor, ValidationError } from "@bapp/domain";
+import { useActiveSurvey } from "@services/ActiveSurveyProvider";
+import { ValidationError } from "@bapp/domain";
 import { RootStackParamList } from "@navigators/index";
 import { CompositeNavigationProp } from "@react-navigation/native";
 import { ObservationSummary } from "@components/ObservationSummary";
@@ -23,23 +24,14 @@ type Nav = CompositeNavigationProp<
 
 export function SurveySummaryScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
-    const [observations, setObservations] = useState<Observation[]>();
-    const [survey, setSurvey] = useState<Survey>();
-    const [surveyor, setSurveyor] = useState<Surveyor>();
     const service = useSurveyService();
+    const { context } = useActiveSurvey();
     const [saving, setSaving] = useState(false);
     const { surveyId, surveyorId } = useRoute<RouteProp<SurveyorStackParamList, 'SurveySummaryScreen'>>().params;
 
-    useEffect(() => {
-        const loadContext = async () => {
-            const { survey, surveyors, observations } = await service.getSurveyContext(surveyId);
-            const surveyorObservations = observations.filter((observation) => observation.surveyorId === surveyorId)
-            setObservations(surveyorObservations);
-            setSurveyor(surveyors.find((surveyor) => surveyor.id === surveyorId));
-            setSurvey(survey);
-        }
-        loadContext();
-    }, [surveyId, service])
+    const survey = context?.survey;
+    const surveyor = context?.surveyors.find((surveyor) => surveyor.id === surveyorId);
+    const observations = context?.observations.filter((observation) => observation.surveyorId === surveyorId);
 
     const handleComplete = async () => {
         setSaving(true);

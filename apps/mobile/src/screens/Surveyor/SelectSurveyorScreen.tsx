@@ -5,30 +5,16 @@ import { screen } from "@theme/screen";
 import { StyleSheet, View } from "react-native";
 import { BackButton, ButtonGroup } from "@components/Button";
 import { Title } from "@components/Titles";
-import { Surveyor } from "@bapp/domain";
-import { useEffect, useState } from "react";
-import { useSurveyService } from "@services/surveyServiceContext";
+import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import SurveyorIllustration from "@assets/illustrations/surveyors.svg"
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
 export function SelectSurveyorScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
-    const service = useSurveyService();
     const { surveyId } = useRoute<RouteProp<SurveyorStackParamList, 'SelectSurveyorScreen'>>().params;
-    const [surveyors, setSurveyors] = useState<Surveyor[]>();
-
-    useEffect(() => {
-        const loadSurveyors = async () => {
-            try {
-                const surveyContext = await service.getSurveyContext(surveyId);
-                setSurveyors(surveyContext.surveyors)
-            } catch (e) {
-                console.error("Error: unable to fetch surveyors")
-            }
-        }
-        loadSurveyors();
-    }, [service, surveyId])
+    const { context } = useActiveSurvey();
+    const surveyors = context?.surveyors;
 
     return (
         <View style={screen.justifyScreen} >

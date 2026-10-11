@@ -10,7 +10,6 @@ import {
 import {
   collection,
   doc,
-  getDoc,
   getDocFromCache,
   getDocs,
   setDoc,
@@ -28,6 +27,8 @@ import {
   stripUndefined,
   nowTimestamp,
   queueWrite,
+  getDocCacheFirst,
+  getDocsCacheFirst,
 } from '../config/firestore-mapping';
 import { fromLocationDoc } from '../locations/firebase-location-repository';
 import { fromSurveyorDoc } from '../surveyors/firebase-surveyor-repository';
@@ -82,7 +83,7 @@ export class FirebaseSurveyRepository implements SurveyRepository {
   }
 
   async findById(id: string): Promise<Survey | null> {
-    const snap = await getDoc(doc(getDb(), COLLECTION, id));
+    const snap = await getDocCacheFirst(doc(getDb(), COLLECTION, id));
     return snap.exists() ? fromSurveyDoc(snap) : null;
   }
 
@@ -135,10 +136,10 @@ export class FirebaseSurveyRepository implements SurveyRepository {
   async getSurveyContext(surveyId: string): Promise<SurveyContext> {
     const db = getDb();
     const [surveySnap, locationsSnap, surveyorsSnap, observationsSnap] = await Promise.all([
-      getDoc(doc(db, COLLECTION, surveyId)),
-      getDocs(collection(db, COLLECTION, surveyId, 'locations')),
-      getDocs(collection(db, COLLECTION, surveyId, 'surveyors')),
-      getDocs(collection(db, COLLECTION, surveyId, 'observations')),
+      getDocCacheFirst(doc(db, COLLECTION, surveyId)),
+      getDocsCacheFirst(collection(db, COLLECTION, surveyId, 'locations')),
+      getDocsCacheFirst(collection(db, COLLECTION, surveyId, 'surveyors')),
+      getDocsCacheFirst(collection(db, COLLECTION, surveyId, 'observations')),
     ]);
     if (!surveySnap.exists()) throw new Error(`Survey ${surveyId} not found`);
     return {
@@ -149,8 +150,56 @@ export class FirebaseSurveyRepository implements SurveyRepository {
     };
   }
 
+  /**
+   * Live counterpart to `getSurveyContext`: four `onSnapshot` listeners (the
+   * survey doc + its three subcollections) merged into one `SurveyContext` stream.
+   * `includeMetadataChanges` is on so a locally-applied write surfaces immediately
+   * from cache (fromCache/pending metadata) rather than waiting on server ack —
+   * the read-your-writes offline experience the rest of this repo is built around.
+   *
+   * We hold the latest snapshot of each part in a local variable and re-emit the
+   * merged context on any change, but only once the survey doc itself has loaded
+   * (exists) — mirroring `getSurveyContext`'s "no survey ⇒ no context" contract.
+   */
+  subscribeSurveyContext(surveyId: string, callback: (context: SurveyContext) => void): Unsubscribe {
+    const db = getDb();
+    const options = { includeMetadataChanges: true };
+    let survey: Survey | null = null;
+    let locations: SurveyContext['locations'] = [];
+    let surveyors: SurveyContext['surveyors'] = [];
+    let observations: SurveyContext['observations'] = [];
+
+    const emit = () => {
+      if (!survey) return; // wait for the survey doc before emitting a context
+      callback({ survey, locations, surveyors, observations });
+    };
+
+    const unsubscribes = [
+      onSnapshot(doc(db, COLLECTION, surveyId), options, (snap) => {
+        survey = snap.exists() ? fromSurveyDoc(snap) : null;
+        emit();
+      }),
+      onSnapshot(collection(db, COLLECTION, surveyId, 'locations'), options, (snap) => {
+        locations = snap.docs.map(fromLocationDoc);
+        emit();
+      }),
+      onSnapshot(collection(db, COLLECTION, surveyId, 'surveyors'), options, (snap) => {
+        surveyors = snap.docs.map(fromSurveyorDoc);
+        emit();
+      }),
+      onSnapshot(collection(db, COLLECTION, surveyId, 'observations'), options, (snap) => {
+        observations = snap.docs.map(fromObservationDoc);
+        emit();
+      }),
+    ];
+
+    return () => {
+      for (const unsubscribe of unsubscribes) unsubscribe();
+    };
+  }
+
   private async findByField(field: 'adminCode' | 'surveyorCode', value: string): Promise<Survey | null> {
-    const snap = await getDocs(query(collection(getDb(), COLLECTION), where(field, '==', value)));
+    const snap = await getDocsCacheFirst(query(collection(getDb(), COLLECTION), where(field, '==', value)));
     return snap.empty ? null : fromSurveyDoc(snap.docs[0]);
   }
 }

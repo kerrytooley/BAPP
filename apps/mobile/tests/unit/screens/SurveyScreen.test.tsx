@@ -4,10 +4,14 @@ jest.mock('@react-navigation/native', () =>
 
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { SurveyScreen } from '@screens/Surveyor/SurveyScreen';
-import { createMockService, renderWithService } from '../../helpers/testUtils';
+import {
+    createContextSubscription,
+    createMockService,
+    mockSubscribeContext,
+    renderWithActiveSurvey,
+} from '../../helpers/testUtils';
 import { buildContext, buildObservation } from '../../helpers/factories';
 import {
-    mockAddListener,
     mockNavigate,
     mockPush,
     resetNavigationMock,
@@ -16,11 +20,12 @@ import {
 
 const observation = buildObservation({ id: 'obs-1', seenCount: 2, heardCount: 1 });
 
-const serviceWith = (updateObservation = jest.fn()) => {
+const serviceWith = (
+    updateObservation = jest.fn(),
+    context = buildContext({ observations: [observation] }),
+) => {
     const service = createMockService({
-        getSurveyContext: jest.fn().mockResolvedValue(
-            buildContext({ observations: [observation] }),
-        ),
+        subscribeSurveyContext: mockSubscribeContext(context),
     });
     (service as unknown as { updateObservation: jest.Mock }).updateObservation =
         updateObservation;
@@ -37,8 +42,8 @@ beforeEach(() => {
 });
 
 describe('SurveyScreen', () => {
-    it('renders the observation entry once the context loads', async () => {
-        renderWithService(<SurveyScreen />, serviceWith());
+    it('renders the observation entry from the live context', async () => {
+        renderWithActiveSurvey(<SurveyScreen />, serviceWith());
         await waitFor(() => expect(screen.getByText('Noc')).toBeOnTheScreen());
     });
 
@@ -47,15 +52,12 @@ describe('SurveyScreen', () => {
         const updateObservation = jest
             .fn()
             .mockResolvedValue(buildObservation({ id: 'obs-1', seenCount: 3, lastSeenAt: null }));
-        const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
-                buildContext({ observations: [observation, other] }),
-            ),
-        });
-        (service as unknown as { updateObservation: jest.Mock }).updateObservation =
-            updateObservation;
+        const service = serviceWith(
+            updateObservation,
+            buildContext({ observations: [observation, other] }),
+        );
 
-        renderWithService(<SurveyScreen />, service);
+        renderWithActiveSurvey(<SurveyScreen />, service);
         await waitFor(() => expect(screen.getByText('S (9)')).toBeOnTheScreen());
 
         fireEvent.press(screen.getAllByLabelText('Add seen count')[0]);
@@ -71,7 +73,7 @@ describe('SurveyScreen', () => {
         const updateObservation = jest
             .fn()
             .mockResolvedValue(buildObservation({ id: 'obs-1', seenCount: 3, lastSeenAt: new Date(2026, 6, 13, 21, 0) }));
-        renderWithService(<SurveyScreen />, serviceWith(updateObservation));
+        renderWithActiveSurvey(<SurveyScreen />, serviceWith(updateObservation));
         await waitFor(() => expect(screen.getByText('S (2)')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByLabelText('Add seen count'));
@@ -91,7 +93,7 @@ describe('SurveyScreen', () => {
         const updateObservation = jest
             .fn()
             .mockResolvedValue(buildObservation({ id: 'obs-1', heardCount: 2, lastSeenAt: new Date(2026, 6, 13, 21, 0) }));
-        renderWithService(<SurveyScreen />, serviceWith(updateObservation));
+        renderWithActiveSurvey(<SurveyScreen />, serviceWith(updateObservation));
         await waitFor(() => expect(screen.getByText('H (1)')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByLabelText('Add heard count'));
@@ -105,7 +107,7 @@ describe('SurveyScreen', () => {
         const updateObservation = jest
             .fn()
             .mockResolvedValue(buildObservation({ id: 'obs-1', heardCount: 2, lastSeenAt: null }));
-        renderWithService(<SurveyScreen />, serviceWith(updateObservation));
+        renderWithActiveSurvey(<SurveyScreen />, serviceWith(updateObservation));
         await waitFor(() => expect(screen.getByText('H (1)')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByLabelText('Add heard count'));
@@ -120,7 +122,7 @@ describe('SurveyScreen', () => {
             .fn()
             .mockResolvedValueOnce(buildObservation({ id: 'obs-1', seenCount: 3 }))
             .mockResolvedValueOnce(buildObservation({ id: 'obs-1', seenCount: 2 }));
-        renderWithService(<SurveyScreen />, serviceWith(updateObservation));
+        renderWithActiveSurvey(<SurveyScreen />, serviceWith(updateObservation));
         await waitFor(() => expect(screen.getByText('S (2)')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByLabelText('Add seen count'));
@@ -140,7 +142,7 @@ describe('SurveyScreen', () => {
         const updateObservation = jest
             .fn()
             .mockResolvedValue(buildObservation({ id: 'obs-1', seenCount: 3 }));
-        renderWithService(<SurveyScreen />, serviceWith(updateObservation));
+        renderWithActiveSurvey(<SurveyScreen />, serviceWith(updateObservation));
         await waitFor(() => expect(screen.getByText('S (2)')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByLabelText('Add seen count'));
@@ -151,7 +153,7 @@ describe('SurveyScreen', () => {
     });
 
     it('navigates to the observation screen when editing an entry', async () => {
-        renderWithService(<SurveyScreen />, serviceWith());
+        renderWithActiveSurvey(<SurveyScreen />, serviceWith());
         await waitFor(() => expect(screen.getByText('Edit')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Edit'));
         expect(mockNavigate).toHaveBeenCalledWith('AddObservationScreen', {
@@ -163,7 +165,7 @@ describe('SurveyScreen', () => {
     });
 
     it('navigates to the species screen when adding a new observation', async () => {
-        renderWithService(<SurveyScreen />, serviceWith());
+        renderWithActiveSurvey(<SurveyScreen />, serviceWith());
         fireEvent.press(screen.getByText('Add new bat observation'));
         expect(mockPush).toHaveBeenCalledWith('SelectSpeciesScreen', {
             surveyId: 'survey-1',
@@ -173,7 +175,7 @@ describe('SurveyScreen', () => {
     });
 
     it('navigates to the survey summary when ending the survey', async () => {
-        renderWithService(<SurveyScreen />, serviceWith());
+        renderWithActiveSurvey(<SurveyScreen />, serviceWith());
         await waitFor(() => expect(screen.getByText('End Survey')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('End Survey'));
         expect(mockNavigate).toHaveBeenCalledWith('SurveySummaryScreen', {
@@ -182,25 +184,10 @@ describe('SurveyScreen', () => {
         });
     });
 
-    it('logs an error when loading the context fails', async () => {
-        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
-        const service = createMockService({
-            getSurveyContext: jest.fn().mockRejectedValue(new Error('load failed')),
-        });
-        renderWithService(<SurveyScreen />, service);
-        await waitFor(() =>
-            expect(errorSpy).toHaveBeenCalledWith(
-                'Error loading survey context',
-                expect.any(Error),
-            ),
-        );
-        errorSpy.mockRestore();
-    });
-
     it('logs an error when a count update fails', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const updateObservation = jest.fn().mockRejectedValue(new Error('update failed'));
-        renderWithService(<SurveyScreen />, serviceWith(updateObservation));
+        renderWithActiveSurvey(<SurveyScreen />, serviceWith(updateObservation));
         await waitFor(() => expect(screen.getByText('S (2)')).toBeOnTheScreen());
         fireEvent.press(screen.getByLabelText('Add seen count'));
         await waitFor(() =>
@@ -216,7 +203,7 @@ describe('SurveyScreen', () => {
     it('logs an error when a heard count update fails', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const updateObservation = jest.fn().mockRejectedValue(new Error('update failed'));
-        renderWithService(<SurveyScreen />, serviceWith(updateObservation));
+        renderWithActiveSurvey(<SurveyScreen />, serviceWith(updateObservation));
         await waitFor(() => expect(screen.getByText('H (1)')).toBeOnTheScreen());
         fireEvent.press(screen.getByLabelText('Add heard count'));
         await waitFor(() =>
@@ -235,7 +222,7 @@ describe('SurveyScreen', () => {
             .fn()
             .mockResolvedValueOnce(buildObservation({ id: 'obs-1', seenCount: 3 }))
             .mockRejectedValueOnce(new Error('undo failed'));
-        renderWithService(<SurveyScreen />, serviceWith(updateObservation));
+        renderWithActiveSurvey(<SurveyScreen />, serviceWith(updateObservation));
         await waitFor(() => expect(screen.getByText('S (2)')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByLabelText('Add seen count'));
@@ -252,21 +239,19 @@ describe('SurveyScreen', () => {
         errorSpy.mockRestore();
     });
 
-    it('reloads the observations when the screen regains focus', async () => {
-        const first = buildObservation({ id: 'obs-1', species: 'Noctule', seenCount: 2 });
-        const refreshed = buildObservation({ id: 'obs-2', species: 'Serotine', seenCount: 7 });
-        let context = buildContext({ observations: [first] });
-        const getSurveyContext = jest.fn((_surveyId: string) => Promise.resolve(context));
-        const service = createMockService({ getSurveyContext });
+    it('reflects observation changes pushed by the live context', async () => {
+        const sub = createContextSubscription(
+            buildContext({ observations: [buildObservation({ id: 'obs-1', species: 'Noctule', seenCount: 2 })] }),
+        );
+        const service = createMockService({ subscribeSurveyContext: sub.subscribe });
         (service as unknown as { updateObservation: jest.Mock }).updateObservation = jest.fn();
 
-        renderWithService(<SurveyScreen />, service);
+        renderWithActiveSurvey(<SurveyScreen />, service);
         await waitFor(() => expect(screen.getByText('S (2)')).toBeOnTheScreen());
 
-        context = buildContext({ observations: [refreshed] });
-        const focusCallback = mockAddListener.mock.calls.find(([event]) => event === 'focus')?.[1];
-        expect(focusCallback).toBeDefined();
-        focusCallback?.();
+        sub.emit(
+            buildContext({ observations: [buildObservation({ id: 'obs-2', species: 'Serotine', seenCount: 7 })] }),
+        );
 
         await waitFor(() => expect(screen.getByText('S (7)')).toBeOnTheScreen());
     });

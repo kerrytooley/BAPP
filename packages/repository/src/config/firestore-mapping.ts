@@ -10,7 +10,14 @@
 //    repositories fire the write (see `queueWrite`) and read the result back
 //    from cache. See FIREBASE_ARCHITECTURE.md §Offline persistence.
 
-import { Timestamp } from '@react-native-firebase/firestore';
+import {
+  Timestamp,
+  getDocFromCache,
+  getDocFromServer,
+  getDocsFromCache,
+  getDocsFromServer,
+  type FirebaseFirestoreTypes,
+} from '@react-native-firebase/firestore';
 
 /** Convert a Firestore Timestamp (or Date/null) read back from a document to a Date | null. */
 export function toDateOrNull(value: unknown): Date | null {
@@ -65,6 +72,42 @@ export function queueWrite(write: Promise<unknown>, context: string): void {
   void write.catch((error) => {
     console.error(`[firebase] queued write failed to sync (${context}):`, error);
   });
+}
+
+/**
+ * Cache-first single-doc read: return the locally-cached doc (instant,
+ * offline-safe, reflects pending writes); on a cache miss fall back to the
+ * server (resolves online, rejects fast offline).
+ *
+ * Default-source reads (`getDoc`) try the network first while offline, which is
+ * slow and can fail — this flips that ordering so a read-your-own-write is
+ * served straight from the local cache.
+ */
+export async function getDocCacheFirst(
+  ref: FirebaseFirestoreTypes.DocumentReference,
+): Promise<FirebaseFirestoreTypes.DocumentSnapshot> {
+  try {
+    return await getDocFromCache(ref);
+  } catch {
+    return getDocFromServer(ref);
+  }
+}
+
+/**
+ * Cache-first query read: return cached matches if any; otherwise try the server
+ * for freshness (online), falling back to the (empty) cache result offline rather
+ * than hanging or throwing.
+ */
+export async function getDocsCacheFirst(
+  query: FirebaseFirestoreTypes.Query,
+): Promise<FirebaseFirestoreTypes.QuerySnapshot> {
+  const cached = await getDocsFromCache(query).catch(() => null);
+  if (cached && !cached.empty) return cached;
+  try {
+    return await getDocsFromServer(query);
+  } catch {
+    return cached ?? (await getDocsFromCache(query));
+  }
 }
 
 /** Recursively drop `undefined` values (invalid in Firestore) while preserving

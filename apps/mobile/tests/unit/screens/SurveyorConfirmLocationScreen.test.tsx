@@ -36,7 +36,12 @@ import {
     buildLocation,
     buildSurveyor,
 } from '../../helpers/factories';
-import { createMockService, renderWithService } from '../../helpers/testUtils';
+import {
+    createContextSubscription,
+    createMockService,
+    mockSubscribeContext,
+    renderWithActiveSurvey,
+} from '../../helpers/testUtils';
 import {
     mockNavigate,
     resetNavigationMock,
@@ -53,17 +58,17 @@ const readyImage = { status: 'ready', url: 'file://boundary.png' };
 describe('SurveyorConfirmLocationScreen', () => {
     it('updates the existing location and continues with it', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [
-                        buildSurveyor({ id: 'surveyor-1', locationId: 'location-9' }),
+                        buildSurveyor({ id: 'surveyor-1', locationId: 'location-9', status: 'ready' }),
                     ],
                     locations: [buildLocation({ id: 'location-9' })],
                 }),
             ),
             getBoundaryImage: jest.fn().mockResolvedValue(readyImage),
         });
-        renderWithService(<SurveyorConfirmLocationScreen />, service);
+        renderWithActiveSurvey(<SurveyorConfirmLocationScreen />, service);
 
         await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
         fireEvent.press(screen.getByLabelText('save-location'));
@@ -85,16 +90,17 @@ describe('SurveyorConfirmLocationScreen', () => {
     });
 
     it('adds a location for a surveyor without one and links it', async () => {
+        const sub = createContextSubscription(
+            buildContext({
+                surveyors: [buildSurveyor({ id: 'surveyor-1', locationId: null, status: 'ready' })],
+            }),
+        );
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
-                buildContext({
-                    surveyors: [buildSurveyor({ id: 'surveyor-1', locationId: null })],
-                }),
-            ),
+            subscribeSurveyContext: sub.subscribe,
             getBoundaryImage: jest.fn().mockResolvedValue(readyImage),
             addLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'location-1' })),
         });
-        renderWithService(<SurveyorConfirmLocationScreen />, service);
+        renderWithActiveSurvey(<SurveyorConfirmLocationScreen />, service);
 
         await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
         fireEvent.press(screen.getByLabelText('save-location'));
@@ -107,6 +113,13 @@ describe('SurveyorConfirmLocationScreen', () => {
             locationId: 'location-1',
         });
 
+        // The write re-emits: the surveyor is now linked to the new location.
+        sub.emit(
+            buildContext({
+                surveyors: [buildSurveyor({ id: 'surveyor-1', locationId: 'location-1', status: 'ready' })],
+                locations: [buildLocation({ id: 'location-1' })],
+            }),
+        );
         fireEvent.press(screen.getByText('Continue'));
         await waitFor(() =>
             expect(mockNavigate).toHaveBeenCalledWith('CapturePhotoScreen', {
@@ -119,14 +132,13 @@ describe('SurveyorConfirmLocationScreen', () => {
     });
 
     it('adds a location when the surveyor is not found and links it via the route', async () => {
+        const sub = createContextSubscription(buildContext({ surveyors: [] }));
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
-                buildContext({ surveyors: [] }),
-            ),
+            subscribeSurveyContext: sub.subscribe,
             getBoundaryImage: jest.fn().mockResolvedValue(readyImage),
             addLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'location-1' })),
         });
-        renderWithService(<SurveyorConfirmLocationScreen />, service);
+        renderWithActiveSurvey(<SurveyorConfirmLocationScreen />, service);
 
         await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
         fireEvent.press(screen.getByLabelText('save-location'));
@@ -136,6 +148,12 @@ describe('SurveyorConfirmLocationScreen', () => {
             }),
         );
 
+        sub.emit(
+            buildContext({
+                surveyors: [buildSurveyor({ id: 'surveyor-1', locationId: 'location-1', status: 'ready' })],
+                locations: [buildLocation({ id: 'location-1' })],
+            }),
+        );
         fireEvent.press(screen.getByText('Continue'));
         await waitFor(() =>
             expect(mockNavigate).toHaveBeenCalledWith('CapturePhotoScreen', {
@@ -149,14 +167,14 @@ describe('SurveyorConfirmLocationScreen', () => {
 
     it('opens the location sheet when changing location', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [buildSurveyor({ id: 'surveyor-1', locationId: null })],
                 }),
             ),
             getBoundaryImage: jest.fn().mockResolvedValue(readyImage),
         });
-        renderWithService(<SurveyorConfirmLocationScreen />, service);
+        renderWithActiveSurvey(<SurveyorConfirmLocationScreen />, service);
 
         await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
         fireEvent.press(screen.getByText('Change Location'));
@@ -166,43 +184,39 @@ describe('SurveyorConfirmLocationScreen', () => {
     it('logs when the boundary image is not ready and skips the pin layer', async () => {
         const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
-                buildContext({ surveyors: [] }),
-            ),
+            subscribeSurveyContext: mockSubscribeContext(buildContext({ surveyors: [] })),
             getBoundaryImage: jest.fn().mockResolvedValue({ status: 'pending' }),
         });
-        renderWithService(<SurveyorConfirmLocationScreen />, service);
+        renderWithActiveSurvey(<SurveyorConfirmLocationScreen />, service);
 
         await waitFor(() =>
             expect(logSpy).toHaveBeenCalledWith(
                 'Boundary image not available, status: pending',
             ),
         );
+        logSpy.mockRestore();
     });
 
-    it('logs errors when the survey context or boundary image fail', async () => {
+    it('logs an error when the boundary image fails to load', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = createMockService({
-            getSurveyContext: jest.fn().mockRejectedValue(new Error('ctx failed')),
+            subscribeSurveyContext: mockSubscribeContext(buildContext({ surveyors: [] })),
             getBoundaryImage: jest.fn().mockRejectedValue(new Error('img failed')),
         });
-        renderWithService(<SurveyorConfirmLocationScreen />, service);
+        renderWithActiveSurvey(<SurveyorConfirmLocationScreen />, service);
 
         await waitFor(() =>
             expect(errorSpy).toHaveBeenCalledWith(
-                'Error fetching survey context',
+                'Error fetching boundary image',
                 expect.any(Error),
             ),
         );
-        expect(errorSpy).toHaveBeenCalledWith(
-            'Error fetching boundary image',
-            expect.any(Error),
-        );
+        errorSpy.mockRestore();
     });
 
     it('creates a placeholder location and continues when none was set', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [buildSurveyor({ id: 'surveyor-1', locationId: null })],
                 }),
@@ -210,7 +224,7 @@ describe('SurveyorConfirmLocationScreen', () => {
             getBoundaryImage: jest.fn().mockResolvedValue(readyImage),
             addLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'location-1' })),
         });
-        renderWithService(<SurveyorConfirmLocationScreen />, service);
+        renderWithActiveSurvey(<SurveyorConfirmLocationScreen />, service);
 
         await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
         fireEvent.press(screen.getByText('Continue'));
@@ -233,13 +247,11 @@ describe('SurveyorConfirmLocationScreen', () => {
 
     it('creates a placeholder location even when the surveyor is not loaded', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
-                buildContext({ surveyors: [] }),
-            ),
+            subscribeSurveyContext: mockSubscribeContext(buildContext({ surveyors: [] })),
             getBoundaryImage: jest.fn().mockResolvedValue(readyImage),
             addLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'location-2' })),
         });
-        renderWithService(<SurveyorConfirmLocationScreen />, service);
+        renderWithActiveSurvey(<SurveyorConfirmLocationScreen />, service);
 
         await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
         fireEvent.press(screen.getByText('Continue'));
@@ -259,7 +271,7 @@ describe('SurveyorConfirmLocationScreen', () => {
 
     it('continues without changing status when the surveyor is not pending', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [
                         buildSurveyor({ id: 'surveyor-1', locationId: 'location-9', status: 'ready' }),
@@ -269,7 +281,7 @@ describe('SurveyorConfirmLocationScreen', () => {
             ),
             getBoundaryImage: jest.fn().mockResolvedValue(readyImage),
         });
-        renderWithService(<SurveyorConfirmLocationScreen />, service);
+        renderWithActiveSurvey(<SurveyorConfirmLocationScreen />, service);
 
         await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
         fireEvent.press(screen.getByText('Continue'));
@@ -290,7 +302,7 @@ describe('SurveyorConfirmLocationScreen', () => {
     it('logs an error and does not navigate when continuing fails', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [buildSurveyor({ id: 'surveyor-1', locationId: null })],
                 }),
@@ -298,7 +310,7 @@ describe('SurveyorConfirmLocationScreen', () => {
             getBoundaryImage: jest.fn().mockResolvedValue(readyImage),
             addLocation: jest.fn().mockRejectedValue(new Error('add failed')),
         });
-        renderWithService(<SurveyorConfirmLocationScreen />, service);
+        renderWithActiveSurvey(<SurveyorConfirmLocationScreen />, service);
 
         await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
         fireEvent.press(screen.getByText('Continue'));
@@ -313,5 +325,6 @@ describe('SurveyorConfirmLocationScreen', () => {
             'CapturePhotoScreen',
             expect.anything(),
         );
+        errorSpy.mockRestore();
     });
 });

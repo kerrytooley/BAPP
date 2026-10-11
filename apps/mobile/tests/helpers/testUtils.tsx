@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react';
-import { render } from '@testing-library/react-native';
-import type { SurveyService } from '@bapp/domain';
+import { act, render } from '@testing-library/react-native';
+import type { SurveyContext, SurveyService, Unsubscribe } from '@bapp/domain';
 import { SurveyServiceProvider } from '@services/surveyServiceContext';
+import { ActiveSurveyProvider } from '@services/ActiveSurveyProvider';
 import { buildContext, buildLocation, buildSurvey, buildSurveyor } from './factories';
 
 export type MockSurveyService = jest.Mocked<
@@ -9,6 +10,8 @@ export type MockSurveyService = jest.Mocked<
         SurveyService,
         | 'createSurvey'
         | 'getSurveyContext'
+        | 'subscribeSurveyContext'
+        | 'prefetchMedia'
         | 'updateSurvey'
         | 'setBoundaryImage'
         | 'getBoundaryImage'
@@ -27,11 +30,60 @@ export type MockSurveyService = jest.Mocked<
     >
 >;
 
+/**
+ * Builds a `subscribeSurveyContext` double that synchronously pushes a canned
+ * context to the callback (mirroring the cache-first repository) and returns a
+ * no-op unsubscribe. This is how the converted consumer screens receive their
+ * data via the ActiveSurveyProvider.
+ */
+export const mockSubscribeContext = (
+    context: SurveyContext = buildContext(),
+): MockSurveyService['subscribeSurveyContext'] =>
+    jest.fn((_surveyId: string, callback: (ctx: SurveyContext) => void): Unsubscribe => {
+        callback(context);
+        return jest.fn();
+    });
+
+/**
+ * A controllable `subscribeSurveyContext` double for write-then-render tests.
+ * `subscribe` emits `initial` synchronously (mirroring the cache-first
+ * repository) and remembers the callback; `emit(ctx)` pushes a follow-up
+ * context — the way the real subscription re-emits after a write hits the
+ * local cache. Emits are wrapped in `act` so state updates flush.
+ */
+export interface ControllableSubscription {
+    subscribe: MockSurveyService['subscribeSurveyContext'];
+    emit: (context: SurveyContext) => void;
+}
+
+export const createContextSubscription = (
+    initial: SurveyContext = buildContext(),
+): ControllableSubscription => {
+    let latest: ((ctx: SurveyContext) => void) | null = null;
+    const subscribe = jest.fn(
+        (_surveyId: string, callback: (ctx: SurveyContext) => void): Unsubscribe => {
+            latest = callback;
+            callback(initial);
+            return jest.fn(() => {
+                latest = null;
+            });
+        },
+    );
+    const emit = (context: SurveyContext) => {
+        act(() => {
+            latest?.(context);
+        });
+    };
+    return { subscribe, emit };
+};
+
 export const createMockService = (
     overrides: Partial<MockSurveyService> = {},
 ): MockSurveyService => ({
     createSurvey: jest.fn().mockResolvedValue(buildSurvey()),
     getSurveyContext: jest.fn().mockResolvedValue(buildContext()),
+    subscribeSurveyContext: mockSubscribeContext(),
+    prefetchMedia: jest.fn(),
     updateSurvey: jest.fn().mockResolvedValue(buildSurvey()),
     setBoundaryImage: jest.fn().mockResolvedValue(undefined),
     getBoundaryImage: jest.fn().mockResolvedValue({ status: 'none' }),
@@ -57,5 +109,21 @@ export const renderWithService = (
     render(
         <SurveyServiceProvider value={service as unknown as SurveyService}>
             {ui}
+        </SurveyServiceProvider>,
+    );
+
+/**
+ * Like `renderWithService`, but also wraps the screen in an ActiveSurveyProvider
+ * for the given `surveyId` — required by screens that read live data via
+ * `useActiveSurvey()`.
+ */
+export const renderWithActiveSurvey = (
+    ui: ReactElement,
+    service: MockSurveyService,
+    surveyId: string | undefined = 'survey-1',
+) =>
+    render(
+        <SurveyServiceProvider value={service as unknown as SurveyService}>
+            <ActiveSurveyProvider surveyId={surveyId}>{ui}</ActiveSurveyProvider>
         </SurveyServiceProvider>,
     );

@@ -11,7 +11,6 @@ import {
   collectionGroup,
   doc,
   getDocFromCache,
-  getDocs,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -26,6 +25,7 @@ import {
   stripUndefined,
   nowTimestamp,
   queueWrite,
+  getDocsCacheFirst,
 } from '../config/firestore-mapping';
 
 /** Surveyors live under `surveys/{surveyId}/surveyors/{id}`. */
@@ -66,12 +66,12 @@ export class FirebaseSurveyorRepository implements SurveyorRepository {
   }
 
   async findById(id: string): Promise<Surveyor | null> {
-    const snap = await getDocs(query(collectionGroup(getDb(), SUBCOLLECTION), where('id', '==', id)));
+    const snap = await getDocsCacheFirst(query(collectionGroup(getDb(), SUBCOLLECTION), where('id', '==', id)));
     return snap.empty ? null : fromSurveyorDoc(snap.docs[0]);
   }
 
   async findBySurveyId(surveyId: string): Promise<Surveyor[]> {
-    const snap = await getDocs(collection(getDb(), 'surveys', surveyId, SUBCOLLECTION));
+    const snap = await getDocsCacheFirst(collection(getDb(), 'surveys', surveyId, SUBCOLLECTION));
     return snap.docs.map(fromSurveyorDoc);
   }
 

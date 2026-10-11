@@ -58,7 +58,12 @@ import {
     buildLocation,
     buildSurveyor,
 } from '../../helpers/factories';
-import { createMockService, renderWithService } from '../../helpers/testUtils';
+import {
+    createContextSubscription,
+    createMockService,
+    mockSubscribeContext,
+    renderWithActiveSurvey,
+} from '../../helpers/testUtils';
 import {
     mockNavigate,
     resetNavigationMock,
@@ -78,84 +83,110 @@ const leadOnlyContext = () =>
 
 describe('AddSurveyorScreen', () => {
     it('creates a lead surveyor when the survey has none', async () => {
+        const lead = buildSurveyor({ id: 'lead-1', isLead: true, name: '' });
+        const sub = createContextSubscription(
+            buildContext({ surveyors: [], locations: [] }),
+        );
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
-                buildContext({ surveyors: [], locations: [] }),
-            ),
-            addSurveyor: jest.fn().mockResolvedValue(
-                buildSurveyor({ id: 'lead-1', isLead: true, name: '' }),
-            ),
+            subscribeSurveyContext: sub.subscribe,
+            addSurveyor: jest.fn().mockResolvedValue(lead),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() =>
             expect(service.addSurveyor).toHaveBeenCalledWith('survey-1', {
                 name: '',
                 isLead: true,
             }),
         );
+        // The created lead arrives via the subscription re-emitting.
+        sub.emit(buildContext({ surveyors: [lead] }));
         expect(screen.getByText('save-lead')).toBeOnTheScreen();
+    });
+
+    it('creates the lead only once even as the context re-emits', async () => {
+        const sub = createContextSubscription(
+            buildContext({ surveyors: [], locations: [] }),
+        );
+        const service = createMockService({
+            subscribeSurveyContext: sub.subscribe,
+            addSurveyor: jest.fn().mockResolvedValue(
+                buildSurveyor({ id: 'lead-1', isLead: true, name: '' }),
+            ),
+        });
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
+        await waitFor(() => expect(service.addSurveyor).toHaveBeenCalledTimes(1));
+        // A stale re-emit still reporting zero surveyors must not create another.
+        sub.emit(buildContext({ surveyors: [], locations: [] }));
+        expect(service.addSurveyor).toHaveBeenCalledTimes(1);
     });
 
     it('renders existing surveyors without creating a lead', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(leadOnlyContext()),
+            subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-lead')).toBeOnTheScreen());
         expect(service.addSurveyor).not.toHaveBeenCalled();
     });
 
-    it('logs an error when loading surveyors fails', async () => {
+    it('logs an error when creating the lead surveyor fails', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = createMockService({
-            getSurveyContext: jest.fn().mockRejectedValue(new Error('load failed')),
+            subscribeSurveyContext: mockSubscribeContext(
+                buildContext({ surveyors: [], locations: [] }),
+            ),
+            addSurveyor: jest.fn().mockRejectedValue(new Error('create failed')),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() =>
             expect(errorSpy).toHaveBeenCalledWith(
-                'Failed to load surveyors',
+                'Failed to create lead surveyor',
                 expect.any(Error),
             ),
         );
+        errorSpy.mockRestore();
     });
 
     it('loads a ready boundary image without error', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(leadOnlyContext()),
+            subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
             getBoundaryImage: jest.fn().mockResolvedValue({ status: 'ready', url: 'file://boundary.png' }),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalledWith('survey-1'));
         expect(errorSpy).not.toHaveBeenCalledWith(
             'Failed to fetch boundary image',
             expect.any(Error),
         );
+        errorSpy.mockRestore();
     });
 
     it('logs an error when the boundary image fails to load', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(leadOnlyContext()),
+            subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
             getBoundaryImage: jest.fn().mockRejectedValue(new Error('no image')),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() =>
             expect(errorSpy).toHaveBeenCalledWith(
                 'Failed to fetch boundary image',
                 expect.any(Error),
             ),
         );
+        errorSpy.mockRestore();
     });
 
-    it('adds another surveyor', async () => {
+    it('adds another surveyor, shown once the context re-emits', async () => {
+        const lead = buildSurveyor({ id: 'lead-1', isLead: true, name: 'Alice' });
+        const s2 = buildSurveyor({ id: 's2', isLead: false, name: '' });
+        const sub = createContextSubscription(buildContext({ surveyors: [lead] }));
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(leadOnlyContext()),
-            addSurveyor: jest.fn().mockResolvedValue(
-                buildSurveyor({ id: 's2', isLead: false, name: '' }),
-            ),
+            subscribeSurveyContext: sub.subscribe,
+            addSurveyor: jest.fn().mockResolvedValue(s2),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-lead')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Add More Surveyors'));
         await waitFor(() =>
@@ -164,12 +195,13 @@ describe('AddSurveyorScreen', () => {
                 isLead: false,
             }),
         );
+        sub.emit(buildContext({ surveyors: [lead, s2] }));
         expect(screen.getByText('save-blank')).toBeOnTheScreen();
     });
 
     it('removes a surveyor that has no location', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [
                         buildSurveyor({ id: 'lead-1', isLead: true, name: 'Alice' }),
@@ -179,7 +211,7 @@ describe('AddSurveyorScreen', () => {
                 }),
             ),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-Bob')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('close-Bob'));
         await waitFor(() => expect(service.removeSurveyor).toHaveBeenCalledWith('s2'));
@@ -188,7 +220,7 @@ describe('AddSurveyorScreen', () => {
 
     it('removes a surveyor and their location', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [
                         buildSurveyor({ id: 'lead-1', isLead: true, name: 'Alice' }),
@@ -198,7 +230,7 @@ describe('AddSurveyorScreen', () => {
                 }),
             ),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-Bob')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('close-Bob'));
         await waitFor(() =>
@@ -209,7 +241,7 @@ describe('AddSurveyorScreen', () => {
     it('logs an error when removing the location fails', async () => {
         const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [
                         buildSurveyor({ id: 'lead-1', isLead: true, name: 'Alice' }),
@@ -220,7 +252,7 @@ describe('AddSurveyorScreen', () => {
             ),
             removeLocation: jest.fn().mockRejectedValue(new Error('remove failed')),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-Bob')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('close-Bob'));
         await waitFor(() =>
@@ -229,13 +261,14 @@ describe('AddSurveyorScreen', () => {
                 expect.any(Error),
             ),
         );
+        logSpy.mockRestore();
     });
 
-    it('saves a surveyor name on end editing', async () => {
+    it('saves a surveyor name from the edit buffer on end editing', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(leadOnlyContext()),
+            subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-lead')).toBeOnTheScreen());
         fireEvent.changeText(screen.getByTestId('name-lead'), 'Alicia');
         fireEvent.press(screen.getByText('save-lead'));
@@ -249,10 +282,10 @@ describe('AddSurveyorScreen', () => {
     it('logs an error when saving a name fails', async () => {
         const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(leadOnlyContext()),
+            subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
             updateSurveyor: jest.fn().mockRejectedValue(new Error('save failed')),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-lead')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('save-lead'));
         await waitFor(() =>
@@ -261,14 +294,15 @@ describe('AddSurveyorScreen', () => {
                 expect.any(Error),
             ),
         );
+        logSpy.mockRestore();
     });
 
     it('adds a new location for a surveyor without one', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(leadOnlyContext()),
+            subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
             addLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'loc-new' })),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() =>
             expect(screen.getByText('add-location-lead')).toBeOnTheScreen(),
         );
@@ -286,7 +320,7 @@ describe('AddSurveyorScreen', () => {
 
     it('updates the existing location for a surveyor', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [
                         buildSurveyor({ id: 'lead-1', isLead: true, name: 'Alice', locationId: 'loc-1' }),
@@ -296,7 +330,7 @@ describe('AddSurveyorScreen', () => {
             ),
             updateLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'loc-1' })),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() =>
             expect(screen.getByText('add-location-lead')).toBeOnTheScreen(),
         );
@@ -311,9 +345,9 @@ describe('AddSurveyorScreen', () => {
 
     it('ignores a location submission when no surveyor is active', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(leadOnlyContext()),
+            subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() =>
             expect(screen.getByText('submit-location')).toBeOnTheScreen(),
         );
@@ -323,20 +357,27 @@ describe('AddSurveyorScreen', () => {
     });
 
     it('saves surveyors and continues to review, dropping blank entries', async () => {
+        const lead = buildSurveyor({ id: 'lead-1', isLead: true, name: 'Alice' });
+        const s2 = buildSurveyor({ id: 's2', isLead: false, name: '' });
+        const s3 = buildSurveyor({ id: 's3', isLead: false, name: '' });
+        const sub = createContextSubscription(buildContext({ surveyors: [lead] }));
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(leadOnlyContext()),
+            subscribeSurveyContext: sub.subscribe,
             addSurveyor: jest
                 .fn()
-                .mockResolvedValueOnce(buildSurveyor({ id: 's2', isLead: false, name: '' }))
-                .mockResolvedValueOnce(buildSurveyor({ id: 's3', isLead: false, name: '' })),
+                .mockResolvedValueOnce(s2)
+                .mockResolvedValueOnce(s3),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-lead')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByText('Add More Surveyors'));
+        sub.emit(buildContext({ surveyors: [lead, s2] }));
         await waitFor(() => expect(screen.getByTestId('name-blank')).toBeTruthy());
+        // Type into the second surveyor's buffer so it is no longer blank.
         fireEvent.changeText(screen.getByTestId('name-blank'), 'Bob');
         fireEvent.press(screen.getByText('Add More Surveyors'));
+        sub.emit(buildContext({ surveyors: [lead, s2, s3] }));
         await waitFor(() => expect(screen.getByText('save-blank')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByText('Continue'));
@@ -351,10 +392,10 @@ describe('AddSurveyorScreen', () => {
     it('logs an error when continuing to review fails', async () => {
         const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(leadOnlyContext()),
+            subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
             updateSurveyor: jest.fn().mockRejectedValue(new Error('save failed')),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-lead')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Continue'));
         await waitFor(() =>
@@ -364,13 +405,14 @@ describe('AddSurveyorScreen', () => {
             ),
         );
         expect(mockNavigate).not.toHaveBeenCalled();
+        logSpy.mockRestore();
     });
 
     it('skips straight to review', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(leadOnlyContext()),
+            subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-lead')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Skip'));
         expect(mockNavigate).toHaveBeenCalledWith('ReviewSurveyDetailsScreen', {
@@ -380,7 +422,7 @@ describe('AddSurveyorScreen', () => {
 
     it('updates and adds locations across multiple surveyors', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [
                         buildSurveyor({ id: 'lead-1', isLead: true, name: 'Alice' }),
@@ -393,7 +435,7 @@ describe('AddSurveyorScreen', () => {
             updateLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'loc-1' })),
             addLocation: jest.fn().mockResolvedValue(buildLocation({ id: 'loc-new' })),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('add-location-Bob')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByText('add-location-Bob'));
@@ -418,7 +460,7 @@ describe('AddSurveyorScreen', () => {
 
     it('continues with nullable surveyor names and located blank entries', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [
                         buildSurveyor({ id: 'lead-1', isLead: true, name: 'Alice' }),
@@ -430,7 +472,7 @@ describe('AddSurveyorScreen', () => {
                 }),
             ),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-Bob')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByText('Continue'));
@@ -446,14 +488,14 @@ describe('AddSurveyorScreen', () => {
 
     it('disables continue when the lead has no name', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [buildSurveyor({ id: 'lead-1', isLead: true, name: null })],
                     locations: [],
                 }),
             ),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-lead')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Continue'));
         expect(mockNavigate).not.toHaveBeenCalled();
@@ -461,7 +503,7 @@ describe('AddSurveyorScreen', () => {
 
     it('saves a null surveyor name as an empty string', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [
                         buildSurveyor({ id: 'lead-1', isLead: true, name: 'Alice' }),
@@ -471,7 +513,7 @@ describe('AddSurveyorScreen', () => {
                 }),
             ),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-blank')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('save-blank'));
         await waitFor(() =>
@@ -481,14 +523,14 @@ describe('AddSurveyorScreen', () => {
 
     it('disables continue when there is no lead surveyor', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [buildSurveyor({ id: 's-bob', isLead: false, name: 'Bob' })],
                     locations: [],
                 }),
             ),
         });
-        renderWithService(<AddSurveyorScreen />, service);
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-Bob')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Continue'));
         expect(mockNavigate).not.toHaveBeenCalled();

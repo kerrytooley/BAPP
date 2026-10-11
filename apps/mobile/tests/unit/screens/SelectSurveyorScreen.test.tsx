@@ -5,7 +5,11 @@ jest.mock('@react-navigation/native', () =>
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { SelectSurveyorScreen } from '@screens/Surveyor/SelectSurveyorScreen';
 import { buildContext, buildSurveyor } from '../../helpers/factories';
-import { createMockService, renderWithService } from '../../helpers/testUtils';
+import {
+    createMockService,
+    mockSubscribeContext,
+    renderWithActiveSurvey,
+} from '../../helpers/testUtils';
 import {
     mockNavigate,
     resetNavigationMock,
@@ -28,9 +32,9 @@ const context = () =>
 describe('SelectSurveyorScreen', () => {
     it('lists the lead and names, with a fallback for missing names', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(context()),
+            subscribeSurveyContext: mockSubscribeContext(context()),
         });
-        renderWithService(<SelectSurveyorScreen />, service);
+        renderWithActiveSurvey(<SelectSurveyorScreen />, service);
         await waitFor(() =>
             expect(screen.getByText('Lead Surveyor: Ada')).toBeOnTheScreen(),
         );
@@ -39,9 +43,9 @@ describe('SelectSurveyorScreen', () => {
 
     it('navigates to confirm the chosen surveyor', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(context()),
+            subscribeSurveyContext: mockSubscribeContext(context()),
         });
-        renderWithService(<SelectSurveyorScreen />, service);
+        renderWithActiveSurvey(<SelectSurveyorScreen />, service);
         await waitFor(() =>
             expect(screen.getByText('Lead Surveyor: Ada')).toBeOnTheScreen(),
         );
@@ -50,16 +54,5 @@ describe('SelectSurveyorScreen', () => {
             surveyId: 'survey-1',
             surveyorId: 'lead-1',
         });
-    });
-
-    it('logs an error when the surveyors fail to load', async () => {
-        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
-        const service = createMockService({
-            getSurveyContext: jest.fn().mockRejectedValue(new Error('load failed')),
-        });
-        renderWithService(<SelectSurveyorScreen />, service);
-        await waitFor(() =>
-            expect(errorSpy).toHaveBeenCalledWith('Error: unable to fetch surveyors'),
-        );
     });
 });

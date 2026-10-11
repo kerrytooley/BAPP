@@ -2,13 +2,14 @@ import { BackButton, Button } from "@components/Button";
 import { CountdownClock } from "@components/CountdownClock";
 import { PreviousEntriesSection } from "@components/PreviousEntriesSection";
 import { screen } from "@theme/screen";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { useSurveyService } from "@services/surveyServiceContext";
-import { Observation, Survey } from "@bapp/domain";
+import { useActiveSurvey } from "@services/ActiveSurveyProvider";
+import { Observation } from "@bapp/domain";
 import { Toast } from "@components/Toast";
 
 
@@ -18,15 +19,12 @@ export function SurveyScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const { surveyId, surveyorId, locationId } = useRoute<RouteProp<SurveyorStackParamList, 'SurveyScreen'>>().params;
     const service = useSurveyService();
+    const { context } = useActiveSurvey();
 
-    const [observations, setObservations] = useState<Observation[]>([]);
-    const [survey, setSurvey] = useState<Survey>();
+    const survey = context?.survey;
+    const observations = context?.observations.filter((observation) => observation.surveyorId === surveyorId) ?? [];
+
     const [toast, setToast] = useState<{ message: string; undo: () => void }>();
-
-    const applyObservation = (updated: Observation) => {
-        setObservations((prev) =>
-            prev.map((o) => (o.id === updated.id ? updated : o)));
-    };
 
     const showToast = (message: string, previous: Observation) => {
         setToast({
@@ -34,12 +32,11 @@ export function SurveyScreen(): React.JSX.Element {
             undo: async () => {
                 setToast(undefined);
                 try {
-                    const reverted = await service.updateObservation(previous.id, {
+                    await service.updateObservation(previous.id, {
                         seenCount: previous.seenCount,
                         heardCount: previous.heardCount,
                         lastSeenAt: previous.lastSeenAt,
                     });
-                    applyObservation(reverted);
                 } catch (e) {
                     console.error("Error undoing count update: ", previous.id, e);
                 }
@@ -50,26 +47,9 @@ export function SurveyScreen(): React.JSX.Element {
     const formatTime = (date: Date) =>
         date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-    useEffect(() => {
-        const loadContext = async () => {
-            try {
-                const context = await service.getSurveyContext(surveyId);
-                const surveyorObservations = context.observations.filter((observation) => observation.surveyorId === surveyorId);
-                setObservations(surveyorObservations);
-                setSurvey(context.survey);
-            } catch (e) {
-                console.error("Error loading survey context", e);
-            }
-        };
-        void loadContext();
-        const unsubscribe = navigation.addListener("focus", () => { void loadContext(); });
-        return unsubscribe;
-    }, [navigation, service, surveyId, surveyorId]);
-
     const addHeard = async (observation: Observation) => {
         try {
             const updatedObservation = await service.updateObservation(observation.id, { heardCount: observation.heardCount + 1, lastSeenAt: new Date() });
-            applyObservation(updatedObservation);
             showToast(
                 `Heard count updated to ${updatedObservation.heardCount}. Last seen ${updatedObservation.lastSeenAt ? formatTime(updatedObservation.lastSeenAt) : ""}`.trim(),
                 observation,
@@ -82,7 +62,6 @@ export function SurveyScreen(): React.JSX.Element {
     const addSeen = async (observation: Observation) => {
         try {
             const updatedObservation = await service.updateObservation(observation.id, { seenCount: observation.seenCount + 1, lastSeenAt: new Date() })
-            applyObservation(updatedObservation);
             showToast(
                 `Seen count updated to ${updatedObservation.seenCount}. Last seen ${updatedObservation.lastSeenAt ? formatTime(updatedObservation.lastSeenAt) : ""}`.trim(),
                 observation,

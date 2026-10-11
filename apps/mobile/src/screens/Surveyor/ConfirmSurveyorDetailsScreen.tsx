@@ -5,9 +5,9 @@ import { screen } from "@theme/screen";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { BackButton, Button, InlineButton } from "@components/Button";
 import { Title } from "@components/Titles";
-import { BoundaryPosition, Survey, Surveyor } from "@bapp/domain";
 import { useEffect, useState } from "react";
 import { useSurveyService } from "@services/surveyServiceContext";
+import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { SummaryGroup } from "@components/SummaryRow";
 import { displayValue } from "@utils/displayValue";
 import { DocumentPreview } from "@components/DocumentPreview";
@@ -19,28 +19,19 @@ export function ConfirmSurveyorDetailsScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const service = useSurveyService();
     const { surveyId, surveyorId } = useRoute<RouteProp<SurveyorStackParamList, 'ConfirmSurveyorDetailsScreen'>>().params;
-    const [surveyor, setSurveyor] = useState<Surveyor>();
-    const [survey, setSurvey] = useState<Survey>();
+    const { context } = useActiveSurvey();
     const [boundaryImage, setBoundaryImage] = useState<string | null>();
-    const [positions, setPositions] = useState<BoundaryPosition[]>([]);
+
+    const survey = context?.survey;
+    const surveyor = context?.surveyors.find((surveyor) => surveyor?.id == surveyorId);
+    const positions = surveyor?.isLead
+        ? (context?.locations.flatMap((location) => location.boundaryPosition ?? []) ?? [])
+        : (context?.locations
+            .filter((location) => location.id === surveyor?.locationId)
+            .flatMap((location) => location.boundaryPosition ?? []) ?? []);
 
     useEffect(() => {
-        const loadSurveyor = async () => {
-            try {
-                const surveyContext = await service.getSurveyContext(surveyId);
-                const currentSurveyor = surveyContext.surveyors.find((surveyor) => surveyor?.id == surveyorId)
-                setSurveyor(currentSurveyor);
-                setSurvey(surveyContext.survey);
-                const positions = currentSurveyor?.isLead
-                    ? surveyContext.locations.flatMap((location) => location.boundaryPosition ?? [])
-                    : surveyContext.locations
-                        .filter((location) => location.id === currentSurveyor?.locationId)
-                        .flatMap((location) => location.boundaryPosition ?? []);
-                setPositions(positions);
-
-            } catch (e) {
-                console.error("Error: unable to fetch survey context", e)
-            }
+        const loadBoundary = async () => {
             try {
                 const boundary = await service.getBoundaryImage(surveyId)
                 setBoundaryImage(boundary.status === 'ready' ? boundary.url : null);
@@ -48,8 +39,8 @@ export function ConfirmSurveyorDetailsScreen(): React.JSX.Element {
                 console.error("Error: unable to fetch boundary image", e)
             }
         }
-        loadSurveyor();
-    }, [service, surveyId, surveyorId])
+        loadBoundary();
+    }, [service, surveyId])
 
     return (
         <View style={screen.justifyScreen} >

@@ -1,13 +1,12 @@
 import { Title } from "@components/Titles";
 import { screen } from "@theme/screen";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { useSurveyService } from "@services/surveyServiceContext";
+import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { BackButton, Button, InlineButton } from "@components/Button";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Survey } from "@bapp/domain";
 import { formatDate } from "@utils/dateTimeUtils";
 import ClipboardIllustration from "@assets/illustrations/clipboard.svg"
 import { textStyles } from "@theme/fonts";
@@ -19,21 +18,8 @@ export function CodeConfirmationScreen(
     const navigation = useNavigation<Nav>();
     const { surveyId } = useRoute<RouteProp<SurveyorStackParamList, 'CodeConfirmationScreen'>>().params;
 
-    const service = useSurveyService();
-    const [survey, setSurvey] = useState<Survey>();
-
-    useEffect(() => {
-        const loadSurvey = async () => {
-            try {
-                const { survey } = await service.getSurveyContext(surveyId);
-                setSurvey(survey);
-            } catch (e) {
-                console.error('getSurveyContext failed:', e);
-            }
-        };
-
-        loadSurvey();
-    }, [service, surveyId])
+    const { context } = useActiveSurvey();
+    const survey = context?.survey;
 
     const surveyTitle = survey?.name && survey?.postcode
         ? `${survey.name} - ${survey.postcode}`

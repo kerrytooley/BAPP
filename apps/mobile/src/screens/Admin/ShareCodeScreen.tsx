@@ -1,14 +1,14 @@
 import { BackButton, Button } from "@components/Button";
 import { RootStackParamList } from "@navigators/index";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { CompositeNavigationProp, RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { CompositeNavigationProp, useNavigation } from "@react-navigation/native";
 import { screen } from "@theme/screen";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Title } from "@components/Titles";
 import { CodeShare } from "@components/CodeShare";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
-import { useSurveyService } from "@services/surveyServiceContext";
+import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import SurveyorIllustration from "@assets/illustrations/surveyors.svg"
 
 type Nav = CompositeNavigationProp<
@@ -18,21 +18,8 @@ type Nav = CompositeNavigationProp<
 
 export function ShareCodeScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
-    const { surveyId } = useRoute<RouteProp<AdminStackParamList, "ShareCodeScreen">>().params;
-    const service = useSurveyService();
-    const [surveyorCode, setSurveyorCode] = useState<string>();
-
-    useEffect(() => {
-        const loadSurvey = async () => {
-            try {
-                const surveyContext = service.getSurveyContext(surveyId)
-                setSurveyorCode((await surveyContext).survey.surveyorCode)
-            } catch (e) {
-                console.error("failed to load survey", e)
-            }
-        }
-        loadSurvey();
-    }, [service, surveyId])
+    const { context } = useActiveSurvey();
+    const surveyorCode = context?.survey.surveyorCode;
 
     return (
         <View style={screen.justifyScreen} >

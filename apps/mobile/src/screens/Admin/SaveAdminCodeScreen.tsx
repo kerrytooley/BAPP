@@ -6,9 +6,9 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { screen } from "@theme/screen";
 import { colours } from "@theme/colours";
 import { fonts, textStyles } from "@theme/fonts";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { useSurveyService } from "@services/surveyServiceContext";
+import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { CodeShare } from "@components/CodeShare";
 import KeyIllustration from "@assets/illustrations/key.svg"
 
@@ -17,20 +17,8 @@ type Nav = NativeStackNavigationProp<AdminStackParamList>;
 export function SaveAdminCodeScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const { surveyId } = useRoute<RouteProp<AdminStackParamList, "SaveAdminCodeScreen">>().params;
-    const service = useSurveyService();
-    const [adminCode, setAdminCode] = useState<string>();
-
-    useEffect(() => {
-        const loadSurvey = async () => {
-            try {
-                const survey = await service.getSurvey(surveyId);
-                setAdminCode(survey.adminCode);
-            } catch (e) {
-                console.error("failed to load survey", e);
-            }
-        };
-        loadSurvey();
-    }, [service, surveyId]);
+    const { context } = useActiveSurvey();
+    const adminCode = context?.survey.adminCode;
 
     return (
         <View style={screen.justifyScreen}>

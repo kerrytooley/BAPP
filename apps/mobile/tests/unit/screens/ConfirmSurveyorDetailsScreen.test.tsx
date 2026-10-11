@@ -6,7 +6,11 @@ import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { ConfirmSurveyorDetailsScreen } from '@screens/Surveyor/ConfirmSurveyorDetailsScreen';
 import { DocumentPreview } from '@components/DocumentPreview';
 import { buildContext, buildLocation, buildSurvey, buildSurveyor } from '../../helpers/factories';
-import { createMockService, renderWithService } from '../../helpers/testUtils';
+import {
+    createMockService,
+    mockSubscribeContext,
+    renderWithActiveSurvey,
+} from '../../helpers/testUtils';
 import {
     mockNavigate,
     resetNavigationMock,
@@ -36,13 +40,13 @@ const positionedLocations = [
 describe('ConfirmSurveyorDetailsScreen', () => {
     it('shows the lead surveyor summary and continues to weather conditions', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(context(true)),
+            subscribeSurveyContext: mockSubscribeContext(context(true)),
             getBoundaryImage: jest.fn().mockResolvedValue({
                 status: 'ready',
                 url: 'https://img/boundary.jpg',
             }),
         });
-        renderWithService(<ConfirmSurveyorDetailsScreen />, service);
+        renderWithActiveSurvey(<ConfirmSurveyorDetailsScreen />, service);
         await waitFor(() =>
             expect(screen.getByText('Lead Surveyor')).toBeOnTheScreen(),
         );
@@ -56,14 +60,14 @@ describe('ConfirmSurveyorDetailsScreen', () => {
 
     it('passes all positioned locations to a lead surveyor', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [buildSurveyor({ id: 'surveyor-1', isLead: true })],
                     locations: positionedLocations,
                 }),
             ),
         });
-        renderWithService(<ConfirmSurveyorDetailsScreen />, service);
+        renderWithActiveSurvey(<ConfirmSurveyorDetailsScreen />, service);
 
         await waitFor(() =>
             expect(DocumentPreview).toHaveBeenLastCalledWith(
@@ -75,14 +79,14 @@ describe('ConfirmSurveyorDetailsScreen', () => {
 
     it('passes only the assigned positioned location to a non-lead surveyor', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(
+            subscribeSurveyContext: mockSubscribeContext(
                 buildContext({
                     surveyors: [buildSurveyor({ id: 'surveyor-1', isLead: false, locationId: 'location-2' })],
                     locations: positionedLocations,
                 }),
             ),
         });
-        renderWithService(<ConfirmSurveyorDetailsScreen />, service);
+        renderWithActiveSurvey(<ConfirmSurveyorDetailsScreen />, service);
 
         await waitFor(() =>
             expect(DocumentPreview).toHaveBeenLastCalledWith(
@@ -94,10 +98,10 @@ describe('ConfirmSurveyorDetailsScreen', () => {
 
     it('continues a non-lead surveyor to confirm their location', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(context(false, 'Bob')),
+            subscribeSurveyContext: mockSubscribeContext(context(false, 'Bob')),
             getBoundaryImage: jest.fn().mockResolvedValue({ status: 'none' }),
         });
-        renderWithService(<ConfirmSurveyorDetailsScreen />, service);
+        renderWithActiveSurvey(<ConfirmSurveyorDetailsScreen />, service);
         await waitFor(() => expect(screen.getByText('Bob')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Continue'));
         expect(mockNavigate).toHaveBeenCalledWith('SurveyorConfirmLocationScreen', {
@@ -108,10 +112,10 @@ describe('ConfirmSurveyorDetailsScreen', () => {
 
     it('returns to the code entry when the details do not look right', async () => {
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(context(true)),
+            subscribeSurveyContext: mockSubscribeContext(context(true)),
             getBoundaryImage: jest.fn().mockResolvedValue({ status: 'none' }),
         });
-        renderWithService(<ConfirmSurveyorDetailsScreen />, service);
+        renderWithActiveSurvey(<ConfirmSurveyorDetailsScreen />, service);
         await waitFor(() =>
             expect(screen.getByText('Lead Surveyor')).toBeOnTheScreen(),
         );
@@ -119,32 +123,19 @@ describe('ConfirmSurveyorDetailsScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('InputCodeScreen');
     });
 
-    it('logs an error when the survey context fails to load', async () => {
-        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
-        const service = createMockService({
-            getSurveyContext: jest.fn().mockRejectedValue(new Error('load failed')),
-        });
-        renderWithService(<ConfirmSurveyorDetailsScreen />, service);
-        await waitFor(() =>
-            expect(errorSpy).toHaveBeenCalledWith(
-                'Error: unable to fetch survey context',
-                expect.any(Error),
-            ),
-        );
-    });
-
     it('logs an error when the boundary image fails to load', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = createMockService({
-            getSurveyContext: jest.fn().mockResolvedValue(context(true)),
+            subscribeSurveyContext: mockSubscribeContext(context(true)),
             getBoundaryImage: jest.fn().mockRejectedValue(new Error('img failed')),
         });
-        renderWithService(<ConfirmSurveyorDetailsScreen />, service);
+        renderWithActiveSurvey(<ConfirmSurveyorDetailsScreen />, service);
         await waitFor(() =>
             expect(errorSpy).toHaveBeenCalledWith(
                 'Error: unable to fetch boundary image',
                 expect.any(Error),
             ),
         );
+        errorSpy.mockRestore();
     });
 });

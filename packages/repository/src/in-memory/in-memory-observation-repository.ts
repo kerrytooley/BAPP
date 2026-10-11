@@ -52,6 +52,7 @@ export class InMemoryObservationRepository implements ObservationRepository {
     }
   );
   private listeners = new Map<string, Set<(observations: Observation[]) => void>>();
+  private surveyListeners = new Map<string, Set<(observations: Observation[]) => void>>();
 
   async create(input: CreateObservationInput): Promise<Observation> {
     const now = new Date();
@@ -65,6 +66,7 @@ export class InMemoryObservationRepository implements ObservationRepository {
     };
     this.store.set(observation.id, observation);
     this.notify(observation.locationId);
+    this.notifySurvey(observation.surveyId);
     return clone(observation);
   }
 
@@ -87,13 +89,17 @@ export class InMemoryObservationRepository implements ObservationRepository {
     const updated: Observation = { ...existing, ...input, updatedAt: new Date() };
     this.store.set(id, updated);
     this.notify(updated.locationId);
+    this.notifySurvey(updated.surveyId);
     return clone(updated);
   }
 
   async delete(id: string): Promise<void> {
     const existing = this.store.get(id);
     this.store.delete(id);
-    if (existing) this.notify(existing.locationId);
+    if (existing) {
+      this.notify(existing.locationId);
+      this.notifySurvey(existing.surveyId);
+    }
   }
 
   subscribeByLocationId(locationId: string, callback: (observations: Observation[]) => void): Unsubscribe {
@@ -103,14 +109,32 @@ export class InMemoryObservationRepository implements ObservationRepository {
     return () => { this.listeners.get(locationId)?.delete(callback); };
   }
 
+  subscribeBySurveyId(surveyId: string, callback: (observations: Observation[]) => void): Unsubscribe {
+    if (!this.surveyListeners.has(surveyId)) this.surveyListeners.set(surveyId, new Set());
+    this.surveyListeners.get(surveyId)!.add(callback);
+    callback(this.getBySurveyId(surveyId).map(clone));
+    return () => { this.surveyListeners.get(surveyId)?.delete(callback); };
+  }
+
   private getByLocationId(locationId: string): Observation[] {
     return [...this.store.values()].filter(o => o.locationId === locationId);
+  }
+
+  private getBySurveyId(surveyId: string): Observation[] {
+    return [...this.store.values()].filter(o => o.surveyId === surveyId);
   }
 
   private notify(locationId: string): void {
     const cbs = this.listeners.get(locationId);
     if (!cbs) return;
     const value = this.getByLocationId(locationId).map(clone);
+    for (const cb of cbs) cb(value);
+  }
+
+  private notifySurvey(surveyId: string): void {
+    const cbs = this.surveyListeners.get(surveyId);
+    if (!cbs) return;
+    const value = this.getBySurveyId(surveyId).map(clone);
     for (const cb of cbs) cb(value);
   }
 }
