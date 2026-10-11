@@ -5,7 +5,6 @@ import { nextSetupStep, type SetupStep, type SetupStepKey, type StepRoute } from
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
-/** Push (not navigate) so going from one photo step to the other opens a fresh screen. */
 export function openSetupStep(navigation: Nav, step: SetupStep): void {
     const push = navigation.push as unknown as (name: StepRoute["name"], params: StepRoute["params"]) => void;
     push(step.route.name, step.route.params);

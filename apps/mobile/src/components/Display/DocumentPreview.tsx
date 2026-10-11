@@ -9,7 +9,6 @@ import { BoundaryPosition } from "@bapp/domain";
 export interface DocumentPreviewProps {
     imageUri: string | undefined | null,
     values: BoundaryPosition[]
-    /** Shown once loading has finished (`imageUri === null`) and there is no image. */
     emptyMessage?: string
 }
 

@@ -8,9 +8,7 @@ export interface RecentSurvey {
     role: RecentRole;
     name: string | null;
     postcode: string | null;
-    /** Surveyor role only: who they picked, so reopening skips Select Surveyor. */
     surveyorId?: string;
-    /** ISO strings so the list round-trips through JSON. */
     surveyCreatedAt: string;
     lastOpenedAt: string;
 }
@@ -24,7 +22,6 @@ const sameEntry = (a: Pick<RecentSurvey, "surveyId" | "role">, b: Pick<RecentSur
 
 const byLastOpened = (a: RecentSurvey, b: RecentSurvey) => b.lastOpenedAt.localeCompare(a.lastOpenedAt);
 
-/** Insert or replace an entry (keyed by survey + role), keeping any remembered surveyor. */
 export function upsertRecent(list: RecentSurvey[], entry: RecentSurvey): RecentSurvey[] {
     const existing = list.find((e) => sameEntry(e, entry));
     const merged = { ...entry, surveyorId: entry.surveyorId ?? existing?.surveyorId };
@@ -35,7 +32,6 @@ export function removeRecent(list: RecentSurvey[], key: Pick<RecentSurvey, "surv
     return list.filter((e) => !sameEntry(e, key));
 }
 
-/** Drop surveys past their expiry (90 days after the survey was created). */
 export function pruneExpired(list: RecentSurvey[], now: Date): RecentSurvey[] {
     const cutoff = now.getTime() - RECENT_SURVEY_LIFETIME_DAYS * DAY_MS;
     return list.filter((e) => new Date(e.surveyCreatedAt).getTime() >= cutoff);
@@ -91,7 +87,6 @@ export async function recordRecentSurvey(
             lastOpenedAt: now.toISOString(),
         }));
     } catch (e) {
-        // Remembering a survey is best-effort; never block the flow that triggered it.
         console.error("Failed to record recent survey", e);
     }
 }

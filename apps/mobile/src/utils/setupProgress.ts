@@ -6,7 +6,6 @@ export type StepRoute = {
     [K in keyof SurveyorStackParamList]: { name: K; params: SurveyorStackParamList[K] }
 }["WeatherConditionsScreen" | "SurveyorConfirmLocationScreen" | "CapturePhotoScreen" | "EquipmentDetailsScreen"];
 
-/** Setup steps in flow order; keys match the surveyor status rows. */
 export const SETUP_STEP_KEYS = ["startWeather", "location", "frontView", "equipmentPhoto", "equipmentDetails"] as const;
 export type SetupStepKey = typeof SETUP_STEP_KEYS[number];
 
@@ -26,7 +25,6 @@ export interface SetupStep {
 
 const isStepKey = (key: string): key is SetupStepKey => (SETUP_STEP_KEYS as readonly string[]).includes(key);
 
-/** Setup steps whose status is missing or incomplete, in flow order. Each route opens in resume mode. */
 export function getIncompleteSetupSteps(context: SurveyContext, surveyorId: string): SetupStep[] {
     const surveyor = context.surveyors.find((s) => s.id === surveyorId);
     const location = context.locations.find((l) => l.id === surveyor?.locationId);
@@ -53,7 +51,6 @@ export function getIncompleteSetupSteps(context: SurveyContext, surveyorId: stri
         .map((key) => ({ key, label: STEP_LABELS[key], route: routes[key] }));
 }
 
-/** The next unfinished step after `current` in flow order, if any. */
 export function nextSetupStep(context: SurveyContext, surveyorId: string, current: SetupStepKey): SetupStep | undefined {
     const after = SETUP_STEP_KEYS.indexOf(current);
     return getIncompleteSetupSteps(context, surveyorId).find((step) => SETUP_STEP_KEYS.indexOf(step.key) > after);

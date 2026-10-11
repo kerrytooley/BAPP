@@ -5,9 +5,7 @@ import { Home } from "./Icons";
 import { ConfirmModal } from "../Modals/ConfirmModal";
 
 export interface ScreenHeaderProps {
-    // Loosely typed so any stack's navigation object fits; 'Welcome' lives on the root stack.
     navigation: { goBack: () => void; navigate: (...args: never[]) => void };
-    /** Replaces the default "confirm then go home" behaviour. */
     onHome?: () => void;
 }
 

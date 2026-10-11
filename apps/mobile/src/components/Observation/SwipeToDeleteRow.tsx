@@ -18,7 +18,6 @@ interface SwipeToDeleteRowProps {
 }
 
 const DELETE_WIDTH = 90;
-// Red extends this far under the tile so its rounded corner sits over it, hiding the hard edge.
 const OVERLAP = 24;
 
 export const SwipeToDeleteRow = ({

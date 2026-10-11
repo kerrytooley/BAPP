@@ -9,15 +9,6 @@ interface ActiveSurvey {
 
 const ActiveSurveyContext = createContext<ActiveSurvey | null>(null);
 
-/**
- * Holds a single live subscription for the currently-open survey and shares the
- * resulting `SurveyContext` with every consumer screen. Cache-first and
- * offline-safe: the service pushes the locally-cached context immediately and
- * again whenever the survey or its children change, so screens never refetch.
- *
- * The active `surveyId` is passed in as a prop (the App derives it from
- * navigation state) rather than read here, keeping the provider testable.
- */
 export function ActiveSurveyProvider({
     surveyId,
     children,

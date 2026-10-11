@@ -22,7 +22,6 @@ export function AdminCodeScreen(): React.JSX.Element {
     const [notFound, setNotFound] = useState(false);
     const service = useSurveyService();
     const codeError = validateSurveyCode(code);
-    // Only nag once the code is full length or has a character that can never be valid.
     const showCodeError = !!codeError && (code.trim().length >= 6 || /[^a-z0-9]/i.test(code.trim()));
 
     return (

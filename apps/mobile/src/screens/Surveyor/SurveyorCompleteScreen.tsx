@@ -15,7 +15,6 @@ type Nav = CompositeNavigationProp<
     NativeStackNavigationProp<RootStackParamList>
 >;
 
-/** The only place a surveyor can reach once they've ended their survey: read-only from here. */
 export function SurveyorCompleteScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const { surveyId, surveyorId, locationId } = useRoute<RouteProp<SurveyorStackParamList, "SurveyorCompleteScreen">>().params;

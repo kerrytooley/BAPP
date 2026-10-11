@@ -11,12 +11,10 @@ export type SurveyorRoute =
     | RouteFor<"CapturePhotoScreen">
     | RouteFor<"ConfirmSurveyorDetailsScreen">;
 
-/** Where a returning surveyor should land, based on how far through the survey they are. */
 export function routeForSurveyor(context: SurveyContext, surveyor: Surveyor): SurveyorRoute {
     const surveyId = context.survey.id;
     const surveyorId = surveyor.id;
 
-    // Checked first: a completed survey is read-only for the surveyor, setup included.
     if (surveyor.status === "done") {
         return { name: "SurveyorCompleteScreen", params: { surveyId, surveyorId, locationId: surveyor.locationId ?? "" } };
     }

@@ -6,7 +6,6 @@ export interface StatusRow {
     key: string;
     label: string;
     status: ItemStatus;
-    /** Optional extra wording shown instead of the plain status label. */
     detail?: string;
 }
 
@@ -24,7 +23,6 @@ function filled(value: unknown): boolean {
     return typeof value === "string" ? !isBlank(value) : value != null;
 }
 
-/** All filled = complete, some = incomplete, none (or no record at all) = missing. */
 function fieldsStatus(values: unknown[] | null | undefined): ItemStatus {
     if (!values) return "missing";
     const count = values.filter(filled).length;
@@ -64,7 +62,6 @@ export function getSetupRows(context: SurveyContext): StatusRow[] {
     ];
 }
 
-/** Setup progress only; observations and ending the survey are reported via the surveyor's status. */
 export function getSurveyorRows(context: SurveyContext, surveyorId: string): StatusRow[] {
     const surveyor = context.surveyors.find((s) => s.id === surveyorId);
     if (!surveyor) return [];

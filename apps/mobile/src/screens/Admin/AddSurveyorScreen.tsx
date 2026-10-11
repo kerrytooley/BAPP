@@ -30,17 +30,10 @@ export function AddSurveyorScreen(): React.JSX.Element {
     const [boundaryImageUrl, setBoundaryImageUrl] = useState<string | null>(null);
     const [boundaryStatus, setBoundaryStatus] = useState<ImageResult["status"]>("none");
     const [showBoundaryRequired, setShowBoundaryRequired] = useState(false);
-    // Local edit buffer keyed by surveyor id, so typing isn't clobbered by
-    // subscription re-emits. Render the buffer value if present, else context.
     const [nameDrafts, setNameDrafts] = useState<Record<string, string>>({});
     const sheetRef = useRef<BottomSheetModal>(null);
-    // Guards the lead-surveyor auto-create so a subscription re-emit (while the
-    // write is still catching up) can't fire it twice — the root cause of the
-    // duplicate / linked lead surveyor boxes.
     const leadCreated = useRef(false);
 
-    // Auto-create a single empty lead when the survey has none yet. The created
-    // lead appears via the subscription; we never setState it here.
     useEffect(() => {
         if (!context || leadCreated.current) return;
         if (context.surveyors.length === 0) {
@@ -53,7 +46,6 @@ export function AddSurveyorScreen(): React.JSX.Element {
     const boundary = context?.survey.boundary;
     const boundaryKey = boundary ? `${boundary.sourceRef}|${boundary.renderRef}|${boundary.status}` : null;
 
-    // Keyed on the live boundary so an upload (or a processing -> ready writeback) is picked up.
     useEffect(() => {
         let cancelled = false;
         service.getBoundaryImage(surveyId)
@@ -78,7 +70,7 @@ export function AddSurveyorScreen(): React.JSX.Element {
         sheetRef.current?.present();
     };
 
-    // add, remove and save actions — the list itself re-emits via the subscription
+    // add, remove and save actions 
     const addSurveyor = async () => {
         try {
             const newSurveyor = await service.addSurveyor(surveyId, { name: "", isLead: false });
@@ -190,7 +182,6 @@ export function AddSurveyorScreen(): React.JSX.Element {
                     disabled={[!canContinue, false]}
                     onPress={[
                         continueToReview,
-                        // Drafts are discarded: Skip/Cancel never save.
                         goNext
                     ]}
                 />

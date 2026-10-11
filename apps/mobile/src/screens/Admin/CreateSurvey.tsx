@@ -36,7 +36,6 @@ export function CreateSurvey(): React.JSX.Element {
     const [originalTiming, setOriginalTiming] = useState<{ date?: number; start?: number }>({});
     const nameError = validateRequiredText(name, "Survey name");
     const postcodeError = validatePostcode(postcode);
-    // When editing, an already-past start only blocks saving if the admin changes it.
     const timingChanged = !editing
         || date?.getTime() !== originalTiming.date
         || startTime?.getTime() !== originalTiming.start;
@@ -48,7 +47,6 @@ export function CreateSurvey(): React.JSX.Element {
     const fieldY = useRef<Record<string, number>>({});
     const createdSurveyId = useRef<string | undefined>(editing ? editParams.surveyId : undefined);
 
-    // Seed once so later subscription re-emits don't overwrite in-progress edits.
     const seeded = useRef(false);
     useEffect(() => {
         const survey = context?.survey;

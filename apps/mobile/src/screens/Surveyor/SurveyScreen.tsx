@@ -148,7 +148,6 @@ export function SurveyScreen(): React.JSX.Element {
     };
 
     const returnHome = () => {
-        // Writes are already persisted (offline-first), so this is just a pause the surveyor can cancel.
         returnHomeTimer.current = setTimeout(() => {
             setConfirmation(undefined);
             navigation.navigate("Welcome");
@@ -165,7 +164,6 @@ export function SurveyScreen(): React.JSX.Element {
 
     useEffect(() => () => clearTimeout(returnHomeTimer.current), []);
 
-    // Reaching this screen means the surveyor has started; returning visits come straight back here.
     const surveyorStatus = surveyor?.status;
     useEffect(() => {
         if (surveyorStatus !== "pending" && surveyorStatus !== "confirmed") return;
@@ -179,7 +177,6 @@ export function SurveyScreen(): React.JSX.Element {
 
     useEffect(() => {
         const timers: ReturnType<typeof setTimeout>[] = [];
-        // Only times still ahead are scheduled, so re-opening the screen later doesn't re-prompt.
         const schedule = (timeMs: number | undefined, prompt: () => void) => {
             const delay = timeMs === undefined ? -1 : timeMs - Date.now();
             if (delay > 0) timers.push(setTimeout(prompt, delay));
@@ -199,7 +196,6 @@ export function SurveyScreen(): React.JSX.Element {
             confirm: endSurvey,
         }));
         return () => timers.forEach(clearTimeout);
-        // Deliberately keyed on primitives: context re-emits create new Date objects every time.
     }, [startTimeMs, endTimeMs, isLead]);
 
     return (

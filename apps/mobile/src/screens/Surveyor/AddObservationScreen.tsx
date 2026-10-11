@@ -52,9 +52,6 @@ export function AddObservationScreen(): React.JSX.Element {
 
     const sheetRef = useRef<BottomSheetModal>(null);
     const [confirmDelete, setConfirmDelete] = useState(false);
-    // Seed the editable field buffers from the observation exactly once, when it
-    // first becomes available. Guarded so later subscription re-emits can't wipe
-    // in-progress edits.
     const seeded = useRef(false);
 
     const bumpLastSeen = () => setLastSeenTime(new Date());
@@ -74,7 +71,6 @@ export function AddObservationScreen(): React.JSX.Element {
         if (!observation || seeded.current) return;
         seeded.current = true;
         if (observation.firstSeenAt) setObservationTime(observation.firstSeenAt);
-        // Default last seen to first seen when it hasn't been recorded yet.
         setLastSeenTime(observation.lastSeenAt ?? observation.firstSeenAt ?? new Date());
         setSeenCount(observation.seenCount);
         setHeardCount(observation.heardCount);
@@ -106,8 +102,6 @@ export function AddObservationScreen(): React.JSX.Element {
 
     const presentFlightPathSheet = (surface: FlightPathSurface) => {
         if (activeSurface === surface) {
-            // Already mounted for this surface; present directly since the
-            // activeSurface state won't change to re-trigger the effect.
             sheetRef.current?.present();
         } else {
             setActiveSurface(surface);

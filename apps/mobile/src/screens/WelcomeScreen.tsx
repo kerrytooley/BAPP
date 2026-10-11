@@ -37,7 +37,6 @@ export function WelcomeScreen(): React.JSX.Element {
         setFailed(null);
         setOpening(entry);
         try {
-            // Always load fresh so a surveyor who has since ended their survey can't reach editable screens.
             const context = await service.getSurveyContext(entry.surveyId);
             void recordRecentSurvey(context.survey, entry.role, entry.surveyorId);
             closeMenu();

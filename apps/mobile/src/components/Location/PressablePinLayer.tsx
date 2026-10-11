@@ -10,7 +10,6 @@ interface PressablePinLayerProps {
     imageUri: string
     value: BoundaryPosition | null
     onChange: (position: BoundaryPosition) => void
-    /** Rendered directly beneath the image; its height is reserved when fitting the image. */
     footer?: ReactNode
 }
 
@@ -47,8 +46,6 @@ export const PressablePinLayer = ({ imageUri, value, onChange, footer }: Pressab
         setAvailable({ width, height })
     }
 
-    // Fit the image inside the available area while preserving its aspect ratio,
-    // so tall (portrait) images shrink to fit rather than overflowing.
     const fitted = (() => {
         const availableHeight = footer ? available.height - footerHeight - FOOTER_GAP : available.height;
         if (!available.width || !availableHeight || availableHeight <= 0) {

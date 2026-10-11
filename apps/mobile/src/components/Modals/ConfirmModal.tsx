@@ -10,10 +10,8 @@ export interface ConfirmModalProps {
     confirmLabel?: string;
     cancelLabel?: string;
     destructive?: boolean;
-    /** Shows a spinner instead of the confirm button; only `onCancel` (if given) can dismiss it. */
     loading?: boolean;
     onConfirm: () => void;
-    /** Omit for an acknowledge-only dialog (single button, backdrop doesn't dismiss). */
     onCancel?: () => void;
 }
 
@@ -23,7 +21,6 @@ export const ConfirmModal = ({ visible, ...props }: ConfirmModalProps) => (
     </Modal>
 );
 
-/** The dialog without its own Modal, for showing on top of content that is already in a Modal. */
 export const ConfirmDialog = ({
     title,
     message,
