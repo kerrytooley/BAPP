@@ -111,23 +111,27 @@ function assertSafeReference(reference: string): void {
   }
 }
 
-/** Root of the on-device offline cache. Mirrors storage ref paths beneath it so
+/** Root of the on-device display cache. Mirrors storage ref paths beneath it so
  *  a reference maps 1:1 to a cache file and survey-scoped clearing is a dir delete.
  *
  *  Lives under `cacheDirectory` (the OS may evict it under storage pressure).
- *  That is fine for the re-downloadable display cache: `getDownloadUrl` is
+ *  That is fine for re-downloadable display copies: `getDownloadUrl` is
  *  cache-first, so an evicted image simply re-downloads from Storage when online
- *  (and degrades to "unavailable" offline). NOTE: unsent-upload bytes + the
- *  pending manifest also live here, so an eviction before an upload flushes can
- *  lose that upload — a pre-existing risk (unchanged by this PR). Moving durable
- *  state to `documentDirectory` and adding LRU eviction for the display cache is
- *  a deferred follow-up (see FIREBASE_ARCHITECTURE.md). */
+ *  (and degrades to "unavailable" offline). Anything that can't be re-downloaded
+ *  — unsent uploads — lives under `PENDING_ROOT` instead. */
 const CACHE_ROOT = `${FileSystem.cacheDirectory ?? ''}bapp-media/`;
 
-/** Durable record of uploads that have not yet reached Storage, persisted next to
- *  the cached bytes so it survives app kills. Kept OUT of the survey-scoped cache
- *  subtree so `clearCache(surveyId)` never orphans it. */
-const PENDING_MANIFEST_PATH = `${CACHE_ROOT}.pending-uploads.json`;
+/** Durable copies of uploads that have not yet reached Storage, plus their
+ *  manifest. Under `documentDirectory`, which the OS never evicts, so an unsent
+ *  photo survives storage pressure as well as app kills; and outside `CACHE_ROOT`,
+ *  so `clearCache()` can never drop one. Mirrors storage ref paths like the cache.
+ *  Each copy is deleted as soon as its upload reaches Storage. */
+const PENDING_ROOT = `${FileSystem.documentDirectory ?? ''}bapp-pending-uploads/`;
+const PENDING_MANIFEST_PATH = `${PENDING_ROOT}manifest.json`;
+
+/** Where the manifest lived before pending uploads moved out of the cache.
+ *  Read once at launch so uploads queued by an older build are not lost. */
+const LEGACY_MANIFEST_PATH = `${CACHE_ROOT}.pending-uploads.json`;
 
 interface PendingUpload {
   contentType: string;
@@ -136,6 +140,11 @@ interface PendingUpload {
 function cachePathFor(reference: string): string {
   assertSafeReference(reference);
   return `${CACHE_ROOT}${reference}`;
+}
+
+function pendingPathFor(reference: string): string {
+  assertSafeReference(reference);
+  return `${PENDING_ROOT}${reference}`;
 }
 
 function parentDir(path: string): string {
@@ -244,12 +253,13 @@ export class FirebaseMediaRepository implements MediaRepository {
    * awaiting would hang the caller and block the surveyor. It runs/resumes in
    * the background and flushes when connectivity returns.
    *
-   * Durability across app kills: before starting, the reference is recorded in a
-   * persisted pending-uploads manifest and only cleared once the upload succeeds.
-   * A terminal failure (or an app kill mid-flight) therefore leaves the entry in
-   * place, so `resumePendingUploads()` at the next launch re-sends it from the
-   * cached bytes — the source is never left as a durable doc reference pointing at
-   * an object that never reached Storage.
+   * Durability across app kills and cache eviction: the just-seeded cache copy is
+   * duplicated under `PENDING_ROOT` and recorded in the pending-uploads manifest;
+   * both are cleared only once the upload succeeds. A terminal failure (or an app
+   * kill mid-flight) therefore leaves the entry in place, so
+   * `resumePendingUploads()` at the next launch re-sends it from the durable copy —
+   * the source is never left as a durable doc reference pointing at an object that
+   * never reached Storage. Pass `alreadyPersisted` when re-sending from that copy.
    *
    * NOTE (device-time hardening): the bytes are also on disk in the cache, so
    * uploading via RNFB's `putFile(ref, cachePath)` is more robust than a byte
@@ -279,10 +289,13 @@ export class FirebaseMediaRepository implements MediaRepository {
     bytes: Uint8Array,
     contentType: string,
     onProgress?: (fraction: number) => void,
+    alreadyPersisted = false,
   ): void {
-    // Record BEFORE starting so an app kill immediately after start is still
-    // recoverable. Fire-and-forget: a local file write, ordered by manifestLock.
-    void this.recordPending(reference, contentType);
+    // Persist alongside the upload so an app kill after start is still
+    // recoverable. Fire-and-forget: local file writes, the manifest part ordered
+    // by manifestLock. A failed persist must not block the upload itself.
+    const persisted = (alreadyPersisted ? Promise.resolve() : this.persistPending(reference, contentType))
+      .catch(() => undefined);
     const task = uploadBytesResumable(
       storageRef(getFirebaseStorage(), reference),
       bytes,
@@ -297,42 +310,73 @@ export class FirebaseMediaRepository implements MediaRepository {
     }
     task.then(
       () => {
-        void this.clearPending(reference); // reached Storage — no longer pending
+        // Reached Storage — no longer pending. Wait for the persist so its late
+        // copy/record can't land after (and outlive) this cleanup.
+        void persisted.then(() => this.settlePending(reference));
       },
       () => undefined, // leave the entry for launch-time resume
     );
   }
 
+  /** Copy the cached bytes to durable storage, then record them in the manifest
+   *  (so the manifest only ever names complete copies). */
+  private async persistPending(reference: string, contentType: string): Promise<void> {
+    const pendingPath = pendingPathFor(reference);
+    await FileSystem.makeDirectoryAsync(parentDir(pendingPath), { intermediates: true });
+    await FileSystem.copyAsync({ from: cachePathFor(reference), to: pendingPath });
+    await this.recordPending(reference, contentType);
+  }
+
+  private async settlePending(reference: string): Promise<void> {
+    await this.clearPending(reference);
+    await FileSystem.deleteAsync(pendingPathFor(reference), { idempotent: true });
+  }
+
   /**
    * Re-enqueue every upload that had not reached Storage when the app last exited.
-   * Call once at startup, after Firebase init. Entries whose cached bytes are gone
-   * (e.g. the cache was cleared) are pruned rather than resent. Best-effort — a
-   * still-offline device simply re-queues them again next launch.
+   * Call once at startup, after Firebase init. Entries whose durable copy is gone
+   * are pruned rather than resent. A display copy the OS evicted is restored from
+   * the durable one, so this device can keep showing the image offline.
+   * Best-effort — a still-offline device simply re-queues them again next launch.
    */
   async resumePendingUploads(): Promise<void> {
-    const manifest = await this.readManifest();
+    await this.adoptLegacyPendingUploads();
+    const manifest = await this.readManifest(PENDING_MANIFEST_PATH);
     for (const [reference, entry] of Object.entries(manifest)) {
-      const cachePath = cachePathFor(reference);
-      const info = await FileSystem.getInfoAsync(cachePath);
-      if (!info.exists) {
+      const pendingPath = pendingPathFor(reference);
+      if (!(await FileSystem.getInfoAsync(pendingPath)).exists) {
         await this.clearPending(reference);
         continue;
       }
-      const b64 = await FileSystem.readAsStringAsync(cachePath, {
+      const cachePath = cachePathFor(reference);
+      if (!(await FileSystem.getInfoAsync(cachePath)).exists) {
+        await FileSystem.makeDirectoryAsync(parentDir(cachePath), { intermediates: true });
+        await FileSystem.copyAsync({ from: pendingPath, to: cachePath });
+      }
+      const b64 = await FileSystem.readAsStringAsync(pendingPath, {
         encoding: FileSystem.EncodingType.Base64,
       });
-      this.startBackgroundUpload(reference, base64ToBytes(b64), entry.contentType);
+      this.startBackgroundUpload(reference, base64ToBytes(b64), entry.contentType, undefined, true);
     }
   }
 
-  private async readManifest(): Promise<Record<string, PendingUpload>> {
-    const info = await FileSystem.getInfoAsync(PENDING_MANIFEST_PATH);
+  /** One-off migration for uploads queued by a build that kept them in the cache:
+   *  move any whose bytes survived into durable storage, then drop the old manifest. */
+  private async adoptLegacyPendingUploads(): Promise<void> {
+    const legacy = await this.readManifest(LEGACY_MANIFEST_PATH);
+    for (const [reference, entry] of Object.entries(legacy)) {
+      if ((await FileSystem.getInfoAsync(cachePathFor(reference))).exists) {
+        await this.persistPending(reference, entry.contentType);
+      }
+    }
+    await FileSystem.deleteAsync(LEGACY_MANIFEST_PATH, { idempotent: true });
+  }
+
+  private async readManifest(path: string): Promise<Record<string, PendingUpload>> {
+    const info = await FileSystem.getInfoAsync(path);
     if (!info.exists) return {};
     try {
-      return JSON.parse(await FileSystem.readAsStringAsync(PENDING_MANIFEST_PATH)) as Record<
-        string,
-        PendingUpload
-      >;
+      return JSON.parse(await FileSystem.readAsStringAsync(path)) as Record<string, PendingUpload>;
     } catch {
       return {}; // corrupt/partial manifest — start clean rather than crash
     }
@@ -341,7 +385,7 @@ export class FirebaseMediaRepository implements MediaRepository {
   /** Atomically read-modify-write the manifest, serialized via `manifestLock`. */
   private mutateManifest(mutator: (manifest: Record<string, PendingUpload>) => void): Promise<void> {
     const next = this.manifestLock.then(async () => {
-      const manifest = await this.readManifest();
+      const manifest = await this.readManifest(PENDING_MANIFEST_PATH);
       mutator(manifest);
       await FileSystem.makeDirectoryAsync(parentDir(PENDING_MANIFEST_PATH), { intermediates: true });
       await FileSystem.writeAsStringAsync(PENDING_MANIFEST_PATH, JSON.stringify(manifest));
@@ -394,10 +438,10 @@ export class FirebaseMediaRepository implements MediaRepository {
     // Holistic + idempotent: remove the reference and every paired source/render
     // (see `deletionGroup`), in both remote storage and the local cache. Missing
     // objects are ignored. Each ref is also dropped from the pending-uploads
-    // manifest so a not-yet-flushed upload can't be resurrected by the launch-time
-    // resume sweep after its object was deleted here.
+    // manifest (and its durable copy removed) so a not-yet-flushed upload can't be
+    // resurrected by the launch-time resume sweep after its object was deleted here.
     for (const r of deletionGroup(reference)) {
-      await this.clearPending(r);
+      await this.settlePending(r);
       try {
         await deleteObject(storageRef(getFirebaseStorage(), r));
       } catch {
@@ -412,7 +456,8 @@ export class FirebaseMediaRepository implements MediaRepository {
     // `surveys/{id}/…`). NOTE: location photos are stored under
     // `locations/{locationId}/…`, so they are not grouped by survey in the
     // storage path and are not removed by a surveyId-scoped clear; a full clear
-    // (no argument) removes everything. See firebase/README.md.
+    // (no argument) removes everything. See firebase/README.md. Either way only
+    // display copies go: unsent uploads live under PENDING_ROOT and are untouched.
     const dir = surveyId ? `${CACHE_ROOT}surveys/${surveyId}` : CACHE_ROOT;
     await FileSystem.deleteAsync(dir, { idempotent: true });
   }
