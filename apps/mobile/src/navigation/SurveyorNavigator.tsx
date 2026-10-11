@@ -16,15 +16,18 @@ import { EquipmentDetailsScreen } from "@screens/Surveyor/EquipmentDetailsScreen
 import { SurveyorCompleteScreen } from "@screens/Surveyor/SurveyorCompleteScreen";
 import { SetupIncompleteScreen } from "@screens/Surveyor/SetupIncompleteScreen";
 
+/** resume: continuing unfinished setup from re-entry; edit: changing one item from the survey summary. */
+export type StepMode = "resume" | "edit";
+
 export type SurveyorStackParamList = {
     InputCodeScreen: undefined,
     CodeConfirmationScreen: { surveyId: string }
     SelectSurveyorScreen: { surveyId: string }
     ConfirmSurveyorDetailsScreen: { surveyId: string, surveyorId: string }
-    SurveyorConfirmLocationScreen: { surveyId: string, surveyorId: string }
-    WeatherConditionsScreen: { surveyId: string, surveyorId: string, locationId: string, type: "start" | "end" }
-    CapturePhotoScreen: { surveyId: string, locationId: string, surveyorId: string, photoType: LocationImageType }
-    EquipmentDetailsScreen: { surveyId: string, locationId: string, surveyorId: string };
+    SurveyorConfirmLocationScreen: { surveyId: string, surveyorId: string, mode?: StepMode }
+    WeatherConditionsScreen: { surveyId: string, surveyorId: string, locationId: string, type: "start" | "end", mode?: StepMode }
+    CapturePhotoScreen: { surveyId: string, locationId: string, surveyorId: string, photoType: LocationImageType, mode?: StepMode }
+    EquipmentDetailsScreen: { surveyId: string, locationId: string, surveyorId: string, mode?: StepMode };
     SetupCompleteScreen: { surveyId: string, locationId: string, surveyorId: string }
     SurveyScreen: { surveyId: string, locationId: string, surveyorId: string }
     SelectSpeciesScreen: { surveyId: string, locationId: string, surveyorId: string }

@@ -6,7 +6,7 @@ const completeLocation = buildLocation({
     id: 'location-1',
     frontViewImage: image,
     equipmentImage: image,
-    equipmentInformation: { audioLabel: 'A1', videoLabel: '', otherInfo: '' },
+    equipmentInformation: { audioLabel: 'A1', videoLabel: 'V1', otherInfo: 'Tripod' },
 });
 
 const routeFor = (status: 'pending' | 'confirmed' | 'ready' | 'done', location = completeLocation, locationId: string | null = 'location-1') => {

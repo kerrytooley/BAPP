@@ -12,6 +12,7 @@ import {
 } from '../../helpers/testUtils';
 import {
     mockNavigate,
+    mockPush,
     resetNavigationMock,
     setRouteParams,
 } from '../../helpers/reactNavigationMock';
@@ -45,14 +46,11 @@ describe('SetupIncompleteScreen', () => {
         expect(screen.getByText('\u2022 Equipment details')).toBeOnTheScreen();
     });
 
-    it('goes to the first missing step to complete setup', async () => {
+    it('opens the first unfinished step in resume mode', async () => {
         renderWith();
         await waitFor(() => expect(screen.getByText('\u2022 Front view photo')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Complete setup'));
-        expect(mockNavigate).toHaveBeenCalledWith({
-            name: 'CapturePhotoScreen',
-            params: { ...params, photoType: 'frontView' },
-        });
+        expect(mockPush).toHaveBeenCalledWith('CapturePhotoScreen', { ...params, photoType: 'frontView', mode: 'resume' });
     });
 
     it('returns to the survey screen', async () => {
@@ -67,10 +65,10 @@ describe('SetupIncompleteScreen', () => {
             id: 'location-1',
             frontViewImage: image,
             equipmentImage: image,
-            equipmentInformation: { audioLabel: 'A1', videoLabel: '', otherInfo: '' },
+            equipmentInformation: { audioLabel: 'A1', videoLabel: 'V1', otherInfo: 'Tripod' },
         }));
         await waitFor(() => expect(screen.getByLabelText('Complete setup')).toBeDisabled());
         fireEvent.press(screen.getByText('Complete setup'));
-        expect(mockNavigate).not.toHaveBeenCalled();
+        expect(mockPush).not.toHaveBeenCalled();
     });
 });

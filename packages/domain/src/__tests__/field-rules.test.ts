@@ -4,9 +4,12 @@ import {
     validateCount,
     validateFrequencyKhz,
     validateNumber,
+    validatePostcode,
     validateRain,
     validateRequiredText,
     validateSurveyCode,
+    validateSurveyEnd,
+    validateSurveyStart,
     validateWeather,
 } from '../field-rules';
 
@@ -109,5 +112,47 @@ describe('validateCount', () => {
         expect(validateCount(null)).toBeNull();
         expect(validateCount(-1)).toBe('Counts must be a whole number of 0 or more');
         expect(validateCount(1.5)).toBe('Counts must be a whole number of 0 or more');
+    });
+});
+
+describe('validatePostcode', () => {
+    it.each(['SW1A 1AA', 'sw1a1aa', 'M1 1AE', 'B33 8TH', 'CR2 6XH', 'DN55 1PT', null, ''])('accepts %j', (value) => {
+        expect(validatePostcode(value)).toBeNull();
+    });
+
+    it.each(['SW1A-1AA', 'SW1A 1A@', 'BS1 #4DJ', '12345', 'ABC'])('rejects %j', (value) => {
+        expect(validatePostcode(value)).toBe('Enter a valid UK postcode, e.g. SW1A 1AA');
+    });
+});
+
+describe('validateSurveyEnd', () => {
+    const at = (h: number, m = 0) => new Date(2026, 0, 1, h, m);
+
+    it('requires the end time to be after the start time of day', () => {
+        expect(validateSurveyEnd(at(20), at(22))).toBeNull();
+        expect(validateSurveyEnd(at(20), new Date(2025, 5, 5, 22, 0))).toBeNull();
+        expect(validateSurveyEnd(at(20), at(20))).toBe('End time must be after the start time');
+        expect(validateSurveyEnd(at(20), at(19, 59))).toBe('End time must be after the start time');
+    });
+
+    it('ignores missing times', () => {
+        expect(validateSurveyEnd(null, at(20))).toBeNull();
+        expect(validateSurveyEnd(at(20), undefined)).toBeNull();
+    });
+});
+
+describe('validateSurveyStart', () => {
+    const now = new Date(2026, 9, 11, 18, 0);
+
+    it('requires the start date and time to be in the future', () => {
+        expect(validateSurveyStart(new Date(2026, 9, 11), new Date(2020, 0, 1, 20, 0), now)).toBeNull();
+        expect(validateSurveyStart(new Date(2026, 9, 11), new Date(2020, 0, 1, 17, 0), now)).toBe('Survey start must be in the future');
+        expect(validateSurveyStart(new Date(2026, 9, 10), new Date(2020, 0, 1, 20, 0), now)).toBe('Survey start must be in the future');
+    });
+
+    it('treats today as valid when no start time is chosen', () => {
+        expect(validateSurveyStart(new Date(2026, 9, 11), null, now)).toBeNull();
+        expect(validateSurveyStart(new Date(2026, 9, 10), null, now)).toBe('Survey start must be in the future');
+        expect(validateSurveyStart(null, null, now)).toBeNull();
     });
 });

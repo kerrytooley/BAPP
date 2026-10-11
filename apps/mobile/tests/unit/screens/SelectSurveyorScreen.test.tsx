@@ -100,7 +100,7 @@ describe('SelectSurveyorScreen', () => {
                 id: 'location-1',
                 frontViewImage: image,
                 equipmentImage: image,
-                equipmentInformation: { audioLabel: 'A1', videoLabel: '', otherInfo: '' },
+                equipmentInformation: { audioLabel: 'A1', videoLabel: 'V1', otherInfo: 'Tripod' },
             });
             const service = createMockService({ subscribeSurveyContext: mockSubscribeContext(startedContext(complete)) });
             renderWithActiveSurvey(<SelectSurveyorScreen />, service);

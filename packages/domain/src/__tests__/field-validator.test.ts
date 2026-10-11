@@ -56,6 +56,17 @@ describe('FieldValidator via SurveyService', () => {
             .rejects.toThrow('Choose Wet or Dry');
     });
 
+    it('rejects a malformed postcode and an end time before the start time', async () => {
+        const { service, survey } = await setup();
+        await expect(service.updateSurvey(survey.id, { postcode: 'SW1A 1AA' })).resolves.toBeDefined();
+        await expect(service.updateSurvey(survey.id, { postcode: 'SW1A-1AA!' }))
+            .rejects.toThrow('Enter a valid UK postcode, e.g. SW1A 1AA');
+        await expect(service.updateSurvey(survey.id, {
+            startTime: new Date(2026, 0, 1, 21, 0),
+            endTime: new Date(2026, 0, 1, 20, 0),
+        })).rejects.toThrow('End time must be after the start time');
+    });
+
     it('rejects an invalid frequency and negative counts', async () => {
         const { service, observation } = await setup();
         await expect(service.updateObservation(observation.id, { frequency: 'loud' })).rejects.toThrow('Enter a number');

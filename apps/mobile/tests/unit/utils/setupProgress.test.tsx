@@ -1,15 +1,15 @@
-import { getIncompleteSetupSteps } from '@utils/setupProgress';
+import { getIncompleteSetupSteps, nextSetupStep } from '@utils/setupProgress';
 import type { MediaAsset } from '@bapp/domain';
 import { buildContext, buildLocation, buildSurvey, buildSurveyor } from '../../helpers/factories';
 
 const image: MediaAsset = { sourceRef: 'a.jpg', renderRef: 'a.jpg', status: 'ready', error: null };
-const weather = { temperature: '12', cloudCover: '', humidity: '', wind: '', rain: 'Dry' };
+const weather = { temperature: '12', cloudCover: '40', humidity: '70', wind: '2', rain: 'Dry' };
 
 const completeLocation = buildLocation({
     id: 'location-1',
     frontViewImage: image,
     equipmentImage: image,
-    equipmentInformation: { audioLabel: 'A1', videoLabel: '', otherInfo: '' },
+    equipmentInformation: { audioLabel: 'A1', videoLabel: 'V1', otherInfo: 'Tripod' },
 });
 
 const contextWith = ({
@@ -46,8 +46,21 @@ describe('getIncompleteSetupSteps', () => {
         ]);
         expect(getIncompleteSetupSteps(context, 'surveyor-1')[0].route).toEqual({
             name: 'WeatherConditionsScreen',
-            params: { surveyId: 'survey-1', surveyorId: 'surveyor-1', locationId: 'location-1', type: 'start' },
+            params: { surveyId: 'survey-1', surveyorId: 'surveyor-1', locationId: 'location-1', type: 'start', mode: 'resume' },
         });
+    });
+
+    it('includes partly-filled steps and failed photos, skipping only complete ones', () => {
+        const context = contextWith({
+            isLead: true,
+            survey: buildSurvey({ startWeather: { ...weather, wind: '' } }),
+            location: {
+                ...completeLocation,
+                equipmentImage: { ...image, status: 'failed' },
+                equipmentInformation: { audioLabel: 'A1', videoLabel: '', otherInfo: '' },
+            },
+        });
+        expect(labels(context)).toEqual(['Start weather conditions', 'Equipment photo', 'Equipment details']);
     });
 
     it('treats blank weather and equipment details as missing', () => {
@@ -72,5 +85,22 @@ describe('getIncompleteSetupSteps', () => {
         expect(getIncompleteSetupSteps(contextWith(), 'missing')).toEqual([]);
         const noLocation = buildContext({ surveyors: [buildSurveyor({ id: 'surveyor-1', locationId: null })] });
         expect(getIncompleteSetupSteps(noLocation, 'surveyor-1')).toEqual([]);
+    });
+});
+
+describe('nextSetupStep', () => {
+    const context = contextWith({
+        isLead: true,
+        survey: buildSurvey({ startWeather: null }),
+        location: { ...completeLocation, frontViewImage: null, equipmentInformation: null },
+    });
+
+    it('skips completed steps to the next unfinished one', () => {
+        expect(nextSetupStep(context, 'surveyor-1', 'startWeather')?.key).toBe('frontView');
+        expect(nextSetupStep(context, 'surveyor-1', 'frontView')?.key).toBe('equipmentDetails');
+    });
+
+    it('never goes back to an earlier or the current step', () => {
+        expect(nextSetupStep(context, 'surveyor-1', 'equipmentDetails')).toBeUndefined();
     });
 });

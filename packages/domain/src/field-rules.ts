@@ -96,3 +96,30 @@ export function validateCount(value: number | null | undefined): FieldError {
     if (value == null) return null;
     return Number.isInteger(value) && value >= 0 ? null : 'Counts must be a whole number of 0 or more';
 }
+
+const UK_POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i;
+
+export function validatePostcode(value: string | null | undefined): FieldError {
+    if (isBlank(value)) return null;
+    return UK_POSTCODE.test((value as string).trim()) ? null : 'Enter a valid UK postcode, e.g. SW1A 1AA';
+}
+
+// Survey times only carry a time of day; their date part is whenever they were picked.
+const minutesOfDay = (time: Date) => time.getHours() * 60 + time.getMinutes();
+
+export function validateSurveyEnd(startTime: Date | null | undefined, endTime: Date | null | undefined): FieldError {
+    if (!startTime || !endTime) return null;
+    return minutesOfDay(endTime) > minutesOfDay(startTime) ? null : 'End time must be after the start time';
+}
+
+export function validateSurveyStart(
+    date: Date | null | undefined,
+    startTime: Date | null | undefined,
+    now: Date = new Date(),
+): FieldError {
+    if (!date) return null;
+    const start = new Date(date);
+    if (startTime) start.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
+    else start.setHours(23, 59, 59, 999);
+    return start > now ? null : 'Survey start must be in the future';
+}

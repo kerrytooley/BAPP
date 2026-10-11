@@ -11,6 +11,8 @@ export interface CardProps {
     contentStyle?: StyleProp<ViewStyle>;
     removable?: boolean,
     onClose?: () => void;
+    /** Shows an Edit link beside the label. */
+    onEdit?: () => void;
 }
 
 export const Card = ({
@@ -19,12 +21,18 @@ export const Card = ({
     style,
     contentStyle,
     removable = false,
-    onClose
+    onClose,
+    onEdit,
 }: CardProps) => {
     return (
         <View style={[styles.cardFlexBox, style]}>
             <View style={styles.labelRow}>
                 <Text style={textStyles.inputTitleText}>{cardLabel}</Text>
+                {onEdit &&
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Edit ${cardLabel}`} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} onPress={onEdit}>
+                        <Text style={styles.edit}>Edit</Text>
+                    </TouchableOpacity>
+                }
                 {removable &&
                     <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Remove ${cardLabel}`} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} onPress={onClose}>
                         <Close width={16} color={colours.light} />
@@ -68,5 +76,10 @@ const styles = StyleSheet.create({
         alignItems: "flex-end",
         "paddingEnd": 8
 
-    }
+    },
+    edit: {
+        ...textStyles.buttonLabel,
+        color: colours.light,
+        textDecorationLine: "underline",
+    },
 })

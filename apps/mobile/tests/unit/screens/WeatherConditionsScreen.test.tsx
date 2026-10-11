@@ -8,7 +8,9 @@ import { WeatherConditionsScreen } from '@screens/Surveyor/WeatherConditionsScre
 import { createMockService, renderWithService } from '../../helpers/testUtils';
 import { buildContext, buildLocation, buildSurvey, buildSurveyor } from '../../helpers/factories';
 import {
+    mockGoBack,
     mockNavigate,
+    mockPush,
     resetNavigationMock,
     setRouteParams,
 } from '../../helpers/reactNavigationMock';
@@ -204,5 +206,59 @@ describe('WeatherConditionsScreen', () => {
                 surveyorId: 'surveyor-1',
             }),
         );
+    });
+
+    it('continues to the next unfinished step when resuming setup', async () => {
+        setRouteParams({ ...startParams, mode: 'resume' });
+        const service = createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(buildContext({
+                survey: buildSurvey({ startWeather: null }),
+                surveyors: [buildSurveyor({ id: 'surveyor-1', locationId: 'location-1' })],
+                locations: [buildLocation({ id: 'location-1' })],
+            })),
+        });
+        renderWithService(<WeatherConditionsScreen />, service);
+
+        fireEvent.changeText(screen.getByPlaceholderText('Input Temperature'), '12');
+        fireEvent.press(screen.getByText('Wet'));
+        fireEvent.press(screen.getByText('Continue'));
+
+        await waitFor(() => expect(mockPush).toHaveBeenCalledWith('CapturePhotoScreen', {
+            surveyId: 'survey-1', locationId: 'location-1', surveyorId: 'surveyor-1', photoType: 'frontView', mode: 'resume',
+        }));
+        expect(mockNavigate).not.toHaveBeenCalledWith('SurveyorConfirmLocationScreen', expect.anything());
+    });
+
+    describe('opened from the survey summary to edit', () => {
+        const saved = { temperature: '14', cloudCover: '20', humidity: '60', wind: '1', rain: '5' };
+        const editService = () => createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(buildContext({ survey: buildSurvey({ endWeather: saved }) })),
+        });
+
+        beforeEach(() => setRouteParams({ ...endParams, mode: 'edit' }));
+
+        it('shows the saved readings and saves changes back to the summary', async () => {
+            const service = editService();
+            renderWithService(<WeatherConditionsScreen />, service);
+
+            expect(await screen.findByDisplayValue('14')).toBeOnTheScreen();
+            fireEvent.changeText(screen.getByDisplayValue('60'), '65');
+            fireEvent.press(screen.getByText('Save'));
+
+            await waitFor(() => expect(mockGoBack).toHaveBeenCalled());
+            expect(service.updateSurvey).toHaveBeenCalledWith('survey-1', { endWeather: { ...saved, humidity: '65' } });
+            expect(mockNavigate).not.toHaveBeenCalled();
+        });
+
+        it('cancels without saving', async () => {
+            const service = editService();
+            renderWithService(<WeatherConditionsScreen />, service);
+            await screen.findByDisplayValue('14');
+
+            fireEvent.press(screen.getByText('Cancel'));
+
+            expect(mockGoBack).toHaveBeenCalled();
+            expect(service.updateSurvey).not.toHaveBeenCalled();
+        });
     });
 });

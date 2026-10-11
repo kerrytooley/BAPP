@@ -6,32 +6,27 @@ import { colours } from "@theme/colours"
 
 interface WeatherProps {
     type: "start" | "end",
-    weather: Weather
+    weather: Weather | null,
+    onEdit?: () => void,
 }
 
-export const WeatherSummary = ({ type, weather }: WeatherProps) => {
+export const WeatherSummary = ({ type, weather, onEdit }: WeatherProps) => {
+    const rows: [string, string][] = weather ? [
+        ["Temperature", `${weather.temperature}°C`],
+        ["Cloud Cover", `${weather.cloudCover}%`],
+        ["Humidity", `${weather.humidity}%`],
+        ["Wind", `${weather.wind} Beaufort`],
+        ["Rain", weather.rain + (type === "start" ? "" : " minutes")],
+    ] : [];
     return (
-        <Card cardLabel={type === "start" ? "Start Weather Conditons" : "End Weather Condtions"}>
-            <View style={styles.row} >
-                <Text style={styles.text}>Temperature</Text>
-                <Text style={styles.text}>{weather.temperature}°C</Text>
-            </View>
-            <View style={styles.row} >
-                <Text style={styles.text}>Cloud Cover</Text>
-                <Text style={styles.text}>{weather.cloudCover}%</Text>
-            </View>
-            <View style={styles.row} >
-                <Text style={styles.text}>Humidity</Text>
-                <Text style={styles.text}>{weather.humidity}%</Text>
-            </View>
-            <View style={styles.row} >
-                <Text style={styles.text}>Wind</Text>
-                <Text style={styles.text}>{weather.wind} Beaufort</Text>
-            </View>
-            <View style={styles.row} >
-                <Text style={styles.text}>Rain</Text>
-                <Text style={styles.text}>{weather.rain + (type === "start" ? "" : " minutes")}</Text>
-            </View>
+        <Card cardLabel={type === "start" ? "Start Weather Conditions" : "End Weather Conditions"} onEdit={onEdit}>
+            {!weather && <Text style={styles.text}>Not recorded</Text>}
+            {rows.map(([label, value]) => (
+                <View key={label} style={styles.row} >
+                    <Text style={styles.text}>{label}</Text>
+                    <Text style={styles.text}>{value}</Text>
+                </View>
+            ))}
         </Card>
     )
 }

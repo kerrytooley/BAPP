@@ -1,7 +1,7 @@
 import { Platform, StyleProp, StyleSheet, ViewStyle, View, Text, TouchableOpacity } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useState } from "react";
-import { textStyles } from "@theme/fonts";
+import { fonts, textStyles } from "@theme/fonts";
 import { colours } from "@theme/colours";
 import { formatDate } from "@utils/dateTimeUtils";
 
@@ -11,6 +11,8 @@ export interface DatePickerInputProps {
     onChange?: (date: Date) => void;
     onOpen?: () => void;
     style?: StyleProp<ViewStyle>;
+    error?: string | null;
+    minimumDate?: Date;
 }
 
 export const DatePickerInput = ({
@@ -19,6 +21,8 @@ export const DatePickerInput = ({
     onChange,
     onOpen,
     style,
+    error,
+    minimumDate,
 }: DatePickerInputProps) => {
     const [show, setShow] = useState(false);
 
@@ -47,16 +51,18 @@ export const DatePickerInput = ({
             <View style={styles.inputTitle}>
                 <Text style={styles.inputTitleText}>{fieldLabel}</Text>
             </View>
-            <TouchableOpacity style={styles.inputBox} onPress={toggleShow} activeOpacity={0.7}>
+            <TouchableOpacity style={[styles.inputBox, !!error && styles.inputBoxError]} onPress={toggleShow} activeOpacity={0.7} accessibilityHint={error ?? undefined}>
                 <Text style={[styles.inputText, !value && styles.placeholder]}>
                     {displayValue}
                 </Text>
             </TouchableOpacity>
+            {!!error && <Text style={styles.errorText}>{error}</Text>}
             {show && (
                 <DateTimePicker
                     value={value ?? new Date()}
                     mode="date"
                     display="spinner"
+                    minimumDate={minimumDate}
                     onChange={handleChange}
                     themeVariant="dark"
                 />
@@ -98,5 +104,14 @@ const styles = StyleSheet.create({
     },
     placeholder: {
         color: colours.placeholderText,
+    },
+    inputBoxError: {
+        borderColor: colours.red,
+    },
+    errorText: {
+        ...textStyles.inputText,
+        fontSize: fonts.size.sm,
+        color: colours.red,
+        paddingTop: 6,
     },
 });

@@ -1,5 +1,6 @@
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
+import { continueResumedSetup } from "@services/setupResume";
 import { screen } from "@theme/screen"
 import { useEffect, useRef, useState } from "react";
 
@@ -19,7 +20,7 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
 export function SurveyorConfirmLocationScreen(): React.JSX.Element {
-    const { surveyId, surveyorId } = useRoute<RouteProp<SurveyorStackParamList, "SurveyorConfirmLocationScreen">>().params;
+    const { surveyId, surveyorId, mode } = useRoute<RouteProp<SurveyorStackParamList, "SurveyorConfirmLocationScreen">>().params;
     const navigation = useNavigation<Nav>();
     const service = useSurveyService();
     const { context } = useActiveSurvey();
@@ -88,7 +89,8 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
             if (currentSurveyor?.status === 'pending') {
                 await service.updateSurveyor(surveyorId, { status: 'confirmed' });
             }
-            navigation.navigate("CapturePhotoScreen", { surveyId, locationId: id, surveyorId, photoType: 'frontView' });
+            if (mode === 'resume') await continueResumedSetup(service, navigation, surveyId, surveyorId, 'location');
+            else navigation.navigate("CapturePhotoScreen", { surveyId, locationId: id, surveyorId, photoType: 'frontView' });
         } catch (e) {
             console.error("Unable to continue to photo capture", e);
         }

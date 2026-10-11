@@ -10,7 +10,7 @@ import { screen } from "@theme/screen";
 import { colours } from "@theme/colours";
 import { textStyles } from "@theme/fonts";
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { exportSurvey } from "@services/export/exportSurvey";
@@ -19,6 +19,9 @@ import { displayValue } from "@utils/displayValue";
 import { getSetupRows, getSurveyorRows, ItemStatus, StatusRow, worstStatus } from "@utils/surveyStatus";
 import { Expandable } from "@components/Common/Expandable";
 import { StatusDot } from "@components/Common/StatusDot";
+import { Upload as ShareIcon } from "@components/Common/Icons";
+import { shareSurveyCode } from "@components/Interactive/CodeShare";
+import { ConfirmModal } from "@components/Modals/ConfirmModal";
 
 type Nav = CompositeNavigationProp<
     NativeStackNavigationProp<AdminStackParamList>,
@@ -58,19 +61,18 @@ export function SurveyStatusScreen(): React.JSX.Element {
     const survey = context?.survey;
     const surveyors = context?.surveyors;
     const [exporting, setExporting] = useState(false);
+    const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
 
     const handleExport = async () => {
         setExporting(true);
-        // Let the loading overlay paint before we kick off the CPU-heavy export,
-        // which otherwise blocks the JS thread and delays the first render.
         await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
         try {
             const { shared } = await exportSurvey(service, surveyId);
             if (!shared) {
-                Alert.alert("Export ready", "Sharing isn't available on this device.");
+                setNotice({ title: "Export ready", message: "Sharing isn't available on this device." });
             }
         } catch {
-            Alert.alert("Export failed", "Could not build the survey export. Please try again.");
+            setNotice({ title: "Export failed", message: "Could not build the survey export. Please try again." });
         } finally {
             setExporting(false);
         }
@@ -109,7 +111,7 @@ export function SurveyStatusScreen(): React.JSX.Element {
 
     return (
         <View style={screen.justifyScreen}>
-            <View style={{ width: "100%" }}>
+            <View style={{ width: "100%", paddingBottom: 8 }}>
                 <ScreenHeader navigation={navigation} />
                 <Title title="Survey Status" subtitle="Track each surveyor and export the survey report" />
             </View>
@@ -123,6 +125,21 @@ export function SurveyStatusScreen(): React.JSX.Element {
                         <Text style={styles.subtext}>{doneCount} of {surveyors.length} surveyors completed</Text>
                     )}
                 </Card>
+                {survey?.surveyorCode &&
+                    <Card cardLabel="Surveyor Code">
+                        <View style={styles.row}>
+                            <Text style={styles.code} accessibilityLabel={`Surveyor code ${survey.surveyorCode}`}>{survey.surveyorCode}</Text>
+                            <TouchableOpacity
+                                accessibilityRole="button"
+                                accessibilityLabel="Share surveyor code"
+                                hitSlop={12}
+                                onPress={() => shareSurveyCode(survey.surveyorCode, "surveyor")}
+                            >
+                                <ShareIcon width={24} height={24} />
+                            </TouchableOpacity>
+                        </View>
+                    </Card>
+                }
                 <Text style={styles.header}>Survey setup:</Text>
                 {context &&
                     <Expandable
@@ -173,18 +190,17 @@ export function SurveyStatusScreen(): React.JSX.Element {
                         </Expandable>
                     );
                 })}
+                <Text style={styles.expiryNote}>Surveys expire 90 days after they're created. Export your report before then.</Text>
             </ScrollView>
-            <Text style={styles.expiryNote}>Surveys expire 90 days after they're created. Export your report before then.</Text>
             <Button variant="light" label={exporting ? "Exporting…" : "Export & Share Survey Report"} disabled={exporting} onPress={handleExport} />
-            <Modal visible={exporting} transparent animationType="fade">
-                <View style={styles.overlay}>
-                    <View style={styles.overlayCard}>
-                        <ActivityIndicator size="large" color={colours.light} />
-                        <Text style={styles.overlayText}>Generating export…</Text>
-                        <Text style={styles.overlaySubtext}>This can take a moment for large surveys.</Text>
-                    </View>
-                </View>
-            </Modal>
+            <ConfirmModal
+                visible={exporting || !!notice}
+                loading={exporting}
+                title={exporting ? "Generating export…" : notice?.title ?? ""}
+                message={exporting ? "This can take a moment for large surveys." : notice?.message}
+                confirmLabel="OK"
+                onConfirm={() => setNotice(null)}
+            />
         </View>
     );
 }
@@ -204,12 +220,17 @@ const styles = StyleSheet.create({
         color: colours.light,
         opacity: 0.7,
     },
+    code: {
+        ...textStyles.title,
+        color: colours.light,
+        letterSpacing: 3,
+    },
     expiryNote: {
         ...textStyles.inputText,
         color: colours.placeholderText,
         textAlign: "center",
         width: "100%",
-        paddingBottom: 12,
+        paddingTop: 8,
     },
     header: {
         ...textStyles.inputTitleText,
@@ -240,28 +261,5 @@ const styles = StyleSheet.create({
         ...textStyles.buttonLabel,
         color: colours.light,
         textDecorationLine: "underline",
-    },
-    overlay: {
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.6)",
-    },
-    overlayCard: {
-        alignItems: "center",
-        gap: 12,
-        paddingVertical: 28,
-        paddingHorizontal: 32,
-        borderRadius: 16,
-        backgroundColor: colours.dark,
-    },
-    overlayText: {
-        ...textStyles.inputTitleText,
-        color: colours.light,
-    },
-    overlaySubtext: {
-        ...textStyles.inputText,
-        color: colours.light,
-        textAlign: "center",
     },
 });

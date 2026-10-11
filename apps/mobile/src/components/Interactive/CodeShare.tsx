@@ -9,30 +9,30 @@ export interface CodeShareProps {
     codeType?: 'admin' | 'surveyor';
 }
 
+export const shareSurveyCode = async (code: string | undefined, codeType: 'admin' | 'surveyor' = 'surveyor') => {
+    try {
+        const message = codeType === 'surveyor' ?
+            `Join my survey! 🦇 \n\n` +
+            `Download or open the BAPP app and join my survey as a surveyor. \n\n` +
+            `Enter this code to join: ${code} \n\n` +
+            `Download the BAPP app: https://example.com`
+            : `Here is your BAPP admin code: ${code}`
+        await Share.share({ message })
+    } catch (e) {
+        console.error("Failed to share code", e);
+    }
+}
+
 export const CodeShare = ({
     value, codeType = 'surveyor'
 }: CodeShareProps) => {
-
-    const shareCode = async (code: string | undefined) => {
-        try {
-            const message = codeType === 'surveyor' ?
-                `Join my survey! 🦇 \n\n` +
-                `Download or open the BAPP app and join my survey as a surveyor. \n\n` +
-                `Enter this code to join: ${code} \n\n` +
-                `Download the BAPP app: https://example.com`
-                : `Here is your BAPP admin code: ${code}`
-            await Share.share({ message })
-        } catch (e) {
-            console.error("Failed to share code", e);
-        }
-    }
 
     return (
         <View style={styles.container}>
             <View style={styles.codeContainer}>
                 <Text testID="survey-code" accessibilityLabel={value} style={styles.codeText}>{value}</Text>
             </View>
-            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Share survey code" onPress={() => shareCode(value)}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Share survey code" onPress={() => shareSurveyCode(value, codeType)}>
                 <Export width={36} />
             </TouchableOpacity>
         </View >

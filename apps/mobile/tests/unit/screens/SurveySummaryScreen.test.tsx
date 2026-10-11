@@ -46,6 +46,36 @@ describe('SurveySummaryScreen', () => {
 
         expect(await screen.findByText('Surveyor Results')).toBeOnTheScreen();
         expect(screen.queryByText('Complete and Save Survey')).toBeNull();
+        expect(screen.queryByText('Edit')).toBeNull();
+    });
+
+    it('opens the equipment and weather screens to edit each card', async () => {
+        const params = { surveyId: 'survey-1', surveyorId: 'surveyor-1', locationId: 'location-1' };
+        setRouteParams(params);
+        renderWithActiveSurvey(<SurveySummaryScreen />, service);
+        await screen.findByText('Survey Summary');
+
+        fireEvent.press(screen.getByLabelText('Edit Equipment Details'));
+        expect(mockNavigate).toHaveBeenCalledWith('EquipmentDetailsScreen', { ...params, mode: 'edit' });
+
+        fireEvent.press(screen.getByLabelText('Edit Start Weather Conditions'));
+        expect(mockNavigate).toHaveBeenCalledWith('WeatherConditionsScreen', { ...params, type: 'start', mode: 'edit' });
+
+        fireEvent.press(screen.getByLabelText('Edit End Weather Conditions'));
+        expect(mockNavigate).toHaveBeenCalledWith('WeatherConditionsScreen', { ...params, type: 'end', mode: 'edit' });
+    });
+
+    it('lets the lead add weather that was skipped', async () => {
+        const skipped = createMockService({
+            subscribeSurveyContext: mockSubscribeContext(buildContext({
+                survey: buildSurvey({ endWeather: null }),
+                surveyors: [buildSurveyor({ id: 'surveyor-1', name: 'Ada' })],
+            })),
+        });
+        renderWithActiveSurvey(<SurveySummaryScreen />, skipped);
+
+        expect(await screen.findByText('Not recorded')).toBeOnTheScreen();
+        expect(screen.getByLabelText('Edit End Weather Conditions')).toBeOnTheScreen();
     });
 
     it('completes the surveyor and survey then confirms results were sent', async () => {
@@ -59,7 +89,7 @@ describe('SurveySummaryScreen', () => {
         expect(service.completeSurvey).toHaveBeenCalledWith('survey-1');
         expect(await screen.findByText('Results sent')).toBeOnTheScreen();
         expect(
-            screen.getByText('Your results have been saved and sent to the lead surveyor.'),
+            screen.getByText('Your results have been saved and sent to the survey admin.'),
         ).toBeOnTheScreen();
     });
 

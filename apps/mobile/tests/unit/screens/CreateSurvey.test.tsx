@@ -59,6 +59,23 @@ describe('CreateSurvey in edit mode', () => {
         expect(mockPopTo).toHaveBeenCalledWith('SurveyStatusScreen', { surveyId: 'survey-1' });
     });
 
+    it('lets an already-started survey be edited without changing its start', async () => {
+        const started = buildSurvey({
+            name: 'Dusk count',
+            date: new Date(2020, 0, 1),
+            startTime: new Date(2020, 0, 1, 20, 0),
+            endTime: new Date(2020, 0, 1, 22, 0),
+        });
+        const service = createMockService({
+            subscribeSurveyContext: mockSubscribeContext(buildContext({ survey: started })),
+        });
+        renderWithActiveSurvey(<CreateSurvey />, service);
+        await waitFor(() => expect(screen.getByDisplayValue('Dusk count')).toBeOnTheScreen());
+
+        expect(screen.queryByText('Survey start must be in the future')).toBeNull();
+        expect(screen.getByLabelText('Save')).toBeEnabled();
+    });
+
     it('cancels back to survey status without saving', async () => {
         const service = editService();
         renderWithActiveSurvey(<CreateSurvey />, service);
@@ -140,6 +157,48 @@ describe('CreateSurvey', () => {
         fireEvent.changeText(nameInput, 'Dusk count');
         expect(screen.getByLabelText('Continue')).toBeEnabled();
         expect(screen.queryByText('Survey name is required')).toBeNull();
+    });
+
+    it('rejects a postcode with special characters', () => {
+        renderWithService(<CreateSurvey />, createMockService());
+        fireEvent.changeText(screen.getByPlaceholderText('Input survey name'), 'Dusk count');
+        const postcodeInput = screen.getByPlaceholderText('Input survey postcode');
+        fireEvent.changeText(postcodeInput, 'SW1A-1AA!');
+        fireEvent(postcodeInput, 'endEditing');
+
+        expect(screen.getByText('Enter a valid UK postcode, e.g. SW1A 1AA')).toBeOnTheScreen();
+        expect(screen.getByLabelText('Continue')).toBeDisabled();
+
+        fireEvent.changeText(postcodeInput, 'SW1A 1AA');
+        expect(screen.getByLabelText('Continue')).toBeEnabled();
+    });
+
+    it('requires the survey to start in the future', () => {
+        jest.useFakeTimers({ now: new Date(2026, 9, 11, 18, 0, 30) });
+        try {
+            renderWithService(<CreateSurvey />, createMockService());
+            fireEvent.changeText(screen.getByPlaceholderText('Input survey name'), 'Dusk count');
+            fireEvent.press(screen.getByText('DD/MM/YYYY'));
+            expect(screen.queryByText('Survey start must be in the future')).toBeNull();
+
+            // Opening an empty time picker seeds it with the current time, which is already past.
+            fireEvent.press(screen.getAllByText('HH:MM')[0]);
+            expect(screen.getByText('Survey start must be in the future')).toBeOnTheScreen();
+            expect(screen.getByLabelText('Continue')).toBeDisabled();
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    it('requires the end time to be after the start time', () => {
+        renderWithService(<CreateSurvey />, createMockService());
+        fireEvent.changeText(screen.getByPlaceholderText('Input survey name'), 'Dusk count');
+        const [start, , end] = screen.getAllByText('HH:MM');
+        fireEvent.press(start);
+        fireEvent.press(end);
+
+        expect(screen.getByText('End time must be after the start time')).toBeOnTheScreen();
+        expect(screen.getByLabelText('Continue')).toBeDisabled();
     });
 
     it('saves an empty postcode as null', async () => {

@@ -11,7 +11,7 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
-import { BoundaryPosition, Surveyor } from "@bapp/domain";
+import { BoundaryPosition, Surveyor, type ImageResult } from "@bapp/domain";
 import { AddLocationBottomSheet } from "@components/BottomSheets/AddLocationBottomSheet";
 import { ConfirmModal } from "@components/Modals/ConfirmModal";
 
@@ -28,6 +28,7 @@ export function AddSurveyorScreen(): React.JSX.Element {
 
     const [activeSurveyorId, setActiveSurveyorId] = useState<string | null>(null);
     const [boundaryImageUrl, setBoundaryImageUrl] = useState<string | null>(null);
+    const [boundaryStatus, setBoundaryStatus] = useState<ImageResult["status"]>("none");
     const [showBoundaryRequired, setShowBoundaryRequired] = useState(false);
     // Local edit buffer keyed by surveyor id, so typing isn't clobbered by
     // subscription re-emits. Render the buffer value if present, else context.
@@ -49,11 +50,21 @@ export function AddSurveyorScreen(): React.JSX.Element {
         }
     }, [context, service, surveyId]);
 
+    const boundary = context?.survey.boundary;
+    const boundaryKey = boundary ? `${boundary.sourceRef}|${boundary.renderRef}|${boundary.status}` : null;
+
+    // Keyed on the live boundary so an upload (or a processing -> ready writeback) is picked up.
     useEffect(() => {
+        let cancelled = false;
         service.getBoundaryImage(surveyId)
-            .then((result) => setBoundaryImageUrl(result.status === 'ready' ? result.url : null))
+            .then((result) => {
+                if (cancelled) return;
+                setBoundaryStatus(result.status);
+                setBoundaryImageUrl(result.status === 'ready' ? result.url : null);
+            })
             .catch((e) => console.error("Failed to fetch boundary image", e));
-    }, [service, surveyId]);
+        return () => { cancelled = true; };
+    }, [service, surveyId, boundaryKey]);
 
     const displayName = (surveyor: Surveyor) =>
         nameDrafts[surveyor.id] ?? surveyor.name ?? "";
@@ -193,8 +204,12 @@ export function AddSurveyorScreen(): React.JSX.Element {
             </ScrollView>
             <ConfirmModal
                 visible={showBoundaryRequired}
-                title="Red line boundary needed"
-                message="Upload a red line boundary to add surveyor locations."
+                title={boundaryStatus === "processing" ? "Red line boundary still processing" : "Red line boundary needed"}
+                message={
+                    boundaryStatus === "processing" ? "Your red line boundary is still being prepared. Try again in a moment."
+                        : boundaryStatus === "failed" ? "Your red line boundary couldn't be processed. Go back and upload it again as a PNG or JPEG image."
+                            : "Upload a red line boundary to add surveyor locations."
+                }
                 confirmLabel="OK"
                 onConfirm={() => setShowBoundaryRequired(false)}
             />

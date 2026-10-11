@@ -7,17 +7,19 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { screen } from "@theme/screen";
 import React, { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { Alert, KeyboardAvoidingView, ScrollView, StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from "react-native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import PadlockIllustration from "@assets/illustrations/padlock.svg"
 import { isBlank, validateSurveyCode } from "@bapp/domain";
 import { recordRecentSurvey } from "@services/recentSurveys";
+import { ConfirmModal } from "@components/Modals/ConfirmModal";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
 export function AdminCodeScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const [code, setCode] = useState('');
+    const [notFound, setNotFound] = useState(false);
     const service = useSurveyService();
     const codeError = validateSurveyCode(code);
     // Only nag once the code is full length or has a character that can never be valid.
@@ -54,12 +56,19 @@ export function AdminCodeScreen(): React.JSX.Element {
                                 navigation.navigate('SurveyStatusScreen', { surveyId: survey.id });
                             } catch (e) {
                                 console.error("Error resuming survey:", e);
-                                Alert.alert("Survey not found", "No survey matches that admin code. Please check and try again.");
+                                setNotFound(true);
                             }
                         }}
                     />
                 </ScrollView>
             </KeyboardAvoidingView >
+            <ConfirmModal
+                visible={notFound}
+                title="Survey not found"
+                message="No survey matches that admin code. Please check and try again."
+                confirmLabel="OK"
+                onConfirm={() => setNotFound(false)}
+            />
         </View>
 
     );

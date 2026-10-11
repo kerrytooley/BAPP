@@ -7,11 +7,12 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { screen } from "@theme/screen";
 import { colours } from "@theme/colours";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Card } from "@components/Common/Card";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { goToLocationStep } from "@services/locationStep";
+import { continueResumedSetup } from "@services/setupResume";
 import { isBlank, START_RAIN_OPTIONS, validateWeather, Weather } from "@bapp/domain";
 import { textStyles } from "@theme/fonts";
 
@@ -19,7 +20,7 @@ type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
 export function WeatherConditionsScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
-    const { surveyId, surveyorId, locationId, type } = useRoute<RouteProp<SurveyorStackParamList, "WeatherConditionsScreen">>().params;
+    const { surveyId, surveyorId, locationId, type, mode } = useRoute<RouteProp<SurveyorStackParamList, "WeatherConditionsScreen">>().params;
     const service = useSurveyService();
 
     const [temperature, setTemperature] = useState<string>();
@@ -29,6 +30,24 @@ export function WeatherConditionsScreen(): React.JSX.Element {
     const [rain, setRain] = useState<string>();
     const [touched, setTouched] = useState<Partial<Record<keyof Weather, boolean>>>({});
     const isSubmitting = useRef(false);
+
+    // Returning to this step (resume/edit) shows what was saved before.
+    useEffect(() => {
+        if (!mode) return;
+        let cancelled = false;
+        service.getSurveyContext(surveyId)
+            .then(({ survey }) => {
+                const saved = type === "start" ? survey.startWeather : survey.endWeather;
+                if (cancelled || !saved) return;
+                setTemperature(saved.temperature);
+                setCloudCover(saved.cloudCover);
+                setHumidity(saved.humidity);
+                setWind(saved.wind);
+                setRain(saved.rain);
+            })
+            .catch((e) => console.error('Failed to load saved weather', e));
+        return () => { cancelled = true; };
+    }, [mode, service, surveyId, type]);
 
     const rainOptions = START_RAIN_OPTIONS.map((label) => ({ label }));
 
@@ -46,12 +65,17 @@ export function WeatherConditionsScreen(): React.JSX.Element {
     const touch = (field: keyof Weather) => () => setTouched((prev) => ({ ...prev, [field]: true }));
 
     const goNext = async () => {
+        if (mode === "edit") {
+            navigation.goBack();
+            return;
+        }
         if (type === "end") {
             navigation.navigate("SurveySummaryScreen", { surveyId, surveyorId, locationId });
             return;
         }
         try {
-            await goToLocationStep(service, navigation, surveyId, surveyorId);
+            if (mode === "resume") await continueResumedSetup(service, navigation, surveyId, surveyorId, "startWeather");
+            else await goToLocationStep(service, navigation, surveyId, surveyorId);
         } catch (e) {
             console.error('Unable to continue to the location step', e);
         }
@@ -123,9 +147,9 @@ export function WeatherConditionsScreen(): React.JSX.Element {
             </ScrollView>
             <ButtonGroup
                 variant="mixed"
-                labels={["Continue", "Skip"]}
+                labels={mode === "edit" ? ["Save", "Cancel"] : ["Continue", "Skip"]}
                 disabled={[!canContinue, false]}
-                onPress={[handleContinue, goNext]}
+                onPress={[handleContinue, mode === "edit" ? () => navigation.goBack() : goNext]}
             />
         </View>
     )

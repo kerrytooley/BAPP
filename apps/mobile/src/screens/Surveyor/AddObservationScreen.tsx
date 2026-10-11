@@ -18,6 +18,7 @@ import { PlusButton as PlusIcon } from "@components/Common/Icons"
 import { textStyles } from "@theme/fonts";
 import { AddFlightPathBottomSheet } from "@components/BottomSheets/AddFlightPathBottomSheet";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { ConfirmModal } from "@components/Modals/ConfirmModal";
 import { colours } from "@theme/colours";
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
@@ -50,6 +51,7 @@ export function AddObservationScreen(): React.JSX.Element {
 
 
     const sheetRef = useRef<BottomSheetModal>(null);
+    const [confirmDelete, setConfirmDelete] = useState(false);
     // Seed the editable field buffers from the observation exactly once, when it
     // first becomes available. Guarded so later subscription re-emits can't wipe
     // in-progress edits.
@@ -279,8 +281,20 @@ export function AddObservationScreen(): React.JSX.Element {
                     variant="mixed"
                     disabled={[!!frequencyError, false]}
                     onPress={[() => updateObservation(),
-                    () => deleteObservation()]} />
+                    () => setConfirmDelete(true)]} />
             </ScrollView>
+            <ConfirmModal
+                visible={confirmDelete}
+                title="Delete observation?"
+                message="This observation will be permanently deleted."
+                confirmLabel="Delete"
+                destructive
+                onConfirm={() => {
+                    setConfirmDelete(false);
+                    void deleteObservation();
+                }}
+                onCancel={() => setConfirmDelete(false)}
+            />
             {activeSurface && activeImageUri &&
                 <AddFlightPathBottomSheet
                     key={activeSurface}

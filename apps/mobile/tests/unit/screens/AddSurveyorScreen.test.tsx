@@ -61,6 +61,7 @@ import {
     buildContext,
     buildLocation,
     buildSurveyor,
+    buildSurvey,
 } from '../../helpers/factories';
 import {
     createContextSubscription,
@@ -353,6 +354,44 @@ describe('AddSurveyorScreen', () => {
         fireEvent.press(screen.getByText('OK'));
         await waitFor(() => expect(screen.queryByText('Red line boundary needed')).toBeNull());
         expect(service.addLocation).not.toHaveBeenCalled();
+    });
+
+    it('enables locations once a boundary uploaded after opening arrives via the subscription', async () => {
+        const lead = buildSurveyor({ id: 'lead-1', isLead: true, name: 'Alice' });
+        const sub = createContextSubscription(buildContext({ surveyors: [lead] }));
+        const service = createMockService({
+            subscribeSurveyContext: sub.subscribe,
+            getBoundaryImage: jest.fn()
+                .mockResolvedValueOnce({ status: 'none' })
+                .mockResolvedValue({ status: 'ready', url: 'file://boundary.png' }),
+        });
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
+        await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalledTimes(1));
+
+        sub.emit(buildContext({
+            survey: buildSurvey({ boundary: { sourceRef: 'b.png', renderRef: 'b.png', status: 'ready', error: null } }),
+            surveyors: [lead],
+        }));
+        await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalledTimes(2));
+
+        fireEvent.press(screen.getByText('add-location-lead'));
+        expect(screen.queryByText('Red line boundary needed')).toBeNull();
+    });
+
+    it.each([
+        ['processing', 'Red line boundary still processing', 'Your red line boundary is still being prepared. Try again in a moment.'],
+        ['failed', 'Red line boundary needed', "Your red line boundary couldn't be processed. Go back and upload it again as a PNG or JPEG image."],
+    ] as const)('explains a %s boundary', async (status, title, message) => {
+        const service = createMockService({
+            subscribeSurveyContext: mockSubscribeContext(leadOnlyContext()),
+            getBoundaryImage: jest.fn().mockResolvedValue(status === 'failed' ? { status, error: null } : { status }),
+        });
+        renderWithActiveSurvey(<AddSurveyorScreen />, service);
+        await waitFor(() => expect(service.getBoundaryImage).toHaveBeenCalled());
+
+        fireEvent.press(screen.getByText('add-location-lead'));
+        expect(await screen.findByText(title)).toBeOnTheScreen();
+        expect(screen.getByText(message)).toBeOnTheScreen();
     });
 
     it('ignores a location submission when no surveyor is active', async () => {

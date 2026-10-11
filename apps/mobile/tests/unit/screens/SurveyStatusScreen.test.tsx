@@ -7,7 +7,7 @@ jest.mock('@services/export/exportSurvey', () => ({
 }));
 
 import { screen, fireEvent, waitFor, act } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { Share } from 'react-native';
 import { SurveyStatusScreen } from '@screens/Admin/SurveyStatusScreen';
 import { exportSurvey } from '@services/export/exportSurvey';
 import { buildContext, buildSurvey, buildSurveyor } from '../../helpers/factories';
@@ -40,7 +40,6 @@ beforeEach(() => {
     setRouteParams({ surveyId: 'survey-1' });
     service.subscribeSurveyContext = mockSubscribeContext(contextWith());
     exportMock.mockReset();
-    jest.spyOn(Alert, 'alert').mockImplementation(() => { });
     jest.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
         cb(0);
         return 0 as unknown as number;
@@ -48,6 +47,17 @@ beforeEach(() => {
 });
 
 describe('SurveyStatusScreen', () => {
+    it('shows the surveyor code and shares an invite message', async () => {
+        const shareSpy = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
+
+        expect(await screen.findByText('BAT123')).toBeOnTheScreen();
+        fireEvent.press(screen.getByLabelText('Share surveyor code'));
+
+        await waitFor(() => expect(shareSpy).toHaveBeenCalledTimes(1));
+        expect(shareSpy.mock.calls[0][0].message).toContain('Enter this code to join: BAT123');
+    });
+
     it('shows each surveyor progress label and a setup dot in the header', async () => {
         renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
@@ -118,42 +128,38 @@ describe('SurveyStatusScreen', () => {
         expect(await screen.findByText('No postcode')).toBeOnTheScreen();
     });
 
-    it('exports and shares the survey without alerting', async () => {
+    it('exports and shares the survey without a message', async () => {
         exportMock.mockResolvedValue({ fileName: 'export.zip', shared: true });
         renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
         fireEvent.press(await screen.findByText(/^Export & Share/));
 
         await waitFor(() => expect(exportMock).toHaveBeenCalledWith(service, 'survey-1'));
-        expect(Alert.alert).not.toHaveBeenCalled();
+        await waitFor(() => expect(screen.queryByText('Generating export…')).toBeNull());
+        expect(screen.queryByText('Export ready')).toBeNull();
+        expect(screen.queryByText('Export failed')).toBeNull();
     });
 
-    it('alerts when sharing is unavailable', async () => {
+    it('tells the admin when sharing is unavailable', async () => {
         exportMock.mockResolvedValue({ fileName: 'export.zip', shared: false });
         renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
         fireEvent.press(await screen.findByText(/^Export & Share/));
 
-        await waitFor(() =>
-            expect(Alert.alert).toHaveBeenCalledWith(
-                'Export ready',
-                "Sharing isn't available on this device.",
-            ),
-        );
+        expect(await screen.findByText('Export ready')).toBeOnTheScreen();
+        expect(screen.getByText("Sharing isn't available on this device.")).toBeOnTheScreen();
+        fireEvent.press(screen.getByText('OK'));
+        await waitFor(() => expect(screen.queryByText('Export ready')).toBeNull());
     });
 
-    it('alerts when the export fails', async () => {
+    it('tells the admin when the export fails', async () => {
         exportMock.mockRejectedValue(new Error('boom'));
         renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
         fireEvent.press(await screen.findByText(/^Export & Share/));
 
-        await waitFor(() =>
-            expect(Alert.alert).toHaveBeenCalledWith(
-                'Export failed',
-                'Could not build the survey export. Please try again.',
-            ),
-        );
+        expect(await screen.findByText('Export failed')).toBeOnTheScreen();
+        expect(screen.getByText('Could not build the survey export. Please try again.')).toBeOnTheScreen();
     });
 
     it('shows a loading overlay and disables the button while exporting', async () => {

@@ -23,7 +23,8 @@ export const buildSurvey = (overrides: Partial<Survey> = {}): Survey => ({
     startWeather: { temperature: '1', humidity: '1', wind: '1', cloudCover: '1', rain: '1' },
     endWeather: { temperature: '1', humidity: '1', wind: '1', cloudCover: '1', rain: '1' },
     data: {},
-    createdAt: now,
+    // Recent-survey entries expire 90 days after creation, so keep surveys "new".
+    createdAt: new Date(),
     updatedAt: now,
     ...overrides,
 });

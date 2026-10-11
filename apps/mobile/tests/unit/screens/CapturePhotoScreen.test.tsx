@@ -21,6 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { CapturePhotoScreen } from '@screens/Surveyor/CapturePhotoScreen';
 import { createImageBody } from '@utils/image';
 import { createMockService, renderWithService } from '../../helpers/testUtils';
+import { buildContext, buildLocation, buildSurveyor } from '../../helpers/factories';
 import {
     mockNavigate,
     mockPush,
@@ -151,6 +152,27 @@ describe('CapturePhotoScreen', () => {
             photoType: 'equipment',
         });
         expect(service.setLocationImage).not.toHaveBeenCalled();
+    });
+
+    it('skips to the next unfinished step when resuming setup', async () => {
+        setRouteParams({ ...baseParams, mode: 'resume' });
+        const service = createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(buildContext({
+                surveyors: [buildSurveyor({ id: 'surveyor-1', isLead: false, locationId: 'location-1' })],
+                locations: [buildLocation({
+                    id: 'location-1',
+                    equipmentImage: { sourceRef: 'a', renderRef: 'a', status: 'ready', error: null },
+                })],
+            })),
+        });
+        renderWithService(<CapturePhotoScreen />, service);
+
+        fireEvent.press(screen.getByText('Skip'));
+
+        // The equipment photo is already done, so it goes straight to equipment details.
+        await waitFor(() => expect(mockPush).toHaveBeenCalledWith('EquipmentDetailsScreen', {
+            surveyId: 'survey-1', locationId: 'location-1', surveyorId: 'surveyor-1', mode: 'resume',
+        }));
     });
 
     it('skips the equipment photo to equipment details without saving', () => {

@@ -12,6 +12,7 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { textStyles } from "@theme/fonts";
 import { Rotate } from "@components/Common/Icons"
 import { useSurveyService } from "@services/surveyServiceContext";
+import { continueResumedSetup } from "@services/setupResume";
 import { createImageBody, getAspectRatio } from "@utils/image";
 
 interface PageTitleProps {
@@ -24,7 +25,7 @@ type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
 export function CapturePhotoScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
-    const { surveyId, surveyorId, locationId, photoType } = useRoute<RouteProp<SurveyorStackParamList, 'CapturePhotoScreen'>>().params;
+    const { surveyId, surveyorId, locationId, photoType, mode } = useRoute<RouteProp<SurveyorStackParamList, 'CapturePhotoScreen'>>().params;
     const service = useSurveyService();
 
     const [pageTitles, setPageTitles] = useState<PageTitleProps>();
@@ -97,7 +98,15 @@ export function CapturePhotoScreen(): React.JSX.Element {
         }
     }
 
-    const goNext = () => {
+    const goNext = async () => {
+        if (mode === 'resume') {
+            try {
+                await continueResumedSetup(service, navigation, surveyId, surveyorId, photoType === 'frontView' ? 'frontView' : 'equipmentPhoto');
+            } catch (e) {
+                console.error('Unable to continue setup', e);
+            }
+            return;
+        }
         if (photoType === 'frontView') {
             navigation.push('CapturePhotoScreen', { surveyId, locationId, surveyorId, photoType: 'equipment' })
         } else {
@@ -111,7 +120,7 @@ export function CapturePhotoScreen(): React.JSX.Element {
             const imageBody = await createImageBody(imageUri as string);
             const updatedLocation = await service.setLocationImage(locationId, imageBody.fileName, imageBody.bytes, photoType);
             console.log('Image saved for ', pageTitles?.title, updatedLocation)
-            goNext();
+            await goNext();
         } catch (error) {
             console.error('saveImage failed:', error);
         }

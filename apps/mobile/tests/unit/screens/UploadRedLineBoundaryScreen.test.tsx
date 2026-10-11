@@ -134,7 +134,7 @@ describe('UploadRedLineBoundaryScreen', () => {
         );
     });
 
-    it('does not navigate when the upload fails', async () => {
+    it('tells the user and stays put when the upload fails', async () => {
         const logSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
         const service = createMockService({
             setBoundaryImage: jest.fn().mockRejectedValue(new Error('upload failed')),
@@ -149,5 +149,8 @@ describe('UploadRedLineBoundaryScreen', () => {
             ),
         );
         expect(mockNavigate).not.toHaveBeenCalled();
+        expect(await screen.findByText('Upload failed')).toBeOnTheScreen();
+        fireEvent.press(screen.getByText('OK'));
+        await waitFor(() => expect(screen.queryByText('Upload failed')).toBeNull());
     });
 });

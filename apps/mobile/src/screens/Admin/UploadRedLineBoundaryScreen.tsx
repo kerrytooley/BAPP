@@ -10,6 +10,7 @@ import { useSurveyService } from "@services/surveyServiceContext";
 import { Title } from "@components/Common/Titles";
 import { DocumentUpload } from "@components/Interactive/DocumentUpload";
 import { createImageBody } from "@utils/image";
+import { ConfirmModal } from "@components/Modals/ConfirmModal";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
@@ -19,6 +20,7 @@ export function UploadRedLineBoundaryScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const [imageUri, setImageUri] = useState<string | undefined>();
     const [existingUri, setExistingUri] = useState<string | undefined>();
+    const [uploadFailed, setUploadFailed] = useState(false);
     const isSubmitting = useRef(false);
 
     useEffect(() => {
@@ -43,6 +45,7 @@ export function UploadRedLineBoundaryScreen(): React.JSX.Element {
             goNext();
         } catch (e) {
             console.log("Error uploading red line boundary: ", e)
+            setUploadFailed(true);
         } finally {
             isSubmitting.current = false;
         }
@@ -66,6 +69,13 @@ export function UploadRedLineBoundaryScreen(): React.JSX.Element {
                 onPress={[handleContinue, handleSkip]}
                 disabled={imageUri ? [false, false] : [true, false]}
                 variant={"mixed"} />
+            <ConfirmModal
+                visible={uploadFailed}
+                title="Upload failed"
+                message="We couldn't save your red line boundary. Please try again or choose a different image."
+                confirmLabel="OK"
+                onConfirm={() => setUploadFailed(false)}
+            />
         </View>
     )
 }

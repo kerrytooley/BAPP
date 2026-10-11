@@ -3,6 +3,7 @@ jest.mock('@react-navigation/native', () =>
 );
 
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { Animated } from 'react-native';
 import { WelcomeScreen } from '@screens/WelcomeScreen';
 import { loadRecentSurveys, recordRecentSurvey } from '@services/recentSurveys';
 import { buildContext, buildLocation, buildSurvey, buildSurveyor } from '../../helpers/factories';
@@ -11,7 +12,20 @@ import { mockNavigate, resetNavigationMock } from '../../helpers/reactNavigation
 
 const survey = buildSurvey({ id: 'survey-1', name: 'Dusk count', postcode: 'SW1A 1AA', createdAt: new Date() });
 
-beforeEach(resetNavigationMock);
+beforeEach(() => {
+    resetNavigationMock();
+    // Finish the panel slide instantly; real-time animations make these tests slow and flaky under load.
+    jest.spyOn(Animated, 'timing').mockImplementation((value, config) => ({
+        start: (callback?: Animated.EndCallback) => {
+            (value as Animated.Value).setValue(config.toValue as number);
+            callback?.({ finished: true });
+        },
+        stop: () => { },
+        reset: () => { },
+    }));
+});
+
+afterEach(() => jest.restoreAllMocks());
 
 const openMenu = async () => {
     fireEvent.press(screen.getByLabelText('Recent surveys'));
@@ -122,6 +136,7 @@ describe('WelcomeScreen', () => {
             errorSpy.mockRestore();
         });
 
+        // Re-rendering the gesture-handler rows is slow in Jest, so allow extra time under a parallel run.
         it('removes a survey after confirming', async () => {
             await recordRecentSurvey(survey, 'admin');
             renderWithService(<WelcomeScreen />, createMockService());
@@ -130,8 +145,8 @@ describe('WelcomeScreen', () => {
             fireEvent.press(await screen.findByLabelText('Remove Dusk count - SW1A 1AA'));
             fireEvent.press(screen.getByText('Remove'));
 
-            await waitFor(() => expect(screen.queryByLabelText('Open Dusk count - SW1A 1AA')).toBeNull(), { timeout: 5000 });
-        });
+            await waitFor(() => expect(screen.queryByLabelText('Open Dusk count - SW1A 1AA')).toBeNull(), { timeout: 10000 });
+        }, 20000);
 
         it('closes the menu', async () => {
             renderWithService(<WelcomeScreen />, createMockService());

@@ -182,12 +182,15 @@ describe('AddObservationScreen', () => {
         );
     });
 
-    it('deletes the observation and navigates back', async () => {
+    it('deletes the observation after confirming and navigates back', async () => {
         const removeObservation = jest.fn().mockResolvedValue(observation);
         renderWithActiveSurvey(<AddObservationScreen />, buildService({ removeObservation }));
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByText('Delete Observation'));
+        expect(screen.getByText('Delete observation?')).toBeOnTheScreen();
+        expect(removeObservation).not.toHaveBeenCalled();
+        fireEvent.press(screen.getByText('Delete'));
 
         await waitFor(() => expect(removeObservation).toHaveBeenCalledWith('obs-1'));
         expect(mockNavigate).toHaveBeenCalledWith('SurveyScreen', {
@@ -195,6 +198,19 @@ describe('AddObservationScreen', () => {
             locationId: 'location-1',
             surveyorId: 'surveyor-1',
         });
+    });
+
+    it('keeps the observation when deletion is cancelled', async () => {
+        const removeObservation = jest.fn();
+        renderWithActiveSurvey(<AddObservationScreen />, buildService({ removeObservation }));
+        await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
+
+        fireEvent.press(screen.getByText('Delete Observation'));
+        fireEvent.press(screen.getByText('Cancel'));
+
+        await waitFor(() => expect(screen.queryByText('Delete observation?')).toBeNull());
+        expect(removeObservation).not.toHaveBeenCalled();
+        expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it('increments the seen count, bumping the last seen time', async () => {
@@ -215,7 +231,9 @@ describe('AddObservationScreen', () => {
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
 
         fireEvent.press(screen.getByText('Delete Observation'));
+        fireEvent.press(screen.getByText('Delete'));
         fireEvent.press(screen.getByText('Delete Observation'));
+        fireEvent.press(screen.getByText('Delete'));
 
         await waitFor(() => expect(removeObservation).toHaveBeenCalledTimes(1));
         resolveDelete(observation);
@@ -412,6 +430,7 @@ describe('AddObservationScreen', () => {
         renderWithActiveSurvey(<AddObservationScreen />, buildService({ removeObservation }));
         await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
         fireEvent.press(screen.getByText('Delete Observation'));
+        fireEvent.press(screen.getByText('Delete'));
         await waitFor(() =>
             expect(logSpy).toHaveBeenCalledWith(
                 'Error deleting observation: ',

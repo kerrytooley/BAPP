@@ -12,6 +12,7 @@ import { Card } from "@components/Common/Card";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { getIncompleteSetupSteps } from "@utils/setupProgress";
+import { openSetupStep } from "@services/setupResume";
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
@@ -23,7 +24,7 @@ export function SetupIncompleteScreen(): React.JSX.Element {
 
     const completeSetup = () => {
         const [first] = steps;
-        if (first) navigation.navigate(first.route);
+        if (first) openSetupStep(navigation, first);
     };
 
     return (

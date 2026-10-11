@@ -5,7 +5,9 @@ jest.mock('@react-navigation/native', () =>
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { EquipmentDetailsScreen } from '@screens/Surveyor/EquipmentDetailsScreen';
 import { createMockService, renderWithService } from '../../helpers/testUtils';
+import { buildContext, buildLocation, buildSurveyor } from '../../helpers/factories';
 import {
+    mockGoBack,
     mockNavigate,
     resetNavigationMock,
     setRouteParams,
@@ -72,5 +74,57 @@ describe('EquipmentDetailsScreen', () => {
         );
         expect(mockNavigate).not.toHaveBeenCalled();
         errorSpy.mockRestore();
+    });
+
+    describe('opened from the survey summary to edit', () => {
+        const saved = { audioLabel: 'A1', videoLabel: 'V1', otherInfo: 'Tripod' };
+        const editService = () => createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(buildContext({
+                locations: [buildLocation({ id: 'location-1', equipmentInformation: saved })],
+            })),
+        });
+
+        beforeEach(() => setRouteParams({ ...params, mode: 'edit' }));
+
+        it('shows the saved details and saves changes back to the summary', async () => {
+            const service = editService();
+            renderWithService(<EquipmentDetailsScreen />, service);
+
+            expect(await screen.findByDisplayValue('Tripod')).toBeOnTheScreen();
+            fireEvent.changeText(screen.getByDisplayValue('V1'), 'V9');
+            fireEvent.press(screen.getByText('Save'));
+
+            await waitFor(() => expect(mockGoBack).toHaveBeenCalled());
+            expect(service.updateLocation).toHaveBeenCalledWith('location-1', {
+                equipmentInformation: { ...saved, videoLabel: 'V9' },
+            });
+            expect(mockNavigate).not.toHaveBeenCalled();
+        });
+
+        it('cancels without saving', async () => {
+            const service = editService();
+            renderWithService(<EquipmentDetailsScreen />, service);
+            await screen.findByDisplayValue('Tripod');
+
+            fireEvent.press(screen.getByText('Cancel'));
+
+            expect(mockGoBack).toHaveBeenCalled();
+            expect(service.updateLocation).not.toHaveBeenCalled();
+        });
+    });
+
+    it('returns to the survey when resuming and nothing else is unfinished', async () => {
+        setRouteParams({ ...params, mode: 'resume' });
+        const service = createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(buildContext({
+                surveyors: [buildSurveyor({ id: 'surveyor-1', locationId: 'location-1' })],
+                locations: [buildLocation({ id: 'location-1', equipmentInformation: null })],
+            })),
+        });
+        renderWithService(<EquipmentDetailsScreen />, service);
+
+        fireEvent.press(screen.getByText('Skip'));
+
+        await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('SurveyScreen', params));
     });
 });

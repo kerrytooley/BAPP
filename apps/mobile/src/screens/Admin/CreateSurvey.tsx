@@ -12,7 +12,7 @@ import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { DatePickerInput } from "@components/DateTime/DatePickerInput";
 import { TimePickerInput } from "@components/DateTime/TimePickerInput";
-import { validateRequiredText } from "@bapp/domain";
+import { validatePostcode, validateRequiredText, validateSurveyEnd, validateSurveyStart } from "@bapp/domain";
 import { recordRecentSurvey } from "@services/recentSurveys";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
@@ -32,7 +32,17 @@ export function CreateSurvey(): React.JSX.Element {
     const [sunsetTime, setSunsetTime] = useState<Date | undefined>(undefined);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [nameTouched, setNameTouched] = useState(false);
+    const [postcodeTouched, setPostcodeTouched] = useState(false);
+    const [originalTiming, setOriginalTiming] = useState<{ date?: number; start?: number }>({});
     const nameError = validateRequiredText(name, "Survey name");
+    const postcodeError = validatePostcode(postcode);
+    // When editing, an already-past start only blocks saving if the admin changes it.
+    const timingChanged = !editing
+        || date?.getTime() !== originalTiming.date
+        || startTime?.getTime() !== originalTiming.start;
+    const startError = timingChanged ? validateSurveyStart(date, startTime) : null;
+    const endError = validateSurveyEnd(startTime, endTime);
+    const hasErrors = !!(nameError || postcodeError || startError || endError);
 
     const scrollRef = useRef<ScrollView>(null);
     const fieldY = useRef<Record<string, number>>({});
@@ -50,6 +60,7 @@ export function CreateSurvey(): React.JSX.Element {
         setStartTime(survey.startTime ?? undefined);
         setEndTime(survey.endTime ?? undefined);
         setSunsetTime(survey.sunsetTime ?? undefined);
+        setOriginalTiming({ date: survey.date?.getTime(), start: survey.startTime?.getTime() });
     }, [editing, context]);
 
     const returnToStatus = () => {
@@ -65,7 +76,7 @@ export function CreateSurvey(): React.JSX.Element {
     };
 
     const saveSurvey = async () => {
-        if (isSubmitting || nameError) return;
+        if (isSubmitting || hasErrors) return;
         setIsSubmitting(true);
         try {
             const surveyId = createdSurveyId.current ?? (await service.createSurvey()).id;
@@ -95,18 +106,18 @@ export function CreateSurvey(): React.JSX.Element {
             <ScrollView ref={scrollRef} style={{ width: "100%" }} contentContainerStyle={screen.content} keyboardShouldPersistTaps="handled">
                 <Title title={editing ? "Edit Survey Details" : "Create Survey"} />
                 <InputField testID="survey-name-input" fieldLabel="Survey Name" placeholderText="Input survey name" value={name} onChangeText={setName} onEndEditing={() => setNameTouched(true)} error={nameTouched ? nameError : null} />
-                <InputField testID="survey-postcode-input" fieldLabel="Survey Postcode" placeholderText="Input survey postcode" value={postcode} onChangeText={setPostcode} />
+                <InputField testID="survey-postcode-input" fieldLabel="Survey Postcode" placeholderText="Input survey postcode" value={postcode} onChangeText={setPostcode} autoCapitalize="characters" onEndEditing={() => setPostcodeTouched(true)} error={postcodeTouched ? postcodeError : null} />
                 <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.date = e.nativeEvent.layout.y; }}>
-                    <DatePickerInput fieldLabel="Survey Date" value={date} onChange={setDate} onOpen={() => scrollToField("date")} />
+                    <DatePickerInput fieldLabel="Survey Date" value={date} onChange={setDate} onOpen={() => scrollToField("date")} minimumDate={editing ? undefined : new Date()} error={startTime ? null : startError} />
                 </View>
                 <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.start = e.nativeEvent.layout.y; }}>
-                    <TimePickerInput fieldLabel="Start Time" value={startTime} onChange={setStartTime} onOpen={() => scrollToField("start")} />
+                    <TimePickerInput fieldLabel="Start Time" value={startTime} onChange={setStartTime} onOpen={() => scrollToField("start")} error={startTime ? startError : null} />
                 </View>
                 <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.sunset = e.nativeEvent.layout.y; }}>
                     <TimePickerInput fieldLabel="Sunrise/Sunset Time" value={sunsetTime} onChange={setSunsetTime} onOpen={() => scrollToField("sunset")} />
                 </View>
                 <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.end = e.nativeEvent.layout.y; }}>
-                    <TimePickerInput fieldLabel="End Time" value={endTime} onChange={setEndTime} onOpen={() => scrollToField("end")} />
+                    <TimePickerInput fieldLabel="End Time" value={endTime} onChange={setEndTime} onOpen={() => scrollToField("end")} error={endError} />
                 </View>
 
             </ScrollView>
@@ -114,13 +125,13 @@ export function CreateSurvey(): React.JSX.Element {
                 ? <ButtonGroup
                     variant="mixed"
                     labels={["Save", "Cancel"]}
-                    disabled={[isSubmitting || !!nameError, false]}
+                    disabled={[isSubmitting || hasErrors, false]}
                     onPress={[saveSurvey, returnToStatus]}
                 />
                 : <Button
                     variant="light"
                     label="Continue"
-                    disabled={isSubmitting || !!nameError}
+                    disabled={isSubmitting || hasErrors}
                     onPress={saveSurvey}
                 />
             }

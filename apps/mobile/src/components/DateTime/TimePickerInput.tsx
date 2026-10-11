@@ -1,7 +1,7 @@
 import { Platform, StyleProp, StyleSheet, ViewStyle, View, Text, TouchableOpacity } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useState } from "react";
-import { textStyles } from "@theme/fonts";
+import { fonts, textStyles } from "@theme/fonts";
 import { colours } from "@theme/colours";
 import { formatTime } from "@utils/dateTimeUtils";
 
@@ -11,6 +11,7 @@ export interface TimePickerInputProps {
     onChange?: (time: Date) => void;
     onOpen?: () => void;
     style?: StyleProp<ViewStyle>;
+    error?: string | null;
 }
 
 export const TimePickerInput = ({
@@ -19,6 +20,7 @@ export const TimePickerInput = ({
     onChange,
     onOpen,
     style,
+    error,
 }: TimePickerInputProps) => {
     const [show, setShow] = useState(false);
 
@@ -47,11 +49,12 @@ export const TimePickerInput = ({
             <View style={styles.inputTitle}>
                 <Text style={styles.inputTitleText}>{fieldLabel}</Text>
             </View>
-            <TouchableOpacity style={styles.inputBox} onPress={toggleShow} activeOpacity={0.7}>
+            <TouchableOpacity style={[styles.inputBox, !!error && styles.inputBoxError]} onPress={toggleShow} activeOpacity={0.7} accessibilityHint={error ?? undefined}>
                 <Text style={[styles.inputText, !value && styles.placeholder]}>
                     {displayValue}
                 </Text>
             </TouchableOpacity >
+            {!!error && <Text style={styles.errorText}>{error}</Text>}
             {show && (
                 <DateTimePicker
                     value={value ?? new Date()}
@@ -99,5 +102,15 @@ const styles = StyleSheet.create({
     },
     placeholder: {
         color: colours.placeholderText,
+    },
+    inputBoxError: {
+        borderColor: colours.red,
+    },
+    errorText: {
+        ...textStyles.inputText,
+        fontSize: fonts.size.sm,
+        color: colours.red,
+        paddingTop: 6,
+        alignSelf: 'flex-start',
     },
 });

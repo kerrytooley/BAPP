@@ -79,7 +79,10 @@ export function SurveySummaryScreen(): React.JSX.Element {
                 <Card cardLabel="Date and Time">
                     <Text style={styles.text}>{formatDate(survey?.date)}</Text>
                 </Card>
-                <Card cardLabel="Equipment Details">
+                <Card
+                    cardLabel="Equipment Details"
+                    onEdit={viewOnly ? undefined : () => navigation.navigate("EquipmentDetailsScreen", { surveyId, surveyorId, locationId, mode: "edit" })}
+                >
                     <View style={styles.row}>
                         <Text style={styles.text}>Audio label: </Text>
                         <Text style={styles.text}>{location?.equipmentInformation?.audioLabel ?? 'N/A'}</Text>
@@ -93,12 +96,14 @@ export function SurveySummaryScreen(): React.JSX.Element {
                         <Text style={styles.text}>{location?.equipmentInformation?.otherInfo ?? 'N/A'}</Text>
                     </View>
                 </Card>
-                {surveyor?.isLead && survey?.startWeather &&
-                    <WeatherSummary type={"start"} weather={survey?.startWeather} />
-                }
-                {surveyor?.isLead && survey?.endWeather &&
-                    <WeatherSummary type={"end"} weather={survey?.endWeather} />
-                }
+                {surveyor?.isLead && (["start", "end"] as const).map((type) => (
+                    <WeatherSummary
+                        key={type}
+                        type={type}
+                        weather={(type === "start" ? survey?.startWeather : survey?.endWeather) ?? null}
+                        onEdit={viewOnly ? undefined : () => navigation.navigate("WeatherConditionsScreen", { surveyId, surveyorId, locationId, type, mode: "edit" })}
+                    />
+                ))}
                 <Text style={styles.header}>Bat Observations:</Text>
                 {
                     observations &&
@@ -130,7 +135,7 @@ export function SurveySummaryScreen(): React.JSX.Element {
 
 const saveModalContent: Record<Exclude<SaveStatus, "idle">, { title: string; message: string; confirmLabel?: string }> = {
     saving: { title: "Saving your results…", message: "Sending your results to the lead surveyor." },
-    sent: { title: "Results sent", message: "Your results have been saved and sent to the lead surveyor.", confirmLabel: "Done" },
+    sent: { title: "Results sent", message: "Your results have been saved and sent to the survey admin.", confirmLabel: "Done" },
     failed: { title: "Save failed", message: "Could not save your results. Please try again.", confirmLabel: "OK" },
 };
 

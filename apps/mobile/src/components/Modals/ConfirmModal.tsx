@@ -37,8 +37,8 @@ export const ConfirmDialog = ({
     <Pressable testID="confirm-modal-backdrop" style={styles.backdrop} onPress={loading ? undefined : onCancel}>
         <Pressable style={styles.modal} onPress={() => { }}>
             {loading && <ActivityIndicator size="large" color={colours.light} style={styles.spinner} />}
-            <Text style={styles.title}>{title}</Text>
-            {message && <Text style={styles.message}>{message}</Text>}
+            <Text style={[styles.title, loading && styles.centred]}>{title}</Text>
+            {message && <Text style={[styles.message, loading && styles.centred]}>{message}</Text>}
             {!loading &&
                 <View style={styles.actions}>
                     <Button variant={destructive ? "dark" : "light"} size="medium" label={confirmLabel} onPress={onConfirm} />
@@ -82,7 +82,10 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     spinner: {
-        alignSelf: "flex-start",
+        alignSelf: "center",
         marginBottom: 8,
+    },
+    centred: {
+        textAlign: "center",
     },
 });
