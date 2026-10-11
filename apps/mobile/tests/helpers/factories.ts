@@ -20,9 +20,11 @@ export const buildSurvey = (overrides: Partial<Survey> = {}): Survey => ({
     endTime: new Date(2026, 6, 13, 22, 0),
     boundary: null,
     status: 'draft',
-    weather: {},
+    startWeather: { temperature: '1', humidity: '1', wind: '1', cloudCover: '1', rain: '1' },
+    endWeather: { temperature: '1', humidity: '1', wind: '1', cloudCover: '1', rain: '1' },
     data: {},
-    createdAt: now,
+    // Recent-survey entries expire 90 days after creation, so keep surveys "new".
+    createdAt: new Date(),
     updatedAt: now,
     ...overrides,
 });
@@ -51,6 +53,8 @@ export const buildLocation = (
     boundaryPosition: { x: 0.5, y: 0.5 },
     frontViewImage: null,
     equipmentImage: null,
+    equipmentInformation: { audioLabel: '', videoLabel: '', otherInfo: '' },
+    notes: [{ time: new Date, text: 'note' }],
     data: {},
     createdAt: now,
     updatedAt: now,

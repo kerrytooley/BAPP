@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
-import { ObservationSummary } from '@components/ObservationSummary';
+import { ObservationSummary } from '@components/Observation/ObservationSummary';
 import { buildObservation } from '../../helpers/factories';
 
 describe('ObservationSummary', () => {

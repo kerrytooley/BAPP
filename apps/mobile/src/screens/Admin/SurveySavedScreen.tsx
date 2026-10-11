@@ -4,7 +4,8 @@ import { screen } from "@theme/screen";
 import { fonts, textStyles } from "@theme/fonts";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { CompositeNavigationProp, useNavigation } from "@react-navigation/native";
-import { BackButton, Button } from "@components/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { Button } from "@components/Common/Button";
 import { RootStackParamList } from "@navigators/index";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import SavedIllustration from "@assets/illustrations/saved.svg"
@@ -21,7 +22,7 @@ export function SurveySavedScreen(): React.JSX.Element {
     return (
         <View style={screen.justifyScreen}>
             <View style={styles.header}>
-                <BackButton navigation={navigation} />
+                <ScreenHeader navigation={navigation} />
             </View>
             <View style={styles.content} >
                 <Text style={styles.title}>Survey Saved!</Text>

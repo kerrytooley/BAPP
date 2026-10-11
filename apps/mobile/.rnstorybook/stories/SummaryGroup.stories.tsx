@@ -1,4 +1,4 @@
-import { SummaryGroup } from '@components/SummaryRow';
+import { SummaryGroup } from '@components/Display/SummaryRow';
 import type { Meta, StoryObj } from '@storybook/react-native';
 import { colours } from '@theme/colours';
 

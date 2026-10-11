@@ -7,7 +7,7 @@ jest.mock('@services/export/exportSurvey', () => ({
 }));
 
 import { screen, fireEvent, waitFor, act } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { Share } from 'react-native';
 import { SurveyStatusScreen } from '@screens/Admin/SurveyStatusScreen';
 import { exportSurvey } from '@services/export/exportSurvey';
 import { buildContext, buildSurvey, buildSurveyor } from '../../helpers/factories';
@@ -17,6 +17,7 @@ import {
     renderWithActiveSurvey,
 } from '../../helpers/testUtils';
 import {
+    mockNavigate,
     resetNavigationMock,
     setRouteParams,
 } from '../../helpers/reactNavigationMock';
@@ -39,7 +40,6 @@ beforeEach(() => {
     setRouteParams({ surveyId: 'survey-1' });
     service.subscribeSurveyContext = mockSubscribeContext(contextWith());
     exportMock.mockReset();
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     jest.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
         cb(0);
         return 0 as unknown as number;
@@ -47,6 +47,70 @@ beforeEach(() => {
 });
 
 describe('SurveyStatusScreen', () => {
+    it('shows the surveyor code and shares an invite message', async () => {
+        const shareSpy = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
+
+        expect(await screen.findByText('BAT123')).toBeOnTheScreen();
+        fireEvent.press(screen.getByLabelText('Share surveyor code'));
+
+        await waitFor(() => expect(shareSpy).toHaveBeenCalledTimes(1));
+        expect(shareSpy.mock.calls[0][0].message).toContain('Enter this code to join: BAT123');
+    });
+
+    it('shows each surveyor progress label and a setup dot in the header', async () => {
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
+
+        expect(await screen.findByText('Survey ended')).toBeOnTheScreen();
+        expect(screen.getByText('Not started')).toBeOnTheScreen();
+        // Default factory locations are absent, so both surveyors are missing setup.
+        expect(screen.getAllByTestId('status-dot-missing').length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('expands a surveyor to show their setup rows', async () => {
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
+        await screen.findByText('Ben');
+        expect(screen.queryByText('Front view photo')).toBeNull();
+
+        fireEvent.press(screen.getByLabelText('Ben'));
+
+        expect(screen.getByLabelText('Ben').props.accessibilityState).toEqual(expect.objectContaining({ expanded: true }));
+        expect(screen.getByText('Front view photo')).toBeOnTheScreen();
+        expect(screen.queryByText('Start weather')).toBeNull();
+    });
+
+    it('links to the results of a surveyor who has ended their survey', async () => {
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
+        await screen.findByText('Ben');
+
+        fireEvent.press(screen.getByLabelText('Ben'));
+        expect(screen.queryByText('See surveyor results')).toBeNull();
+
+        fireEvent.press(screen.getByLabelText('Lead Surveyor: Ada'));
+        fireEvent.press(screen.getByText('See surveyor results'));
+
+        expect(mockNavigate).toHaveBeenCalledWith('SurveyorResultsScreen', {
+            surveyId: 'survey-1',
+            surveyorId: 'surveyor-1',
+            locationId: '',
+            viewOnly: true,
+        });
+    });
+
+    it('expands survey setup and edits each item', async () => {
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
+        await screen.findByText('Setup details');
+
+        fireEvent.press(screen.getByLabelText('Survey setup'));
+        expect(screen.getByText('Survey details')).toBeOnTheScreen();
+
+        fireEvent.press(screen.getByLabelText('Edit Survey details'));
+        expect(mockNavigate).toHaveBeenLastCalledWith('CreateSurvey', { surveyId: 'survey-1', editing: true });
+        fireEvent.press(screen.getByLabelText('Edit Red line boundary'));
+        expect(mockNavigate).toHaveBeenLastCalledWith('UploadRedLineBoundaryScreen', { surveyId: 'survey-1', editing: true });
+        fireEvent.press(screen.getByLabelText('Edit Surveyors & locations'));
+        expect(mockNavigate).toHaveBeenLastCalledWith('AddSurveyorScreen', { surveyId: 'survey-1', editing: true });
+    });
     it('shows the survey, overall status and each surveyor', async () => {
         renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
@@ -64,52 +128,48 @@ describe('SurveyStatusScreen', () => {
         expect(await screen.findByText('No postcode')).toBeOnTheScreen();
     });
 
-    it('exports and shares the survey without alerting', async () => {
+    it('exports and shares the survey without a message', async () => {
         exportMock.mockResolvedValue({ fileName: 'export.zip', shared: true });
         renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
-        fireEvent.press(await screen.findByText('Export & Share'));
+        fireEvent.press(await screen.findByText(/^Export & Share/));
 
         await waitFor(() => expect(exportMock).toHaveBeenCalledWith(service, 'survey-1'));
-        expect(Alert.alert).not.toHaveBeenCalled();
+        await waitFor(() => expect(screen.queryByText('Generating export…')).toBeNull());
+        expect(screen.queryByText('Export ready')).toBeNull();
+        expect(screen.queryByText('Export failed')).toBeNull();
     });
 
-    it('alerts when sharing is unavailable', async () => {
+    it('tells the admin when sharing is unavailable', async () => {
         exportMock.mockResolvedValue({ fileName: 'export.zip', shared: false });
         renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
-        fireEvent.press(await screen.findByText('Export & Share'));
+        fireEvent.press(await screen.findByText(/^Export & Share/));
 
-        await waitFor(() =>
-            expect(Alert.alert).toHaveBeenCalledWith(
-                'Export ready',
-                "Sharing isn't available on this device.",
-            ),
-        );
+        expect(await screen.findByText('Export ready')).toBeOnTheScreen();
+        expect(screen.getByText("Sharing isn't available on this device.")).toBeOnTheScreen();
+        fireEvent.press(screen.getByText('OK'));
+        await waitFor(() => expect(screen.queryByText('Export ready')).toBeNull());
     });
 
-    it('alerts when the export fails', async () => {
+    it('tells the admin when the export fails', async () => {
         exportMock.mockRejectedValue(new Error('boom'));
         renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
-        fireEvent.press(await screen.findByText('Export & Share'));
+        fireEvent.press(await screen.findByText(/^Export & Share/));
 
-        await waitFor(() =>
-            expect(Alert.alert).toHaveBeenCalledWith(
-                'Export failed',
-                'Could not build the survey export. Please try again.',
-            ),
-        );
+        expect(await screen.findByText('Export failed')).toBeOnTheScreen();
+        expect(screen.getByText('Could not build the survey export. Please try again.')).toBeOnTheScreen();
     });
 
     it('shows a loading overlay and disables the button while exporting', async () => {
-        let resolveExport: (value: { fileName: string; shared: boolean }) => void = () => {};
+        let resolveExport: (value: { fileName: string; shared: boolean }) => void = () => { };
         exportMock.mockImplementation(
             () => new Promise((resolve) => { resolveExport = resolve; }),
         );
         renderWithActiveSurvey(<SurveyStatusScreen />, service);
 
-        fireEvent.press(await screen.findByText('Export & Share'));
+        fireEvent.press(await screen.findByText(/^Export & Share/));
 
         expect(await screen.findByText('Generating export…')).toBeOnTheScreen();
         fireEvent.press(screen.getByText('Exporting…'));

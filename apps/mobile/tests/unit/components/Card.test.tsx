@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { Text } from 'react-native';
-import { Card } from '@components/Card';
+import { Card } from '@components/Common/Card';
 
 describe('Card', () => {
     it('renders the card label', () => {

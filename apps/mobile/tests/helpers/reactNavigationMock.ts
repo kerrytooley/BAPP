@@ -3,6 +3,7 @@ import { useEffect } from "react";
 export const mockNavigate = jest.fn();
 export const mockGoBack = jest.fn();
 export const mockPush = jest.fn();
+export const mockPopTo = jest.fn();
 export const mockAddListener = jest.fn(
     (_event: string, _callback: () => void): (() => void) => jest.fn(),
 );
@@ -13,6 +14,7 @@ export const useNavigation = () => ({
     navigate: mockNavigate,
     goBack: mockGoBack,
     push: mockPush,
+    popTo: mockPopTo,
     addListener: mockAddListener,
 });
 
@@ -30,6 +32,7 @@ export const resetNavigationMock = () => {
     mockNavigate.mockReset();
     mockGoBack.mockReset();
     mockPush.mockReset();
+    mockPopTo.mockReset();
     mockAddListener.mockReset();
     mockAddListener.mockImplementation(() => jest.fn());
     routeState.params = {};

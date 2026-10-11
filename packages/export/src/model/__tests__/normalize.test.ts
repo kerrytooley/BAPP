@@ -7,6 +7,7 @@ import type {
   Survey,
   SurveyContext,
   Surveyor,
+  Weather,
 } from '@bapp/domain';
 import { normalizeReport } from '../normalize';
 import { FIGURE_PALETTE } from '../colors';
@@ -36,7 +37,8 @@ function survey(overrides: Partial<Survey> = {}): Survey {
     endTime: null,
     boundary: null,
     status: 'active',
-    weather: {},
+    startWeather: null,
+    endWeather: null,
     data: {},
     createdAt: EPOCH,
     updatedAt: EPOCH,
@@ -67,6 +69,8 @@ function location(id: string, overrides: Partial<Location> = {}): Location {
     boundaryPosition: null,
     frontViewImage: null,
     equipmentImage: null,
+    equipmentInformation: null,
+    notes: null,
     data: {},
     createdAt: EPOCH,
     updatedAt: EPOCH,
@@ -131,7 +135,14 @@ describe('normalizeReport', () => {
       postcode: 'AB1 2CD',
       date: EPOCH,
       status: 'active',
-      weather: {
+      startWeather: {
+        temperature: null,
+        wind: null,
+        humidity: null,
+        rain: null,
+        cloudCover: null,
+      },
+      endWeather: {
         temperature: null,
         wind: null,
         humidity: null,
@@ -140,9 +151,16 @@ describe('normalizeReport', () => {
       },
     });
     expect(model.surveyors).toEqual([
-      { id: 'sur_1', name: 'Surveyor sur_1', isLead: false, status: 'ready' },
+      { id: 'sur_1', name: 'Surveyor sur_1', isLead: false, status: 'ready', locationId: null },
     ]);
-    expect(model.locations).toEqual([{ id: 'loc_1', name: 'Location loc_1' }]);
+    expect(model.locations).toEqual([
+      {
+        id: 'loc_1',
+        name: 'Location loc_1',
+        equipmentInformation: { audioLabel: '', videoLabel: '', otherInfo: '' },
+        notes: [],
+      },
+    ]);
   });
 
   it('emits no figures when there are no base images', () => {
@@ -385,12 +403,12 @@ describe('normalizeReport', () => {
     const model = normalizeReport(
       context({
         survey: survey({
-          weather: { temperature: 15, wind: '4', humidity: '', rain: 'Wet' },
+          startWeather: { temperature: 15, wind: '4', humidity: '', rain: 'Wet' } as unknown as Weather,
         }),
       }),
     );
 
-    expect(model.survey.weather).toEqual({
+    expect(model.survey.startWeather).toEqual({
       temperature: '15',
       wind: '4',
       humidity: null, // empty string → null

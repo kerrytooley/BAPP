@@ -160,7 +160,7 @@ describe('SurveyService', () => {
       expect(validate).toHaveBeenCalledTimes(1);
       const [ctx, change] = validate.mock.calls[0];
       expect(ctx.survey.name).toBe('New Name');
-      expect(change).toEqual({ type: 'survey', surveyId: survey.id });
+      expect(change).toEqual({ type: 'survey', surveyId: survey.id, fields: ['name'] });
     });
 
     it('rejects if validator throws', async () => {
@@ -632,7 +632,7 @@ describe('SurveyService', () => {
       const [ctx, change] = validate.mock.calls[0];
       const updatedObs = ctx.observations.find((o: { id: string }) => o.id === obs.id);
       expect(updatedObs.seenCount).toBe(10);
-      expect(change).toEqual({ type: 'observation', observationId: obs.id });
+      expect(change).toEqual({ type: 'observation', observationId: obs.id, fields: ['seenCount'] });
     });
   });
 

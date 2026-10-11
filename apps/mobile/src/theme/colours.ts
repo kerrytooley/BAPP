@@ -7,5 +7,7 @@ export const colours = {
     inputBackground: '#2c2c2e',
     placeholderText: '#808080',
     buttonBorder: '#404040',
-    red: '#FF383C'
+    red: '#FF383C',
+    amber: '#FF9F0A',
+    green: '#34C759'
 }

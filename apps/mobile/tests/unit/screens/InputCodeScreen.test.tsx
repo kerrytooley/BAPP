@@ -4,6 +4,7 @@ jest.mock('@react-navigation/native', () =>
 
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { InputCodeScreen } from '@screens/Surveyor/InputCodeScreen';
+import { loadRecentSurveys } from '@services/recentSurveys';
 import { buildContext, buildSurvey } from '../../helpers/factories';
 import { createMockService, renderWithService } from '../../helpers/testUtils';
 import {
@@ -32,6 +33,11 @@ describe('InputCodeScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('CodeConfirmationScreen', {
             surveyId: 'joined-survey',
         });
+        await waitFor(async () =>
+            expect(await loadRecentSurveys()).toEqual([
+                expect.objectContaining({ surveyId: 'joined-survey', role: 'surveyor' }),
+            ]),
+        );
     });
 
     it('does not navigate when joining fails', async () => {
@@ -40,8 +46,24 @@ describe('InputCodeScreen', () => {
             joinSurvey: jest.fn().mockRejectedValue(new Error('bad code')),
         });
         renderWithService(<InputCodeScreen />, service);
+        fireEvent.changeText(screen.getByPlaceholderText('XXXXXX'), 'zzz999');
         fireEvent.press(screen.getByText('Continue'));
         await waitFor(() => expect(errorSpy).toHaveBeenCalled());
         expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('disables continue until a valid code is entered', () => {
+        const service = createMockService();
+        renderWithService(<InputCodeScreen />, service);
+        expect(screen.getByLabelText('Continue')).toBeDisabled();
+
+        fireEvent.changeText(screen.getByPlaceholderText('XXXXXX'), 'bat!');
+        expect(screen.getByText('Codes are 6 letters or numbers')).toBeOnTheScreen();
+        fireEvent.press(screen.getByText('Continue'));
+        expect(service.joinSurvey).not.toHaveBeenCalled();
+
+        fireEvent.changeText(screen.getByPlaceholderText('XXXXXX'), 'BAT123');
+        expect(screen.getByLabelText('Continue')).toBeEnabled();
+        expect(screen.queryByText('Codes are 6 letters or numbers')).toBeNull();
     });
 });

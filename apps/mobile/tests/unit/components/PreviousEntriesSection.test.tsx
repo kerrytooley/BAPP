@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { PreviousEntriesSection } from '@components/PreviousEntriesSection';
+import { PreviousEntriesSection } from '@components/Observation/PreviousEntriesSection';
 import { buildObservation } from '../../helpers/factories';
 
 const setup = (observations = [buildObservation()]) => {
@@ -12,6 +12,7 @@ const setup = (observations = [buildObservation()]) => {
             onAddHeard={onAddHeard}
             onAddSeen={onAddSeen}
             onEdit={onEdit}
+            onDelete={jest.fn()}
         />,
     );
     return { onAddHeard, onAddSeen, onEdit };

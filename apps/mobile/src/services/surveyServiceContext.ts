@@ -1,4 +1,4 @@
-import { NoOpValidator, SurveyService } from '@bapp/domain';
+import { FieldValidator, SurveyService } from '@bapp/domain';
 import {
     InMemorySurveyRepository,
     InMemoryMediaRepository,
@@ -22,7 +22,7 @@ export function createInMemorySurveyService(): SurveyService {
         surveyorRepo,
         observationRepo,
         mediaRepo,
-        new NoOpValidator()
+        new FieldValidator()
     );
 }
 

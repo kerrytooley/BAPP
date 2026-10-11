@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-native';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { DatePickerInput } from '@components/DatePickerInput';
+import { DatePickerInput } from '@components/DateTime/DatePickerInput';
 
 const meta = {
     title: 'Components/DatePickerInput',

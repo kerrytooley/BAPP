@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-native';
 
 import { View } from 'react-native';
-import { CodeInput } from '@components/CodeInput';
+import { CodeInput } from '@components/Interactive/CodeInput';
 
 
 const meta = {

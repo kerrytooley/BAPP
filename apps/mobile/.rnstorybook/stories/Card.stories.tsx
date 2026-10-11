@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-native';
 
 import { View } from 'react-native';
 
-import { Card } from '@components/Card';
-import { InputField } from '@components/InputField';
-import { Button } from '@components/Button';
+import { Card } from '@components/Common/Card';
+import { InputField } from '@components/Common/InputField';
+import { Button } from '@components/Common/Button';
 
 const meta = {
     title: 'Components/Card',

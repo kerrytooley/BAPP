@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { Button, ButtonGroup, BackButton, InlineButton } from '@components/Button';
+import { Button, ButtonGroup, BackButton, InlineButton } from '@components/Common/Button';
 
 describe('Button', () => {
     it('renders the label', () => {
@@ -44,6 +44,15 @@ describe('Button', () => {
     it('reflects the disabled state via accessibility', () => {
         render(<Button label="Continue" disabled />);
         expect(screen.getByRole('button')).toBeDisabled();
+    });
+
+    it('calls onDisabledPress instead of onPress when tapped while disabled', () => {
+        const onPress = jest.fn();
+        const onDisabledPress = jest.fn();
+        render(<Button label="Locate" disabled onPress={onPress} onDisabledPress={onDisabledPress} />);
+        fireEvent.press(screen.getByText('Locate'));
+        expect(onDisabledPress).toHaveBeenCalledTimes(1);
+        expect(onPress).not.toHaveBeenCalled();
     });
 
     it('renders the light variant', () => {

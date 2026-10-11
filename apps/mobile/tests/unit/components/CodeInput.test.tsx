@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { CodeInput } from '@components/CodeInput';
+import { CodeInput } from '@components/Interactive/CodeInput';
 
 describe('CodeInput', () => {
     it('renders the placeholder', () => {
@@ -22,5 +22,15 @@ describe('CodeInput', () => {
     it('disables auto-capitalisation', () => {
         render(<CodeInput placeholder="Code" />);
         expect(screen.getByPlaceholderText('Code').props.autoCapitalize).toBe('none');
+    });
+
+    it('limits input to 6 characters', () => {
+        render(<CodeInput placeholder="Code" />);
+        expect(screen.getByPlaceholderText('Code').props.maxLength).toBe(6);
+    });
+
+    it('shows an error message when given', () => {
+        render(<CodeInput placeholder="Code" error="Codes are 6 letters or numbers" />);
+        expect(screen.getByText('Codes are 6 letters or numbers')).toBeOnTheScreen();
     });
 });

@@ -1,6 +1,7 @@
-import { BackButton, ButtonGroup, InlineButton } from "@components/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { ButtonGroup, InlineButton } from "@components/Common/Button";
 import { SurveyorCard } from "@components/SurveyorCard";
-import { Title } from "@components/Titles";
+import { Title } from "@components/Common/Titles";
 import { screen } from "@theme/screen";
 import { ScrollView, StyleSheet, View } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
@@ -10,13 +11,14 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
-import { BoundaryPosition, Surveyor } from "@bapp/domain";
-import { AddLocationBottomSheet } from "@components/AddLocationBottomSheet";
+import { BoundaryPosition, Surveyor, type ImageResult } from "@bapp/domain";
+import { AddLocationBottomSheet } from "@components/BottomSheets/AddLocationBottomSheet";
+import { ConfirmModal } from "@components/Modals/ConfirmModal";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
 export function AddSurveyorScreen(): React.JSX.Element {
-    const { surveyId } = useRoute<RouteProp<AdminStackParamList, 'AddSurveyorScreen'>>().params;
+    const { surveyId, editing = false } = useRoute<RouteProp<AdminStackParamList, 'AddSurveyorScreen'>>().params;
     const service = useSurveyService();
     const navigation = useNavigation<Nav>();
     const { context } = useActiveSurvey();
@@ -26,17 +28,12 @@ export function AddSurveyorScreen(): React.JSX.Element {
 
     const [activeSurveyorId, setActiveSurveyorId] = useState<string | null>(null);
     const [boundaryImageUrl, setBoundaryImageUrl] = useState<string | null>(null);
-    // Local edit buffer keyed by surveyor id, so typing isn't clobbered by
-    // subscription re-emits. Render the buffer value if present, else context.
+    const [boundaryStatus, setBoundaryStatus] = useState<ImageResult["status"]>("none");
+    const [showBoundaryRequired, setShowBoundaryRequired] = useState(false);
     const [nameDrafts, setNameDrafts] = useState<Record<string, string>>({});
     const sheetRef = useRef<BottomSheetModal>(null);
-    // Guards the lead-surveyor auto-create so a subscription re-emit (while the
-    // write is still catching up) can't fire it twice — the root cause of the
-    // duplicate / linked lead surveyor boxes.
     const leadCreated = useRef(false);
 
-    // Auto-create a single empty lead when the survey has none yet. The created
-    // lead appears via the subscription; we never setState it here.
     useEffect(() => {
         if (!context || leadCreated.current) return;
         if (context.surveyors.length === 0) {
@@ -46,11 +43,20 @@ export function AddSurveyorScreen(): React.JSX.Element {
         }
     }, [context, service, surveyId]);
 
+    const boundary = context?.survey.boundary;
+    const boundaryKey = boundary ? `${boundary.sourceRef}|${boundary.renderRef}|${boundary.status}` : null;
+
     useEffect(() => {
+        let cancelled = false;
         service.getBoundaryImage(surveyId)
-            .then((result) => setBoundaryImageUrl(result.status === 'ready' ? result.url : null))
+            .then((result) => {
+                if (cancelled) return;
+                setBoundaryStatus(result.status);
+                setBoundaryImageUrl(result.status === 'ready' ? result.url : null);
+            })
             .catch((e) => console.error("Failed to fetch boundary image", e));
-    }, [service, surveyId]);
+        return () => { cancelled = true; };
+    }, [service, surveyId, boundaryKey]);
 
     const displayName = (surveyor: Surveyor) =>
         nameDrafts[surveyor.id] ?? surveyor.name ?? "";
@@ -64,7 +70,7 @@ export function AddSurveyorScreen(): React.JSX.Element {
         sheetRef.current?.present();
     };
 
-    // add, remove and save actions — the list itself re-emits via the subscription
+    // add, remove and save actions 
     const addSurveyor = async () => {
         try {
             const newSurveyor = await service.addSurveyor(surveyId, { name: "", isLead: false });
@@ -90,13 +96,6 @@ export function AddSurveyorScreen(): React.JSX.Element {
 
     const updateName = (id: string, name: string) => {
         setNameDrafts((prev) => ({ ...prev, [id]: name }));
-    }
-
-    const saveName = (id: string) => {
-        const name = nameDrafts[id] ?? surveyors.find((s) => s.id === id)?.name ?? "";
-        return service.updateSurveyor(id, { name })
-            .then((surveyor) => console.log('Surveyor name saved:', surveyor))
-            .catch((e) => console.log("Error saving surveyor name", e));
     }
 
     const saveLocation = async (position: BoundaryPosition) => {
@@ -126,8 +125,8 @@ export function AddSurveyorScreen(): React.JSX.Element {
     const canContinue = (leadSurveyor ? displayName(leadSurveyor) : "").trim().length > 0;
 
     const continueToReview = async () => {
-        const nameOf = (s: Surveyor) => nameDrafts[s.id] ?? s.name ?? "";
-        const isBlank = (s: Surveyor) => !s.isLead && nameOf(s).trim() === "" && !s.locationId;
+        const nameOf = (s: Surveyor) => (nameDrafts[s.id] ?? s.name ?? "").trim();
+        const isBlank = (s: Surveyor) => !s.isLead && nameOf(s) === "" && !s.locationId;
         const blank = surveyors.filter(isBlank);
         const remaining = surveyors.filter((s) => !isBlank(s));
 
@@ -137,20 +136,29 @@ export function AddSurveyorScreen(): React.JSX.Element {
             const saved = await Promise.all(remaining.map((s) => service.updateSurveyor(s.id, { name: nameOf(s) })));
             console.log('Surveyor names saved:', saved);
 
-            navigation.navigate('ReviewSurveyDetailsScreen', { surveyId });
+            goNext();
         } catch (e) {
             console.log("Error saving surveyors", e);
         }
     };
 
+    const goNext = () => editing
+        ? navigation.popTo('SurveyStatusScreen', { surveyId })
+        : navigation.navigate('ReviewSurveyDetailsScreen', { surveyId });
+
 
     return (
         <View style={screen.justifyScreen}>
             <View style={{ width: "100%" }}>
-                <BackButton navigation={navigation} />
+                <ScreenHeader navigation={navigation} />
             </View>
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-                <Title title="Add Surveyors" subtitle="Add the name and site location of each surveyor for this survey" />
+                <Title
+                    title={editing ? "Edit Surveyors" : "Add Surveyors"}
+                    subtitle={editing
+                        ? "Names are saved when you press Save. Added surveyors, removals and locations are saved straight away."
+                        : "Add the name and site location of each surveyor for this survey"}
+                />
                 <View style={styles.content} >
                     {surveyors.map((surveyor) => (
                         <SurveyorCard
@@ -159,8 +167,9 @@ export function AddSurveyorScreen(): React.JSX.Element {
                             testID={isLead(surveyor) ? "lead-surveyor-name-input" : "surveyor-name-input"}
                             name={displayName(surveyor)}
                             onChangeName={(text) => updateName(surveyor.id, text)}
-                            onEndEditingName={() => saveName(surveyor.id)}
                             onAddLocation={() => openLocationSheet(surveyor.id)}
+                            canAddLocation={!!boundaryImageUrl}
+                            onLocationUnavailable={() => setShowBoundaryRequired(true)}
                             onClose={() => removeSurveyor(surveyor.id)}
                             hasLocation={surveyor.locationId != null}
                         />
@@ -169,11 +178,11 @@ export function AddSurveyorScreen(): React.JSX.Element {
                 </View>
                 <ButtonGroup
                     variant="mixed"
-                    labels={['Continue', 'Skip']}
+                    labels={editing ? ['Save', 'Cancel'] : ['Continue', 'Skip']}
                     disabled={[!canContinue, false]}
                     onPress={[
                         continueToReview,
-                        () => { navigation.navigate('ReviewSurveyDetailsScreen', { surveyId }) }
+                        goNext
                     ]}
                 />
                 <AddLocationBottomSheet
@@ -184,6 +193,17 @@ export function AddSurveyorScreen(): React.JSX.Element {
                     onChange={saveLocation}
                 />
             </ScrollView>
+            <ConfirmModal
+                visible={showBoundaryRequired}
+                title={boundaryStatus === "processing" ? "Red line boundary still processing" : "Red line boundary needed"}
+                message={
+                    boundaryStatus === "processing" ? "Your red line boundary is still being prepared. Try again in a moment."
+                        : boundaryStatus === "failed" ? "Your red line boundary couldn't be processed. Go back and upload it again as a PNG or JPEG image."
+                            : "Upload a red line boundary to add surveyor locations."
+                }
+                confirmLabel="OK"
+                onConfirm={() => setShowBoundaryRequired(false)}
+            />
         </View>
     );
 }

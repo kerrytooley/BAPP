@@ -1,5 +1,5 @@
 import { Observation } from '@bapp/domain';
-import { ObservationSummary } from '@components/ObservationSummary';
+import { ObservationSummary } from '@components/Observation/ObservationSummary';
 import type { Meta, StoryObj } from '@storybook/react-native';
 import { colours } from '@theme/colours';
 

@@ -1,14 +1,15 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import type { NavigatorScreenParams } from '@react-navigation/native';
 
 import { WelcomeScreen } from '@screens/WelcomeScreen';
-import { AdminNavigator } from './AdminNavigator';
-import { SurveyorNavigator } from './SurveyorNavigator';
+import { AdminNavigator, type AdminStackParamList } from './AdminNavigator';
+import { SurveyorNavigator, type SurveyorStackParamList } from './SurveyorNavigator';
 
 export type RootStackParamList = {
     Welcome: undefined;
-    Admin: undefined;
-    Surveyor: undefined;
+    Admin: NavigatorScreenParams<AdminStackParamList> | undefined;
+    Surveyor: NavigatorScreenParams<SurveyorStackParamList> | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

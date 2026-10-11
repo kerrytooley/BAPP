@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-native';
 
 import { View } from 'react-native';
 
-import { Title } from '@components/Titles';
+import { Title } from '@components/Common/Titles';
 import { colours } from '@theme/colours';
 
 const meta = {

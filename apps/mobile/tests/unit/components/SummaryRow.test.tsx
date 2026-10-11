@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
-import { SummaryRow, SummaryGroup } from '@components/SummaryRow';
+import { SummaryRow, SummaryGroup } from '@components/Display/SummaryRow';
 
 describe('SummaryRow', () => {
     it('renders a string value verbatim', () => {

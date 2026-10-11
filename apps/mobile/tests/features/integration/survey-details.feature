@@ -14,5 +14,12 @@ Feature: Capturing survey details
   Scenario: Admin is blocked by a failing save
     Given the create survey screen is open
     And saving the survey will fail
-    When the admin continues
+    When the admin enters the survey name "Dusk count"
+    And the admin continues
     Then the admin stays on the create survey screen
+
+  Scenario: Admin cannot continue without a survey name
+    Given the create survey screen is open
+    When the admin enters the postcode "SW1A 1AA"
+    And the admin continues
+    Then nothing is saved and the admin stays on the create survey screen

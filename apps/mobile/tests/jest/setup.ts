@@ -17,6 +17,15 @@ require('react-native-gesture-handler/jestSetup');
 // library-provided mock so its children render synchronously in tests.
 jest.mock('@gorhom/bottom-sheet', () => require('@gorhom/bottom-sheet/mock'));
 
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
+beforeEach(async () => {
+  const storage = require('@react-native-async-storage/async-storage');
+  await (storage.default ?? storage).clear();
+});
+
 // Provide stable safe-area insets without needing a SafeAreaProvider wrapper.
 jest.mock('react-native-safe-area-context', () => {
   const actual = jest.requireActual('react-native-safe-area-context');

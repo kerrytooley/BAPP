@@ -1,4 +1,4 @@
-import { Bat } from "@components/BatItem";
+import { Bat } from "@components/Display/BatItem";
 
 
 

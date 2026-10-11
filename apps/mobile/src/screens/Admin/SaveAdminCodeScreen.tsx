@@ -1,5 +1,6 @@
-import { BackButton, Button } from "@components/Button";
-import { Title } from "@components/Titles";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { Button } from "@components/Common/Button";
+import { Title } from "@components/Common/Titles";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
@@ -9,7 +10,7 @@ import { fonts, textStyles } from "@theme/fonts";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
-import { CodeShare } from "@components/CodeShare";
+import { CodeShare } from "@components/Interactive/CodeShare";
 import KeyIllustration from "@assets/illustrations/key.svg"
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
@@ -23,10 +24,11 @@ export function SaveAdminCodeScreen(): React.JSX.Element {
     return (
         <View style={screen.justifyScreen}>
             <View style={{ width: "100%" }}>
-                <BackButton navigation={navigation} />
+                <ScreenHeader navigation={navigation} />
                 <KeyIllustration width={180} height={180} style={styles.illustration} />
                 <Title title="Save Your Admin Code" subtitle="Keep this admin code safe. You'll need it later to access your survey results." />
                 <Text style={styles.hint}>Don't share this code. You'll get a different code later on to invite your surveyors to join. </Text>
+                <Text style={styles.hint}>Surveys are kept for 90 days, after which they expire and can no longer be opened.</Text>
             </View>
             <View style={styles.content}>
                 <CodeShare value={adminCode} codeType="admin" />

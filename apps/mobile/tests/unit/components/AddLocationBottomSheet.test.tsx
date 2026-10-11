@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react-native';
 import { Image } from 'react-native';
-import { AddLocationBottomSheet } from '@components/AddLocationBottomSheet';
+import { AddLocationBottomSheet } from '@components/BottomSheets/AddLocationBottomSheet';
 import { PressableType } from '../../helpers/rnComponents';
 
 jest.mock('@gorhom/bottom-sheet', () => {

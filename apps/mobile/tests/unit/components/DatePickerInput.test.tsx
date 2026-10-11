@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { DatePickerInput } from '@components/DatePickerInput';
+import { Platform } from 'react-native';
+import { DatePickerInput } from '@components/DateTime/DatePickerInput';
 
 jest.mock('@react-native-community/datetimepicker', () => {
     const React = require('react');
@@ -86,5 +87,17 @@ describe('DatePickerInput', () => {
         onChange.mockClear();
         fireEvent(screen.getByTestId('date-picker'), 'change', { type: 'set' }, undefined);
         expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('closes the Android dialog once a date is chosen', () => {
+        jest.replaceProperty(Platform, 'OS', 'android');
+        const onChange = jest.fn();
+        render(<DatePickerInput fieldLabel="Date" onChange={onChange} />);
+        fireEvent.press(screen.getByText('DD/MM/YYYY'));
+        const selected = new Date(2026, 6, 13);
+        fireEvent(screen.getByTestId('date-picker'), 'change', { type: 'set' }, selected);
+        expect(onChange).toHaveBeenLastCalledWith(selected);
+        expect(screen.queryByTestId('date-picker')).toBeNull();
+        jest.restoreAllMocks();
     });
 });

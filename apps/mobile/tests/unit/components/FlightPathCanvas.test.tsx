@@ -24,7 +24,7 @@ jest.mock('react-native-gesture-handler', () => {
 
 import { render, screen, fireEvent, act } from '@testing-library/react-native';
 import { Image, View } from 'react-native';
-import { FlightPathCanvas } from '@components/FlightPathCanvas';
+import { FlightPathCanvas } from '@components/Interactive/FlightPathCanvas';
 import type { FlightPath, FlightPathPoint } from '@bapp/domain';
 
 type Handlers = {

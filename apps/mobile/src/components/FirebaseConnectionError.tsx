@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { Title } from '@components/Titles';
-import { Button } from '@components/Button';
+import { Title } from '@components/Common/Titles';
+import { Button } from '@components/Common/Button';
 import { screen } from '@theme/screen';
 import { textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';

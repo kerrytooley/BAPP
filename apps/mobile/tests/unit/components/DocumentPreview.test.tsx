@@ -4,7 +4,7 @@ jest.mock('@utils/image', () => ({
 
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { Image, Modal, TouchableOpacity } from 'react-native';
-import { DocumentPreview } from '@components/DocumentPreview';
+import { DocumentPreview } from '@components/Display/DocumentPreview';
 import { PressableType } from '../../helpers/rnComponents';
 
 describe('DocumentPreview', () => {
@@ -16,6 +16,13 @@ describe('DocumentPreview', () => {
     it('renders nothing when value is undefined', () => {
         render(<DocumentPreview imageUri={undefined} values={[]} />);
         expect(screen.UNSAFE_queryByType(Image)).toBeNull();
+    });
+
+    it('shows the empty message once there is known to be no image', () => {
+        const { rerender } = render(<DocumentPreview imageUri={undefined} values={[]} emptyMessage="No boundary" />);
+        expect(screen.queryByText('No boundary')).toBeNull();
+        rerender(<DocumentPreview imageUri={null} values={[]} emptyMessage="No boundary" />);
+        expect(screen.getByText('No boundary')).toBeOnTheScreen();
     });
 
     it('renders the preview image when a value is provided', () => {

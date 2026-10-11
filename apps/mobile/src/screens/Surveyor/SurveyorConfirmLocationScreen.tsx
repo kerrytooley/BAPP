@@ -1,5 +1,6 @@
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
+import { continueResumedSetup } from "@services/setupResume";
 import { screen } from "@theme/screen"
 import { useEffect, useRef, useState } from "react";
 
@@ -9,16 +10,17 @@ import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { BoundaryPosition } from "@bapp/domain";
 
 import { StyleSheet, View } from "react-native";
-import { BackButton, ButtonGroup } from "@components/Button";
-import { Title } from "@components/Titles";
-import { StaticPinLayer } from "@components/StaticPinLayer";
-import { AddLocationBottomSheet } from "@components/AddLocationBottomSheet";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { ButtonGroup } from "@components/Common/Button";
+import { Title } from "@components/Common/Titles";
+import { StaticPinLayer } from "@components/Location/StaticPinLayer";
+import { AddLocationBottomSheet } from "@components/BottomSheets/AddLocationBottomSheet";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
 export function SurveyorConfirmLocationScreen(): React.JSX.Element {
-    const { surveyId, surveyorId } = useRoute<RouteProp<SurveyorStackParamList, "SurveyorConfirmLocationScreen">>().params;
+    const { surveyId, surveyorId, mode } = useRoute<RouteProp<SurveyorStackParamList, "SurveyorConfirmLocationScreen">>().params;
     const navigation = useNavigation<Nav>();
     const service = useSurveyService();
     const { context } = useActiveSurvey();
@@ -85,9 +87,10 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
                 currentSurveyor = surveyContext.surveyors.find((s) => s.id === surveyorId);
             }
             if (currentSurveyor?.status === 'pending') {
-                await service.updateSurveyor(surveyorId, { status: 'ready' });
+                await service.updateSurveyor(surveyorId, { status: 'confirmed' });
             }
-            navigation.navigate("CapturePhotoScreen", { surveyId, locationId: id, surveyorId, photoType: 'frontView' });
+            if (mode === 'resume') await continueResumedSetup(service, navigation, surveyId, surveyorId, 'location');
+            else navigation.navigate("CapturePhotoScreen", { surveyId, locationId: id, surveyorId, photoType: 'frontView' });
         } catch (e) {
             console.error("Unable to continue to photo capture", e);
         }
@@ -96,7 +99,7 @@ export function SurveyorConfirmLocationScreen(): React.JSX.Element {
     return (
         <View style={screen.justifyScreen}>
             <View style={{ width: "100%" }} >
-                <BackButton navigation={navigation} />
+                <ScreenHeader navigation={navigation} />
                 <Title title="Confirm Location" subtitle="Confirm your location is correct on the map" />
             </View>
             <View style={[screen.content, styles.imageArea]}>

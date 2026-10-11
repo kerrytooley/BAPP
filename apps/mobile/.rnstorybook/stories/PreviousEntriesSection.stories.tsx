@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-native';
-import { PreviousEntriesSection } from '@components/PreviousEntriesSection';
+import { PreviousEntriesSection } from '@components/Observation/PreviousEntriesSection';
 import { View } from 'react-native';
 import { colours } from '@theme/colours';
 
@@ -26,8 +26,9 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
     args: {
         observations: [],
-        onAddHeard: () => {},
-        onAddSeen: () => {},
-        onEdit: () => {}
+        onAddHeard: () => { },
+        onAddSeen: () => { },
+        onEdit: () => { },
+        onDelete: () => { }
     }
 }

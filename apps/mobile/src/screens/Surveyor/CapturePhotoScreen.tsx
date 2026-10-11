@@ -1,5 +1,6 @@
-import { BackButton, Button, ButtonGroup } from "@components/Button";
-import { Title } from "@components/Titles";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { ButtonGroup } from "@components/Common/Button";
+import { Title } from "@components/Common/Titles";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { colours } from "@theme/colours";
@@ -9,8 +10,9 @@ import React, { useEffect, useState } from "react";
 import { Image, ImageSourcePropType, StyleSheet, Text, View } from "react-native";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { textStyles } from "@theme/fonts";
-import { Rotate } from "@components/icons"
+import { Rotate } from "@components/Common/Icons"
 import { useSurveyService } from "@services/surveyServiceContext";
+import { continueResumedSetup } from "@services/setupResume";
 import { createImageBody, getAspectRatio } from "@utils/image";
 
 interface PageTitleProps {
@@ -23,7 +25,7 @@ type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
 export function CapturePhotoScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
-    const { surveyId, surveyorId, locationId, photoType } = useRoute<RouteProp<SurveyorStackParamList, 'CapturePhotoScreen'>>().params;
+    const { surveyId, surveyorId, locationId, photoType, mode } = useRoute<RouteProp<SurveyorStackParamList, 'CapturePhotoScreen'>>().params;
     const service = useSurveyService();
 
     const [pageTitles, setPageTitles] = useState<PageTitleProps>();
@@ -96,19 +98,29 @@ export function CapturePhotoScreen(): React.JSX.Element {
         }
     }
 
+    const goNext = async () => {
+        if (mode === 'resume') {
+            try {
+                await continueResumedSetup(service, navigation, surveyId, surveyorId, photoType === 'frontView' ? 'frontView' : 'equipmentPhoto');
+            } catch (e) {
+                console.error('Unable to continue setup', e);
+            }
+            return;
+        }
+        if (photoType === 'frontView') {
+            navigation.push('CapturePhotoScreen', { surveyId, locationId, surveyorId, photoType: 'equipment' })
+        } else {
+            navigation.navigate('EquipmentDetailsScreen', { surveyId, locationId, surveyorId });
+        }
+    }
+
     const saveAndContinue = async () => {
         console.log('saveImage called with uri:', imageUri);
         try {
             const imageBody = await createImageBody(imageUri as string);
             const updatedLocation = await service.setLocationImage(locationId, imageBody.fileName, imageBody.bytes, photoType);
             console.log('Image saved for ', pageTitles?.title, updatedLocation)
-
-            if (photoType === 'frontView') {
-                navigation.push('CapturePhotoScreen', { surveyId, locationId, surveyorId, photoType: 'equipment' })
-            } else {
-                navigation.navigate('SetupCompleteScreen', { surveyId, locationId, surveyorId });
-            }
-
+            await goNext();
         } catch (error) {
             console.error('saveImage failed:', error);
         }
@@ -117,7 +129,7 @@ export function CapturePhotoScreen(): React.JSX.Element {
     return (
         <View style={screen.justifyScreen}>
             <View style={{ width: "100%" }} >
-                <BackButton navigation={navigation} />
+                <ScreenHeader navigation={navigation} />
                 {pageTitles && <Title title={pageTitles.title} subtitle={pageTitles.subtitle} />}
             </View>
             <View style={[screen.content, { gap: 48 }]} >
@@ -133,7 +145,7 @@ export function CapturePhotoScreen(): React.JSX.Element {
             </View>
             {
                 !imageUri &&
-                <Button label="Take Photo" variant="light" onPress={() => launchCamera()} />
+                <ButtonGroup variant="mixed" labels={["Take Photo", "Skip"]} onPress={[() => launchCamera(), goNext]} />
             }
             {imageUri &&
                 <ButtonGroup variant="mixed" labels={["Save photo and continue", "Retake photo"]} onPress={[() => saveAndContinue(), () => launchCamera()]} />

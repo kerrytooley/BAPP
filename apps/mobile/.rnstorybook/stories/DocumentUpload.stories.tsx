@@ -1,4 +1,4 @@
-import { DocumentUpload } from '@components/DocumentUpload';
+import { DocumentUpload } from '@components/Interactive/DocumentUpload';
 import type { Meta, StoryObj } from '@storybook/react-native';
 import { colours } from '@theme/colours';
 

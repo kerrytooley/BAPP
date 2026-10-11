@@ -90,4 +90,22 @@ describe('SurveyorCard', () => {
         );
         expect(screen.getByText('Edit Surveyor Location')).toBeOnTheScreen();
     });
+
+    it('reports an unavailable location instead of opening it', () => {
+        const onAddLocation = jest.fn();
+        const onLocationUnavailable = jest.fn();
+        render(
+            <SurveyorCard
+                name="Ada"
+                onChangeName={noop}
+                onAddLocation={onAddLocation}
+                canAddLocation={false}
+                onLocationUnavailable={onLocationUnavailable}
+                onClose={noop}
+            />,
+        );
+        fireEvent.press(screen.getByText('Add Surveyor Location'));
+        expect(onLocationUnavailable).toHaveBeenCalledTimes(1);
+        expect(onAddLocation).not.toHaveBeenCalled();
+    });
 });

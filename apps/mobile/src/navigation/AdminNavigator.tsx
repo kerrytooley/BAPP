@@ -4,25 +4,25 @@ import { CreateSurvey } from "@screens/Admin/CreateSurvey";
 import { UploadRedLineBoundaryScreen } from "@screens/Admin/UploadRedLineBoundaryScreen"
 import { AddSurveyorScreen } from "@screens/Admin/AddSurveyorScreen";
 import { ReviewSurveyDetailsScreen } from "@screens/Admin/ReviewSurveyDetailsScreen";
-import { SurveySavedScreen } from "@screens/Admin/SurveySavedScreen";
 import { ShareCodeScreen } from "@screens/Admin/ShareCodeScreen";
 import { AdminCodeScreen } from "@screens/Admin/AdminCodeScreen";
 import { SurveyStatusScreen } from "@screens/Admin/SurveyStatusScreen";
 import { SaveAdminCodeScreen } from "@screens/Admin/SaveAdminCodeScreen";
 import { WelcomeWalkthroughScreen } from "@screens/Admin/WelcomeWalkthroughScreen";
+import { SurveySummaryScreen } from "@screens/Surveyor/SurveySummaryScreen";
 
 export type AdminStackParamList = {
     BeginOrContinueSurveyScreen: undefined;
     WelcomeWalkthroughScreen: undefined;
-    CreateSurvey: undefined;
+    CreateSurvey: { surveyId: string; editing: true } | undefined;
     SaveAdminCodeScreen: { surveyId: string };
-    UploadRedLineBoundaryScreen: { surveyId: string };
-    AddSurveyorScreen: { surveyId: string };
+    UploadRedLineBoundaryScreen: { surveyId: string; editing?: boolean };
+    AddSurveyorScreen: { surveyId: string; editing?: boolean };
     ReviewSurveyDetailsScreen: { surveyId: string };
-    SurveySavedScreen: undefined;
     ShareCodeScreen: { surveyId: string };
     AdminCodeScreen: undefined;
     SurveyStatusScreen: { surveyId: string };
+    SurveyorResultsScreen: { surveyId: string; surveyorId: string; locationId: string; viewOnly: true };
 };
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();
@@ -37,10 +37,10 @@ export function AdminNavigator() {
             <Stack.Screen name="UploadRedLineBoundaryScreen" component={UploadRedLineBoundaryScreen} />
             <Stack.Screen name="AddSurveyorScreen" component={AddSurveyorScreen} />
             <Stack.Screen name="ReviewSurveyDetailsScreen" component={ReviewSurveyDetailsScreen} />
-            <Stack.Screen name="SurveySavedScreen" component={SurveySavedScreen} />
             <Stack.Screen name="ShareCodeScreen" component={ShareCodeScreen} />
             <Stack.Screen name="AdminCodeScreen" component={AdminCodeScreen} />
             <Stack.Screen name="SurveyStatusScreen" component={SurveyStatusScreen} />
+            <Stack.Screen name="SurveyorResultsScreen" component={SurveySummaryScreen} />
         </Stack.Navigator>
     )
 }

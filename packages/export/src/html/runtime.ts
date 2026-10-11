@@ -44,12 +44,12 @@ export function runtime(): void {
     observations: Observation[];
     figures: Figure[];
   }
-  interface ResolvedImage { dataUri: string; mediaPath: string; }
+  interface ResolvedMedia { mediaPath: string; }
 
   const doc = document;
   const blob = doc.getElementById('report-data');
   if (!blob || !blob.textContent) return;
-  const data = JSON.parse(blob.textContent) as { model: Model; images: Record<string, ResolvedImage>; };
+  const data = JSON.parse(blob.textContent) as { model: Model; images: Record<string, ResolvedMedia>; };
   const model = data.model;
   const images = data.images;
 
@@ -57,9 +57,26 @@ export function runtime(): void {
   const hidden = new Set<string>();
   const hiddenPins = new Set<string>();
   const PIN_COLOR = '#ff5252';
+  const PIN_PATH = 'M12 0C7.03 0 3 4.03 3 9c0 6.75 9 15 9 15s9-8.25 9-15c0-4.97-4.03-9-9-9z';
+  const PIN_SVG = '<svg viewBox="-1 -1 26 26" aria-hidden="true"><path d="' + PIN_PATH + '" fill="' + PIN_COLOR
+    + '" stroke="#ffffff" stroke-width="1.5"/><circle cx="12" cy="9" r="3.2" fill="#ffffff"/></svg>';
   let activeFigureId = model.figures.length ? model.figures[0].figureId : '';
 
   const $ = (id: string) => doc.getElementById(id)!;
+
+  // Scripts run, so swap the no-JS static report for the interactive one.
+  $('static-report').hidden = true;
+  $('report-main').hidden = false;
+
+  // Base images are inlined once, in the static figures; reuse those sources.
+  function inlineSource(figureId: string): string | null {
+    const staticImgs = doc.querySelectorAll('img[data-figure-id]');
+    for (let i = 0; i < staticImgs.length; i++) {
+      const el = staticImgs[i];
+      if (el.getAttribute('data-figure-id') === figureId) return el.getAttribute('src');
+    }
+    return null;
+  }
 
   // ---- Header -----------------------------------------------------------
   $('survey-title').textContent = model.survey.name || 'Survey report';
@@ -105,9 +122,10 @@ export function runtime(): void {
     if (!figure) { img.removeAttribute('src'); return; }
 
     const resolved = images[figure.imageRef];
-    if (resolved) {
-      img.src = resolved.dataUri;
-      img.onerror = () => { img.onerror = null; img.src = resolved.mediaPath; };
+    const src = inlineSource(figure.figureId);
+    if (src) {
+      img.src = src;
+      img.onerror = () => { img.onerror = null; if (resolved) img.src = resolved.mediaPath; };
       img.alt = figure.title;
     } else {
       img.onerror = null;
@@ -125,21 +143,20 @@ export function runtime(): void {
       overlay.appendChild(poly);
     });
 
+    const stage = $('figure-stage');
+    const oldPins = stage.querySelectorAll('.pin-marker');
+    for (let i = 0; i < oldPins.length; i++) stage.removeChild(oldPins[i]);
     figure.pins.forEach((pin) => {
       if (hiddenPins.has(pin.locationId)) return;
-      const marker = doc.createElementNS(SVG_NS, 'circle');
-      marker.setAttribute('cx', String(pin.x));
-      marker.setAttribute('cy', String(pin.y));
-      marker.setAttribute('r', '0.012');
-      marker.setAttribute('fill', PIN_COLOR);
-      marker.setAttribute('stroke', '#ffffff');
-      marker.setAttribute('stroke-width', '2');
-      marker.setAttribute('vector-effect', 'non-scaling-stroke');
-      const title = doc.createElementNS(SVG_NS, 'title');
+      // HTML (not SVG) so the pin keeps its shape; the 0..1 overlay stretches with the image.
+      const marker = doc.createElement('span');
+      marker.className = 'pin-marker';
+      marker.style.left = pin.x * 100 + '%';
+      marker.style.top = pin.y * 100 + '%';
       const who = pin.surveyorNames.length ? ' (' + pin.surveyorNames.join(', ') + ')' : '';
-      title.textContent = pin.label + who;
-      marker.appendChild(title);
-      overlay.appendChild(marker);
+      marker.title = pin.label + who;
+      marker.innerHTML = PIN_SVG;
+      stage.appendChild(marker);
     });
 
     renderChecklist(figure, highlightObs);
@@ -164,9 +181,8 @@ export function runtime(): void {
       });
 
       const swatch = doc.createElement('span');
-      swatch.className = 'swatch pin-swatch';
-      swatch.style.background = PIN_COLOR;
-      swatch.textContent = '\uD83D\uDCCD';
+      swatch.className = 'pin-swatch';
+      swatch.innerHTML = PIN_SVG;
 
       const text = doc.createElement('span');
       text.className = 'check-label';
@@ -272,18 +288,24 @@ export function runtime(): void {
       ctx.stroke();
     });
 
+    const pinShape = new Path2D(PIN_PATH);
+    const pinScale = Math.max(24, canvas.width * 0.035) / 24;
     figure.pins.forEach((pin) => {
       if (hiddenPins.has(pin.locationId)) return;
-      const x = pin.x * canvas.width;
-      const y = pin.y * canvas.height;
-      const r = Math.max(4, canvas.width * 0.012);
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.save();
+      // The path's tip is at (12, 24) in its 24x24 box; anchor that on the location.
+      ctx.translate(pin.x * canvas.width - 12 * pinScale, pin.y * canvas.height - 24 * pinScale);
+      ctx.scale(pinScale, pinScale);
       ctx.fillStyle = PIN_COLOR;
-      ctx.fill();
-      ctx.lineWidth = Math.max(2, canvas.width * 0.003);
+      ctx.fill(pinShape);
+      ctx.lineWidth = 1.5;
       ctx.strokeStyle = '#ffffff';
-      ctx.stroke();
+      ctx.stroke(pinShape);
+      ctx.beginPath();
+      ctx.arc(12, 9, 3.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.restore();
     });
 
     try {

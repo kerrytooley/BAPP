@@ -29,7 +29,7 @@ jest.mock('@gorhom/bottom-sheet', () => {
     };
 });
 
-jest.mock('@components/FlightPathCanvas', () => {
+jest.mock('@components/Interactive/FlightPathCanvas', () => {
     const { TouchableOpacity, Text } = require('react-native');
     return {
         FlightPathCanvas: (props: { surface: string; onCommitPath: (p: unknown[]) => void }) => (
@@ -44,7 +44,7 @@ jest.mock('@components/FlightPathCanvas', () => {
 });
 
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { AddFlightPathBottomSheet } from '@components/AddFlightPathBottomSheet';
+import { AddFlightPathBottomSheet } from '@components/BottomSheets/AddFlightPathBottomSheet';
 import type { FlightPath } from '@bapp/domain';
 
 const initialPaths = [

@@ -6,7 +6,7 @@ jest.mock('@utils/image', () => ({
     getAspectRatio: jest.fn(() => Promise.resolve(1)),
 }));
 
-jest.mock('@components/AddLocationBottomSheet', () => {
+jest.mock('@components/BottomSheets/AddLocationBottomSheet', () => {
     const React = require('react');
     const { Pressable, Text } = require('react-native');
     return {
@@ -44,6 +44,7 @@ import {
 } from '../../helpers/testUtils';
 import {
     mockNavigate,
+    mockPush,
     resetNavigationMock,
     setRouteParams,
 } from '../../helpers/reactNavigationMock';
@@ -56,6 +57,25 @@ beforeEach(() => {
 const readyImage = { status: 'ready', url: 'file://boundary.png' };
 
 describe('SurveyorConfirmLocationScreen', () => {
+    it('continues to the next unfinished step when resuming setup', async () => {
+        setRouteParams({ surveyId: 'survey-1', surveyorId: 'surveyor-1', mode: 'resume' });
+        const context = buildContext({
+            surveyors: [buildSurveyor({ id: 'surveyor-1', isLead: false, locationId: 'location-1', status: 'ready' })],
+            locations: [buildLocation({ id: 'location-1' })],
+        });
+        const service = createMockService({
+            subscribeSurveyContext: mockSubscribeContext(context),
+            getSurveyContext: jest.fn().mockResolvedValue(context),
+            getBoundaryImage: jest.fn().mockResolvedValue(readyImage),
+        });
+        renderWithActiveSurvey(<SurveyorConfirmLocationScreen />, service);
+
+        fireEvent.press(screen.getByText('Continue'));
+
+        await waitFor(() => expect(mockPush).toHaveBeenCalledWith('CapturePhotoScreen', {
+            surveyId: 'survey-1', locationId: 'location-1', surveyorId: 'surveyor-1', photoType: 'frontView', mode: 'resume',
+        }));
+    });
     it('updates the existing location and continues with it', async () => {
         const service = createMockService({
             subscribeSurveyContext: mockSubscribeContext(

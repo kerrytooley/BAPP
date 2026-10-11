@@ -12,20 +12,29 @@ import { SurveyScreen } from "@screens/Surveyor/SurveyScreen";
 import { AddObservationScreen } from "@screens/Surveyor/AddObservationScreen";
 import { type LocationImageType } from "@bapp/domain";
 import { SurveySummaryScreen } from "@screens/Surveyor/SurveySummaryScreen";
+import { EquipmentDetailsScreen } from "@screens/Surveyor/EquipmentDetailsScreen";
+import { SurveyorCompleteScreen } from "@screens/Surveyor/SurveyorCompleteScreen";
+import { SetupIncompleteScreen } from "@screens/Surveyor/SetupIncompleteScreen";
+
+/** resume: continuing unfinished setup from re-entry; edit: changing one item from the survey summary. */
+export type StepMode = "resume" | "edit";
 
 export type SurveyorStackParamList = {
     InputCodeScreen: undefined,
     CodeConfirmationScreen: { surveyId: string }
     SelectSurveyorScreen: { surveyId: string }
     ConfirmSurveyorDetailsScreen: { surveyId: string, surveyorId: string }
-    SurveyorConfirmLocationScreen: { surveyId: string, surveyorId: string }
-    WeatherConditionsScreen: { surveyId: string, surveyorId: string }
-    CapturePhotoScreen: { surveyId: string, locationId: string, surveyorId: string, photoType: LocationImageType }
+    SurveyorConfirmLocationScreen: { surveyId: string, surveyorId: string, mode?: StepMode }
+    WeatherConditionsScreen: { surveyId: string, surveyorId: string, locationId: string, type: "start" | "end", mode?: StepMode }
+    CapturePhotoScreen: { surveyId: string, locationId: string, surveyorId: string, photoType: LocationImageType, mode?: StepMode }
+    EquipmentDetailsScreen: { surveyId: string, locationId: string, surveyorId: string, mode?: StepMode };
     SetupCompleteScreen: { surveyId: string, locationId: string, surveyorId: string }
     SurveyScreen: { surveyId: string, locationId: string, surveyorId: string }
     SelectSpeciesScreen: { surveyId: string, locationId: string, surveyorId: string }
     AddObservationScreen: { surveyId: string, observationId: string, surveyorId: string, locationId: string }
-    SurveySummaryScreen: { surveyId: string, surveyorId: string }
+    SurveySummaryScreen: { surveyId: string, surveyorId: string, locationId: string, viewOnly?: boolean }
+    SurveyorCompleteScreen: { surveyId: string, surveyorId: string, locationId: string }
+    SetupIncompleteScreen: { surveyId: string, surveyorId: string, locationId: string }
 };
 
 const Stack = createNativeStackNavigator<SurveyorStackParamList>();
@@ -40,11 +49,14 @@ export function SurveyorNavigator() {
             <Stack.Screen name="SurveyorConfirmLocationScreen" component={SurveyorConfirmLocationScreen} />
             <Stack.Screen name="WeatherConditionsScreen" component={WeatherConditionsScreen} />
             <Stack.Screen name="CapturePhotoScreen" component={CapturePhotoScreen} />
+            <Stack.Screen name="EquipmentDetailsScreen" component={EquipmentDetailsScreen} />
             <Stack.Screen name="SetupCompleteScreen" component={SetupCompleteScreen} />
             <Stack.Screen name="SurveyScreen" component={SurveyScreen} />
             <Stack.Screen name="SelectSpeciesScreen" component={SelectSpeciesPage} />
             <Stack.Screen name="AddObservationScreen" component={AddObservationScreen} />
             <Stack.Screen name="SurveySummaryScreen" component={SurveySummaryScreen} />
+            <Stack.Screen name="SurveyorCompleteScreen" component={SurveyorCompleteScreen} />
+            <Stack.Screen name="SetupIncompleteScreen" component={SetupIncompleteScreen} />
         </Stack.Navigator>
     )
 }

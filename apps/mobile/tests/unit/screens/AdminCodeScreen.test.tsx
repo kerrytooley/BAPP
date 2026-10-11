@@ -3,8 +3,8 @@ jest.mock('@react-navigation/native', () =>
 );
 
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 import { AdminCodeScreen } from '@screens/Admin/AdminCodeScreen';
+import { loadRecentSurveys } from '@services/recentSurveys';
 import { buildContext, buildSurvey } from '../../helpers/factories';
 import { createMockService, renderWithService } from '../../helpers/testUtils';
 import {
@@ -14,7 +14,6 @@ import {
 
 beforeEach(() => {
     resetNavigationMock();
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 });
 
 describe('AdminCodeScreen', () => {
@@ -38,24 +37,47 @@ describe('AdminCodeScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('SurveyStatusScreen', {
             surveyId: 'resumed-survey',
         });
+        await waitFor(async () =>
+            expect(await loadRecentSurveys()).toEqual([
+                expect.objectContaining({ surveyId: 'resumed-survey', role: 'admin' }),
+            ]),
+        );
     });
 
-    it('alerts and does not navigate when the code is not found', async () => {
-        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    it('shows a not-found message and does not navigate when the code is not found', async () => {
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = createMockService({
             resumeSurvey: jest.fn().mockRejectedValue(new Error('not found')),
         });
         renderWithService(<AdminCodeScreen />, service);
 
+        fireEvent.changeText(screen.getByPlaceholderText('XXXXXX'), 'zzz999');
         fireEvent.press(screen.getByText('Continue'));
 
-        await waitFor(() =>
-            expect(Alert.alert).toHaveBeenCalledWith(
-                'Survey not found',
-                'No survey matches that admin code. Please check and try again.',
-            ),
-        );
+        expect(await screen.findByText('Survey not found')).toBeOnTheScreen();
+        expect(screen.getByText('No survey matches that admin code. Please check and try again.')).toBeOnTheScreen();
         expect(mockNavigate).not.toHaveBeenCalled();
+
+        fireEvent.press(screen.getByText('OK'));
+        await waitFor(() => expect(screen.queryByText('Survey not found')).toBeNull());
         errorSpy.mockRestore();
+    });
+
+    it('disables continue until a valid code is entered', () => {
+        const service = createMockService();
+        renderWithService(<AdminCodeScreen />, service);
+        expect(screen.getByLabelText('Continue')).toBeDisabled();
+
+        fireEvent.changeText(screen.getByPlaceholderText('XXXXXX'), 'abc');
+        expect(screen.getByLabelText('Continue')).toBeDisabled();
+        expect(screen.queryByText('Codes are 6 letters or numbers')).toBeNull();
+
+        fireEvent.changeText(screen.getByPlaceholderText('XXXXXX'), 'ab-12c');
+        expect(screen.getByText('Codes are 6 letters or numbers')).toBeOnTheScreen();
+        fireEvent.press(screen.getByText('Continue'));
+        expect(service.resumeSurvey).not.toHaveBeenCalled();
+
+        fireEvent.changeText(screen.getByPlaceholderText('XXXXXX'), 'abc123');
+        expect(screen.getByLabelText('Continue')).toBeEnabled();
     });
 });

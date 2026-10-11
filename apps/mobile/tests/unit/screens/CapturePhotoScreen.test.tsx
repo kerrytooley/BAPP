@@ -21,6 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { CapturePhotoScreen } from '@screens/Surveyor/CapturePhotoScreen';
 import { createImageBody } from '@utils/image';
 import { createMockService, renderWithService } from '../../helpers/testUtils';
+import { buildContext, buildLocation, buildSurveyor } from '../../helpers/factories';
 import {
     mockNavigate,
     mockPush,
@@ -117,7 +118,7 @@ describe('CapturePhotoScreen', () => {
         });
     });
 
-    it('navigates to the setup-complete screen after saving the equipment photo', async () => {
+    it('navigates to equipment details after saving the equipment photo', async () => {
         setRouteParams({ ...baseParams, photoType: 'equipment' });
         const service = createMockService();
         renderWithService(<CapturePhotoScreen />, service);
@@ -130,12 +131,63 @@ describe('CapturePhotoScreen', () => {
         fireEvent.press(screen.getByText('Save photo and continue'));
 
         await waitFor(() =>
-            expect(mockNavigate).toHaveBeenCalledWith('SetupCompleteScreen', {
+            expect(mockNavigate).toHaveBeenCalledWith('EquipmentDetailsScreen', {
                 surveyId: 'survey-1',
                 locationId: 'location-1',
                 surveyorId: 'surveyor-1',
             }),
         );
+    });
+
+    it('skips the front-view photo to the equipment photo without saving', () => {
+        const service = createMockService();
+        renderWithService(<CapturePhotoScreen />, service);
+
+        fireEvent.press(screen.getByText('Skip'));
+
+        expect(mockPush).toHaveBeenCalledWith('CapturePhotoScreen', {
+            surveyId: 'survey-1',
+            locationId: 'location-1',
+            surveyorId: 'surveyor-1',
+            photoType: 'equipment',
+        });
+        expect(service.setLocationImage).not.toHaveBeenCalled();
+    });
+
+    it('skips to the next unfinished step when resuming setup', async () => {
+        setRouteParams({ ...baseParams, mode: 'resume' });
+        const service = createMockService({
+            getSurveyContext: jest.fn().mockResolvedValue(buildContext({
+                surveyors: [buildSurveyor({ id: 'surveyor-1', isLead: false, locationId: 'location-1' })],
+                locations: [buildLocation({
+                    id: 'location-1',
+                    equipmentImage: { sourceRef: 'a', renderRef: 'a', status: 'ready', error: null },
+                })],
+            })),
+        });
+        renderWithService(<CapturePhotoScreen />, service);
+
+        fireEvent.press(screen.getByText('Skip'));
+
+        // The equipment photo is already done, so it goes straight to equipment details.
+        await waitFor(() => expect(mockPush).toHaveBeenCalledWith('EquipmentDetailsScreen', {
+            surveyId: 'survey-1', locationId: 'location-1', surveyorId: 'surveyor-1', mode: 'resume',
+        }));
+    });
+
+    it('skips the equipment photo to equipment details without saving', () => {
+        setRouteParams({ ...baseParams, photoType: 'equipment' });
+        const service = createMockService();
+        renderWithService(<CapturePhotoScreen />, service);
+
+        fireEvent.press(screen.getByText('Skip'));
+
+        expect(mockNavigate).toHaveBeenCalledWith('EquipmentDetailsScreen', {
+            surveyId: 'survey-1',
+            locationId: 'location-1',
+            surveyorId: 'surveyor-1',
+        });
+        expect(service.setLocationImage).not.toHaveBeenCalled();
     });
 
     it('re-launches the camera when retaking a photo', async () => {

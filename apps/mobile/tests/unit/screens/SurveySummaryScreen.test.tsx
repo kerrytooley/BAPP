@@ -3,8 +3,7 @@ jest.mock('@react-navigation/native', () =>
 );
 
 import { screen, fireEvent, waitFor, act } from '@testing-library/react-native';
-import { Alert } from 'react-native';
-import type { Surveyor } from '@bapp/domain';
+import { ValidationError, type Surveyor } from '@bapp/domain';
 import { SurveySummaryScreen } from '@screens/Surveyor/SurveySummaryScreen';
 import {
     createMockService,
@@ -33,13 +32,50 @@ beforeEach(() => {
     setRouteParams({ surveyId: 'survey-1', surveyorId: 'surveyor-1' });
     service.completeSurveyor.mockReset().mockResolvedValue(buildSurveyor({ status: 'done' }));
     service.completeSurvey.mockReset().mockResolvedValue(buildSurvey({ status: 'completed' }));
-    jest.spyOn(Alert, 'alert').mockImplementation(() => { });
 });
 
 describe('SurveySummaryScreen', () => {
     it('shows the summary title', async () => {
         renderWithActiveSurvey(<SurveySummaryScreen />, service);
         expect(await screen.findByText('Survey Summary')).toBeOnTheScreen();
+    });
+
+    it('is read-only when the admin views a surveyor\'s results', async () => {
+        setRouteParams({ surveyId: 'survey-1', surveyorId: 'surveyor-1', locationId: '', viewOnly: true });
+        renderWithActiveSurvey(<SurveySummaryScreen />, service);
+
+        expect(await screen.findByText('Surveyor Results')).toBeOnTheScreen();
+        expect(screen.queryByText('Complete and Save Survey')).toBeNull();
+        expect(screen.queryByText('Edit')).toBeNull();
+    });
+
+    it('opens the equipment and weather screens to edit each card', async () => {
+        const params = { surveyId: 'survey-1', surveyorId: 'surveyor-1', locationId: 'location-1' };
+        setRouteParams(params);
+        renderWithActiveSurvey(<SurveySummaryScreen />, service);
+        await screen.findByText('Survey Summary');
+
+        fireEvent.press(screen.getByLabelText('Edit Equipment Details'));
+        expect(mockNavigate).toHaveBeenCalledWith('EquipmentDetailsScreen', { ...params, mode: 'edit' });
+
+        fireEvent.press(screen.getByLabelText('Edit Start Weather Conditions'));
+        expect(mockNavigate).toHaveBeenCalledWith('WeatherConditionsScreen', { ...params, type: 'start', mode: 'edit' });
+
+        fireEvent.press(screen.getByLabelText('Edit End Weather Conditions'));
+        expect(mockNavigate).toHaveBeenCalledWith('WeatherConditionsScreen', { ...params, type: 'end', mode: 'edit' });
+    });
+
+    it('lets the lead add weather that was skipped', async () => {
+        const skipped = createMockService({
+            subscribeSurveyContext: mockSubscribeContext(buildContext({
+                survey: buildSurvey({ endWeather: null }),
+                surveyors: [buildSurveyor({ id: 'surveyor-1', name: 'Ada' })],
+            })),
+        });
+        renderWithActiveSurvey(<SurveySummaryScreen />, skipped);
+
+        expect(await screen.findByText('Not recorded')).toBeOnTheScreen();
+        expect(screen.getByLabelText('Edit End Weather Conditions')).toBeOnTheScreen();
     });
 
     it('completes the surveyor and survey then confirms results were sent', async () => {
@@ -51,11 +87,10 @@ describe('SurveySummaryScreen', () => {
             expect(service.completeSurveyor).toHaveBeenCalledWith('surveyor-1'),
         );
         expect(service.completeSurvey).toHaveBeenCalledWith('survey-1');
-        expect(Alert.alert).toHaveBeenCalledWith(
-            'Results sent',
-            'Your results have been saved and sent to the lead surveyor.',
-            expect.any(Array),
-        );
+        expect(await screen.findByText('Results sent')).toBeOnTheScreen();
+        expect(
+            screen.getByText('Your results have been saved and sent to the survey admin.'),
+        ).toBeOnTheScreen();
     });
 
     it('navigates to Welcome when confirming the results dialog', async () => {
@@ -63,39 +98,31 @@ describe('SurveySummaryScreen', () => {
 
         fireEvent.press(await screen.findByText('Complete and Save Survey'));
 
-        await waitFor(() => expect(Alert.alert).toHaveBeenCalled());
-        const buttons = (Alert.alert as jest.Mock).mock.calls[0][2];
-        buttons[0].onPress();
+        fireEvent.press(await screen.findByText('Done'));
         expect(mockNavigate).toHaveBeenCalledWith('Welcome');
     });
 
     it('still confirms results when the survey cannot be completed yet', async () => {
-        service.completeSurvey.mockRejectedValue(new Error('not all surveyors done'));
+        service.completeSurvey.mockRejectedValue(new ValidationError('not all surveyors done'));
         renderWithActiveSurvey(<SurveySummaryScreen />, service);
 
         fireEvent.press(await screen.findByText('Complete and Save Survey'));
 
-        await waitFor(() =>
-            expect(Alert.alert).toHaveBeenCalledWith(
-                'Results sent',
-                'Your results have been saved and sent to the lead surveyor.',
-                expect.any(Array),
-            ),
-        );
+        expect(await screen.findByText('Results sent')).toBeOnTheScreen();
     });
 
-    it('alerts when completing the surveyor fails', async () => {
+    it('shows a failure message when completing the surveyor fails', async () => {
         service.completeSurveyor.mockRejectedValue(new Error('boom'));
         renderWithActiveSurvey(<SurveySummaryScreen />, service);
 
         fireEvent.press(await screen.findByText('Complete and Save Survey'));
 
-        await waitFor(() =>
-            expect(Alert.alert).toHaveBeenCalledWith(
-                'Save failed',
-                'Could not save your results. Please try again.',
-            ),
-        );
+        expect(await screen.findByText('Save failed')).toBeOnTheScreen();
+        expect(screen.getByText('Could not save your results. Please try again.')).toBeOnTheScreen();
+
+        fireEvent.press(screen.getByText('OK'));
+        await waitFor(() => expect(screen.queryByText('OK')).toBeNull());
+        expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it('shows a loading overlay while the results are saving', async () => {

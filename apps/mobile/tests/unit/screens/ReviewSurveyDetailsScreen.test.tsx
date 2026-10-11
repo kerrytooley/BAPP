@@ -4,7 +4,7 @@ jest.mock('@react-navigation/native', () =>
 
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { ReviewSurveyDetailsScreen } from '@screens/Admin/ReviewSurveyDetailsScreen';
-import { DocumentPreview } from '@components/DocumentPreview';
+import { DocumentPreview } from '@components/Display/DocumentPreview';
 import { buildContext, buildLocation, buildSurvey, buildSurveyor } from '../../helpers/factories';
 import {
     createMockService,
@@ -17,7 +17,7 @@ import {
     setRouteParams,
 } from '../../helpers/reactNavigationMock';
 
-jest.mock('@components/DocumentPreview', () => ({
+jest.mock('@components/Display/DocumentPreview', () => ({
     DocumentPreview: jest.fn(() => null),
 }));
 
@@ -92,14 +92,13 @@ describe('ReviewSurveyDetailsScreen', () => {
         });
     });
 
-    it('navigates to the saved screen when saving for later', async () => {
+    it('does not offer saving for later', async () => {
         const service = createMockService({
             subscribeSurveyContext: mockSubscribeContext(populatedContext()),
         });
         renderWithActiveSurvey(<ReviewSurveyDetailsScreen />, service);
         await waitFor(() => expect(screen.getByText('Dusk count')).toBeOnTheScreen());
-        fireEvent.press(screen.getByText('Save for Later'));
-        expect(mockNavigate).toHaveBeenCalledWith('SurveySavedScreen');
+        expect(screen.queryByText('Save for Later')).toBeNull();
     });
 
     it('logs an error when the boundary image fails to load', async () => {

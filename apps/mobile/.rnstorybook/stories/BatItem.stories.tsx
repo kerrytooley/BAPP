@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-native';
-import { Bat, BatItem } from '@components/BatItem';
+import { Bat, BatItem } from '@components/Display/BatItem';
 import { Image, View } from 'react-native';
 
 const meta = {
@@ -29,6 +29,7 @@ const bat = {
 export const Default: Story = {
     args: {
         bat,
+        disabled: false,
         onPress: () => { }
     }
 }

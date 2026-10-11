@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { InputField } from '@components/InputField';
+import { InputField } from '@components/Common/InputField';
 
 describe('InputField', () => {
     it('renders the placeholder', () => {
@@ -68,5 +68,24 @@ describe('InputField', () => {
         fireEvent(input, 'focus');
         fireEvent(input, 'blur');
         expect(input).toBeOnTheScreen();
+    });
+
+    it('calls onFocus when focused', () => {
+        const onFocus = jest.fn();
+        render(<InputField placeholderText="Survey name" onFocus={onFocus} />);
+        fireEvent(screen.getByPlaceholderText('Survey name'), 'focus');
+        expect(onFocus).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows an error message only when one is given', () => {
+        const { rerender } = render(<InputField placeholderText="Wind" error="Enter a whole number" />);
+        expect(screen.getByText('Enter a whole number')).toBeOnTheScreen();
+        rerender(<InputField placeholderText="Wind" error={null} />);
+        expect(screen.queryByText('Enter a whole number')).toBeNull();
+    });
+
+    it('passes the keyboard type through', () => {
+        render(<InputField placeholderText="Wind" keyboardType="number-pad" />);
+        expect(screen.getByPlaceholderText('Wind').props.keyboardType).toBe('number-pad');
     });
 });

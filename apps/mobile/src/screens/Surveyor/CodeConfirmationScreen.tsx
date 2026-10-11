@@ -1,11 +1,12 @@
-import { Title } from "@components/Titles";
+import { Title } from "@components/Common/Titles";
 import { screen } from "@theme/screen";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
-import { BackButton, Button, InlineButton } from "@components/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { Button, InlineButton } from "@components/Common/Button";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { formatDate } from "@utils/dateTimeUtils";
 import ClipboardIllustration from "@assets/illustrations/clipboard.svg"
@@ -31,7 +32,7 @@ export function CodeConfirmationScreen(
     return (
         <View style={styles.screen}>
             <View style={{ width: "100%", gap: 24 }}>
-                <BackButton navigation={navigation} />
+                <ScreenHeader navigation={navigation} />
                 <ClipboardIllustration width={180} height={180} style={styles.illustration} />
                 <Title testID="confirmation-heading" title="You are joining:" />
                 <View style={{ paddingVertical: 24 }}>

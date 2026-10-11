@@ -1,12 +1,13 @@
-import { BackButton, Button } from "@components/Button";
+import { ScreenHeader } from "@components/Common/ScreenHeader";
+import { Button } from "@components/Common/Button";
 import { RootStackParamList } from "@navigators/index";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { CompositeNavigationProp, useNavigation } from "@react-navigation/native";
 import { screen } from "@theme/screen";
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { Title } from "@components/Titles";
-import { CodeShare } from "@components/CodeShare";
+import { Title } from "@components/Common/Titles";
+import { CodeShare } from "@components/Interactive/CodeShare";
 import { AdminStackParamList } from "@navigators/AdminNavigator";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import SurveyorIllustration from "@assets/illustrations/surveyors.svg"
@@ -25,7 +26,7 @@ export function ShareCodeScreen(): React.JSX.Element {
         <View style={screen.justifyScreen} >
             <View style={{ width: "100%" }} >
                 <View style={styles.header}>
-                    <BackButton navigation={navigation} />
+                    <ScreenHeader navigation={navigation} />
                 </View>
                 <SurveyorIllustration width={180} height={180} style={styles.illustration} />
                 <Title title="Share Your Survey Code" subtitle="Share this surveyor code with your team to invite them to the survey." />

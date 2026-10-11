@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-native';
 
 import { View } from 'react-native';
 
-import { ButtonGroup } from '@components/Button';
+import { ButtonGroup } from '@components/Common/Button';
 
 const meta = {
     title: 'Components/ButtonGroup',

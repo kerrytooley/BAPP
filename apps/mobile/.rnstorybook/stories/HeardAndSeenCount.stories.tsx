@@ -1,4 +1,4 @@
-import { HeardAndSeenCount } from '@components/HeardAndSeenCount';
+import { HeardAndSeenCount } from '@components/Observation/HeardAndSeenCount';
 import type { Meta, StoryObj } from '@storybook/react-native';
 import { colours } from '@theme/colours';
 import { useState } from 'react';

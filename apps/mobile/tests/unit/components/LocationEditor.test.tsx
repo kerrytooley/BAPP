@@ -3,7 +3,7 @@ jest.mock('@utils/image', () => ({
 }));
 
 import { render, screen } from '@testing-library/react-native';
-import { LocationEditor } from '@components/LocationEditor';
+import { LocationEditor } from '@components/Location/LocationEditor';
 import { PressableType } from '../../helpers/rnComponents';
 
 describe('LocationEditor', () => {
@@ -29,13 +29,13 @@ describe('LocationEditor', () => {
                 setPosition={jest.fn()}
             />,
         );
-        expect(screen.getByText('Tap again to move pin')).toBeOnTheScreen();
+        expect(screen.getByText('Tap again to move pin')).toBeVisible();
     });
 
     it('does not prompt to move the pin before a position is set', () => {
         render(
             <LocationEditor boundaryImageUri="file://b.png" position={null} setPosition={jest.fn()} />,
         );
-        expect(screen.queryByText('Tap again to move pin')).toBeNull();
+        expect(screen.getByText('Tap again to move pin', { includeHiddenElements: true })).not.toBeVisible();
     });
 });

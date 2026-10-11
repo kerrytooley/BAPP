@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-native';
-import { BatGrid } from '@components/BatGrid';
+import { BatGrid } from '@components/Display/BatGrid';
 import { View } from 'react-native';
 import { bats } from '../../src/data/bats';
 import { colours } from '@theme/colours';
@@ -32,6 +32,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
     args: {
         bats,
+        isLoading: false,
         onPress(species) {
 
         },

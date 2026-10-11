@@ -5,6 +5,17 @@ export interface BoundaryPosition {
   y: number;
 }
 
+export interface NotesProps {
+  text: string,
+  time: Date
+}
+
+export interface EquipmentInformation {
+  audioLabel: string,
+  videoLabel: string,
+  otherInfo: string
+}
+
 export interface Location {
   id: string;
   surveyId: string;
@@ -12,6 +23,8 @@ export interface Location {
   boundaryPosition: BoundaryPosition | null;
   frontViewImage: MediaAsset | null;
   equipmentImage: MediaAsset | null;
+  equipmentInformation: EquipmentInformation | null;
+  notes: NotesProps[] | null;
   data: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
@@ -23,6 +36,8 @@ export type CreateLocationInput = {
   boundaryPosition?: BoundaryPosition | null;
   frontViewImage?: MediaAsset | null;
   equipmentImage?: MediaAsset | null;
+  equipmentInformation?: EquipmentInformation | null;
+  notes?: NotesProps[] | null;
   data?: Record<string, unknown>;
 };
 
@@ -31,6 +46,8 @@ export type UpdateLocationInput = Partial<{
   boundaryPosition: BoundaryPosition | null;
   frontViewImage: MediaAsset | null;
   equipmentImage: MediaAsset | null;
+  equipmentInformation: EquipmentInformation | null;
+  notes: NotesProps[] | null;
   data: Record<string, unknown>;
 }>;
 
@@ -48,6 +65,8 @@ export function applyLocationDefaults(input: CreateLocationInput): NewLocationFi
     boundaryPosition: input.boundaryPosition ?? null,
     frontViewImage: input.frontViewImage ?? null,
     equipmentImage: input.equipmentImage ?? null,
+    equipmentInformation: input.equipmentInformation ?? null,
+    notes: input.notes ?? null,
     data: input.data ?? {},
   };
 }

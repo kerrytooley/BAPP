@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { Share } from 'react-native';
-import { CodeShare } from '@components/CodeShare';
+import { CodeShare } from '@components/Interactive/CodeShare';
 
 describe('CodeShare', () => {
     afterEach(() => jest.restoreAllMocks());
@@ -20,14 +20,14 @@ describe('CodeShare', () => {
         expect(shareSpy.mock.calls[0][0].message).toContain('BAT123');
     });
 
-    it('shares only the code for an admin code type', async () => {
+    it('shares the admin code with a short intro for an admin code type', async () => {
         const shareSpy = jest
             .spyOn(Share, 'share')
             .mockResolvedValue({ action: 'sharedAction' });
         render(<CodeShare value="ADMIN1" codeType="admin" />);
         fireEvent.press(screen.getByLabelText('Share survey code'));
         await waitFor(() => expect(shareSpy).toHaveBeenCalledTimes(1));
-        expect(shareSpy.mock.calls[0][0].message).toBe('ADMIN1');
+        expect(shareSpy.mock.calls[0][0].message).toBe('Here is your BAPP admin code: ADMIN1');
     });
 
     it('defaults to the surveyor message when no code type is given', async () => {

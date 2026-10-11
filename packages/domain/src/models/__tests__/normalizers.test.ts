@@ -21,7 +21,8 @@ describe('applySurveyDefaults', () => {
       endTime: null,
       boundary: null,
       status: 'draft',
-      weather: {},
+      startWeather: null,
+      endWeather: null,
       data: {},
     });
   });
@@ -35,14 +36,15 @@ describe('applySurveyDefaults', () => {
       postcode: 'SW1A 1AA',
       date,
       status: 'active',
-      weather: { temp: 15 },
+      startWeather: { temperature: '1', humidity: '1', wind: '1', cloudCover: '1', rain: '1' },
+      endWeather: { temperature: '1', humidity: '1', wind: '1', cloudCover: '1', rain: '1' },
       data: { note: 'x' },
     });
     expect(fields.name).toBe('Bat Survey');
     expect(fields.postcode).toBe('SW1A 1AA');
     expect(fields.date).toBe(date);
     expect(fields.status).toBe('active');
-    expect(fields.weather).toEqual({ temp: 15 });
+    expect(fields.startWeather).toEqual({ temperature: '1', humidity: '1', wind: '1', cloudCover: '1', rain: '1' });
     expect(fields.data).toEqual({ note: 'x' });
   });
 
@@ -62,6 +64,8 @@ describe('applyLocationDefaults', () => {
       boundaryPosition: null,
       frontViewImage: null,
       equipmentImage: null,
+      equipmentInformation: null,
+      notes: null,
       data: {},
     });
   });

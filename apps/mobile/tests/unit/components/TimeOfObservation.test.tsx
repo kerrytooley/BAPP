@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react-native';
-import { TimeOfObservation } from '@components/TimeOfObservation';
+import { Platform } from 'react-native';
+import { TimeOfObservation } from '@components/DateTime/TimeOfObservation';
 
 jest.mock('@react-native-community/datetimepicker', () => {
     const React = require('react');
@@ -63,5 +64,16 @@ describe('TimeOfObservation', () => {
         fireEvent.press(screen.getByText('Edit'));
         fireEvent(screen.getByTestId('time-picker'), 'change', { type: 'dismissed' }, undefined);
         expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('closes the Android dialog immediately and ignores a dismissal', () => {
+        jest.replaceProperty(Platform, 'OS', 'android');
+        const onChange = jest.fn();
+        render(<TimeOfObservation observationTime={new Date(2026, 6, 13, 20, 5)} onChange={onChange} />);
+        fireEvent.press(screen.getByText('Edit'));
+        fireEvent(screen.getByTestId('time-picker'), 'change', { type: 'dismissed' }, new Date(2026, 6, 13, 20, 5));
+        expect(screen.queryByTestId('time-picker')).toBeNull();
+        expect(onChange).not.toHaveBeenCalled();
+        jest.restoreAllMocks();
     });
 });
