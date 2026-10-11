@@ -26,6 +26,7 @@ export class InMemoryObservationRepository implements ObservationRepository {
       notes: 'I saw a bat and it was nice, pretty batty',
       emergence: false,
       flightPaths: [],
+      flightPathLinks: [],
       data: {},
       createdAt: new Date,
       updatedAt: new Date(Date.now() + 30000)
@@ -46,6 +47,7 @@ export class InMemoryObservationRepository implements ObservationRepository {
       notes: 'I saw a bat and it was nice, pretty batty',
       emergence: false,
       flightPaths: [],
+      flightPathLinks: [],
       data: {},
       createdAt: new Date,
       updatedAt: new Date(Date.now() + 30000)

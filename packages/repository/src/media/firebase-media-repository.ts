@@ -299,7 +299,10 @@ export class FirebaseMediaRepository implements MediaRepository {
       () => {
         void this.clearPending(reference); // reached Storage — no longer pending
       },
-      () => undefined, // leave the entry for launch-time resume
+      (error: unknown) => {
+        // Left in the manifest for launch-time resume.
+        console.warn(`[media] upload of ${reference} did not complete; will retry next launch`, error);
+      },
     );
   }
 

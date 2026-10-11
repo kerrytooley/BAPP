@@ -64,7 +64,34 @@ describe('FieldValidator via SurveyService', () => {
         await expect(service.updateSurvey(survey.id, {
             startTime: new Date(2026, 0, 1, 21, 0),
             endTime: new Date(2026, 0, 1, 20, 0),
-        })).rejects.toThrow('End time must be after the start time');
+        })).rejects.toThrow('End time must be within 12 hours after the start time');
+    });
+
+    it('accepts a survey that crosses midnight', async () => {
+        const { service, survey } = await setup();
+        await expect(service.updateSurvey(survey.id, {
+            startTime: new Date(2026, 0, 1, 22, 30),
+            sunsetTime: new Date(2026, 0, 1, 23, 15),
+            endTime: new Date(2026, 0, 1, 0, 45),
+        })).resolves.toBeDefined();
+    });
+
+    it('rejects a sunrise/sunset time that is not between the start and end', async () => {
+        const { service, survey } = await setup();
+        await expect(service.updateSurvey(survey.id, {
+            startTime: new Date(2026, 0, 1, 20, 0),
+            sunsetTime: new Date(2026, 0, 1, 19, 0),
+        })).rejects.toThrow('Sunrise/sunset time must be within 12 hours after the start time');
+        await expect(service.updateSurvey(survey.id, {
+            startTime: new Date(2026, 0, 1, 20, 0),
+            sunsetTime: new Date(2026, 0, 1, 21, 0),
+            endTime: new Date(2026, 0, 1, 20, 30),
+        })).rejects.toThrow('End time must be after the sunrise/sunset time');
+        await expect(service.updateSurvey(survey.id, {
+            startTime: new Date(2026, 0, 1, 20, 0),
+            sunsetTime: new Date(2026, 0, 1, 20, 15),
+            endTime: new Date(2026, 0, 1, 22, 0),
+        })).resolves.toBeDefined();
     });
 
     it('rejects an invalid frequency and negative counts', async () => {

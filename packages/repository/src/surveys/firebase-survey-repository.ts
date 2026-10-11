@@ -159,8 +159,8 @@ export class FirebaseSurveyRepository implements SurveyRepository {
    * the read-your-writes offline experience the rest of this repo is built around.
    *
    * We hold the latest snapshot of each part in a local variable and re-emit the
-   * merged context on any change, but only once the survey doc itself has loaded
-   * (exists) — mirroring `getSurveyContext`'s "no survey ⇒ no context" contract.
+   * merged context on any change, but only once all four listeners have delivered
+   * and the survey doc exists — mirroring `getSurveyContext`'s "no survey ⇒ no context" contract.
    */
   subscribeSurveyContext(surveyId: string, callback: (context: SurveyContext) => void): Unsubscribe {
     const db = getDb();
@@ -169,28 +169,32 @@ export class FirebaseSurveyRepository implements SurveyRepository {
     let locations: SurveyContext['locations'] = [];
     let surveyors: SurveyContext['surveyors'] = [];
     let observations: SurveyContext['observations'] = [];
+    // Each listener's first snapshot arrives separately; emitting before all four
+    // have landed would report e.g. `surveyors: []` for a survey that has some.
+    const loaded = new Set<string>();
 
-    const emit = () => {
-      if (!survey) return; // wait for the survey doc before emitting a context
+    const emit = (part: string) => {
+      loaded.add(part);
+      if (!survey || loaded.size < 4) return;
       callback({ survey, locations, surveyors, observations });
     };
 
     const unsubscribes = [
       onSnapshot(doc(db, COLLECTION, surveyId), options, (snap) => {
         survey = snap.exists() ? fromSurveyDoc(snap) : null;
-        emit();
+        emit('survey');
       }),
       onSnapshot(collection(db, COLLECTION, surveyId, 'locations'), options, (snap) => {
         locations = snap.docs.map(fromLocationDoc);
-        emit();
+        emit('locations');
       }),
       onSnapshot(collection(db, COLLECTION, surveyId, 'surveyors'), options, (snap) => {
         surveyors = snap.docs.map(fromSurveyorDoc);
-        emit();
+        emit('surveyors');
       }),
       onSnapshot(collection(db, COLLECTION, surveyId, 'observations'), options, (snap) => {
         observations = snap.docs.map(fromObservationDoc);
-        emit();
+        emit('observations');
       }),
     ];
 

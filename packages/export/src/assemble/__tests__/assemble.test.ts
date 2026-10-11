@@ -52,6 +52,7 @@ function observation(id: string, overrides: Partial<Observation> = {}): Observat
     firstSeenAt: EPOCH, lastSeenAt: null, seenCount: 1, heardCount: 0, frequency: null,
     direction: null, notes: null, emergence: false,
     flightPaths: [{ id: `fp_${id}`, surface: 'boundary', points: [{ x: 0.1, y: 0.2 }, { x: 0.4, y: 0.5 }] }],
+    flightPathLinks: [],
     data: {}, createdAt: EPOCH, updatedAt: EPOCH, ...overrides,
   };
 }

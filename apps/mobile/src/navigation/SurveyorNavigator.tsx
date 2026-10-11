@@ -15,13 +15,16 @@ import { SurveySummaryScreen } from "@screens/Surveyor/SurveySummaryScreen";
 import { EquipmentDetailsScreen } from "@screens/Surveyor/EquipmentDetailsScreen";
 import { SurveyorCompleteScreen } from "@screens/Surveyor/SurveyorCompleteScreen";
 import { SetupIncompleteScreen } from "@screens/Surveyor/SetupIncompleteScreen";
+import { WelcomeBackScreen } from "@screens/Surveyor/WelcomeBackScreen";
 
 /** resume: continuing unfinished setup from re-entry; edit: changing one item from the survey summary. */
 export type StepMode = "resume" | "edit";
 
 export type SurveyorStackParamList = {
     InputCodeScreen: undefined,
-    CodeConfirmationScreen: { surveyId: string }
+    /** returning: opened from the recent surveys menu; surveyorId: who last used it on this device. */
+    CodeConfirmationScreen: { surveyId: string, returning?: boolean, surveyorId?: string }
+    WelcomeBackScreen: { surveyId: string, surveyorId: string }
     SelectSurveyorScreen: { surveyId: string }
     ConfirmSurveyorDetailsScreen: { surveyId: string, surveyorId: string }
     SurveyorConfirmLocationScreen: { surveyId: string, surveyorId: string, mode?: StepMode }
@@ -44,6 +47,7 @@ export function SurveyorNavigator() {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="InputCodeScreen" component={InputCodeScreen} />
             <Stack.Screen name="CodeConfirmationScreen" component={CodeConfirmationScreen} />
+            <Stack.Screen name="WelcomeBackScreen" component={WelcomeBackScreen} />
             <Stack.Screen name="SelectSurveyorScreen" component={SelectSurveyorScreen} />
             <Stack.Screen name="ConfirmSurveyorDetailsScreen" component={ConfirmSurveyorDetailsScreen} />
             <Stack.Screen name="SurveyorConfirmLocationScreen" component={SurveyorConfirmLocationScreen} />

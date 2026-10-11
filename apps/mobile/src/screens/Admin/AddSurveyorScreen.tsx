@@ -38,7 +38,7 @@ export function AddSurveyorScreen(): React.JSX.Element {
         if (!context || leadCreated.current) return;
         if (context.surveyors.length === 0) {
             leadCreated.current = true;
-            service.addSurveyor(surveyId, { name: "", isLead: true })
+            service.ensureLeadSurveyor(surveyId)
                 .catch((e) => console.error("Failed to create lead surveyor", e));
         }
     }, [context, service, surveyId]);
