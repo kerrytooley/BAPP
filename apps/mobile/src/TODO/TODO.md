@@ -10,4 +10,3 @@ Re-entering survey skips survey setup flow
 Add nearby feartues e.g. lighting
 Update report - emergences first
 Update report html UI
-Add select from previous flight paths

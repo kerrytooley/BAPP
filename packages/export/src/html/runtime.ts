@@ -26,7 +26,9 @@ export function renderRuntimeFromSource(): string {
 // DOM globals available at runtime.
 export function runtime(): void {
   interface Point { x: number; y: number; }
-  interface FigurePath { observationId: string; color: string; label: string; points: Point[]; }
+  interface FigurePath { observationId: string; groupId: string; color: string; label: string; points: Point[]; }
+  interface PathGroupMember { observationId: string; surveyorName: string | null; time: string; species: string; }
+  interface PathGroup { groupId: string; label: string; color: string; members: PathGroupMember[]; }
   interface FigurePin { locationId: string; label: string; x: number; y: number; surveyorNames: string[]; }
   interface Figure {
     figureId: string;
@@ -35,6 +37,8 @@ export function runtime(): void {
     imageRef: string;
     locationId: string | null;
     paths: FigurePath[];
+    pathGroups: PathGroup[];
+    showSurveyorNames: boolean;
     pins: FigurePin[];
   }
   interface Observation { id: string; label: string; color: string; species: string | null; }
@@ -55,6 +59,7 @@ export function runtime(): void {
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const hidden = new Set<string>();
+  const openGroups = new Set<string>();
   const hiddenPins = new Set<string>();
   const PIN_COLOR = '#ff5252';
   const PIN_PATH = 'M12 0C7.03 0 3 4.03 3 9c0 6.75 9 15 9 15s9-8.25 9-15c0-4.97-4.03-9-9-9z';
@@ -102,6 +107,20 @@ export function runtime(): void {
     return model.figures.filter((f) => f.figureId === activeFigureId)[0];
   }
 
+  function groupForObservation(figure: Figure, observationId?: string): string | undefined {
+    if (!observationId) return undefined;
+    const group = figure.pathGroups.filter((g) =>
+      g.members.some((m) => m.observationId === observationId))[0];
+    return group ? group.groupId : undefined;
+  }
+
+  /** Keep in sync with memberText in build-html.ts. */
+  function memberText(member: PathGroupMember, showSurveyorName: boolean): string {
+    return [showSurveyorName ? member.surveyorName : null, member.time, member.species]
+      .filter(Boolean)
+      .join(' \u2022 ');
+  }
+
   function selectFigure(figureId: string, highlightObs?: string): void {
     activeFigureId = figureId;
     const tabs = nav.querySelectorAll('.figure-tab');
@@ -133,12 +152,13 @@ export function runtime(): void {
       img.alt = '';
     }
 
+    const highlightGroup = groupForObservation(figure, highlightObs);
     figure.paths.forEach((path) => {
-      if (hidden.has(path.observationId)) return;
+      if (hidden.has(path.groupId)) return;
       const poly = doc.createElementNS(SVG_NS, 'polyline');
       poly.setAttribute('points', path.points.map((p) => p.x + ',' + p.y).join(' '));
       poly.setAttribute('stroke', path.color);
-      poly.setAttribute('stroke-width', path.observationId === highlightObs ? '4' : '2.5');
+      poly.setAttribute('stroke-width', path.groupId === highlightGroup ? '4' : '2.5');
       poly.setAttribute('vector-effect', 'non-scaling-stroke');
       overlay.appendChild(poly);
     });
@@ -159,11 +179,11 @@ export function runtime(): void {
       stage.appendChild(marker);
     });
 
-    renderChecklist(figure, highlightObs);
+    renderChecklist(figure, highlightGroup);
   }
 
-  // ---- Per-observation checklist ---------------------------------------
-  function renderChecklist(figure: Figure, highlightObs?: string): void {
+  // ---- Per-flight-path checklist ---------------------------------------
+  function renderChecklist(figure: Figure, highlightGroup?: string): void {
     const list = $('checklist');
     while (list.firstChild) list.removeChild(list.firstChild);
 
@@ -196,14 +216,7 @@ export function runtime(): void {
       list.appendChild(item);
     });
 
-    const counts: Record<string, number> = {};
-    const order: string[] = [];
-    figure.paths.forEach((p) => {
-      if (counts[p.observationId] === undefined) { counts[p.observationId] = 0; order.push(p.observationId); }
-      counts[p.observationId]++;
-    });
-
-    if (!order.length && !figure.pins.length) {
+    if (!figure.pathGroups.length && !figure.pins.length) {
       const empty = doc.createElement('li');
       empty.className = 'check-item empty';
       empty.textContent = 'No flight paths on this figure.';
@@ -211,38 +224,67 @@ export function runtime(): void {
       return;
     }
 
-    order.forEach((obsId) => {
-      const obs = model.observations.filter((o) => o.id === obsId)[0];
-      const color = obs ? obs.color : '#888';
-      const label = obs ? obs.label : obsId;
+    figure.pathGroups.forEach((group) => {
+      const groupId = group.groupId;
+      const highlighted = groupId === highlightGroup;
+      if (highlighted) openGroups.add(groupId);
 
       const item = doc.createElement('li');
-      item.className = 'check-item' + (obsId === highlightObs ? ' highlight' : '');
+      item.className = 'check-group';
+
+      const row = doc.createElement('label');
+      row.className = 'check-item' + (highlighted ? ' highlight' : '');
 
       const cb = doc.createElement('input');
       cb.type = 'checkbox';
-      cb.checked = !hidden.has(obsId);
+      cb.checked = !hidden.has(groupId);
       cb.addEventListener('change', () => {
-        if (cb.checked) hidden.delete(obsId); else hidden.add(obsId);
+        if (cb.checked) hidden.delete(groupId); else hidden.add(groupId);
         renderFigure();
       });
 
       const swatch = doc.createElement('span');
       swatch.className = 'swatch';
-      swatch.style.background = color;
+      swatch.style.background = group.color;
 
       const text = doc.createElement('span');
       text.className = 'check-label';
-      text.textContent = label;
+      text.textContent = group.label;
 
       const count = doc.createElement('span');
       count.className = 'check-count';
-      count.textContent = String(counts[obsId]);
+      count.textContent = String(group.members.length);
 
-      item.appendChild(cb);
-      item.appendChild(swatch);
-      item.appendChild(text);
-      item.appendChild(count);
+      row.appendChild(cb);
+      row.appendChild(swatch);
+      row.appendChild(text);
+      row.appendChild(count);
+      item.appendChild(row);
+
+      if (cb.checked) {
+        const details = doc.createElement('details');
+        details.className = 'group-details';
+        details.open = openGroups.has(groupId);
+        details.addEventListener('toggle', () => {
+          if (details.open) openGroups.add(groupId); else openGroups.delete(groupId);
+        });
+
+        const summary = doc.createElement('summary');
+        summary.textContent = group.members.length === 1 ? '1 observation' : group.members.length + ' observations';
+
+        const members = doc.createElement('ul');
+        members.className = 'group-members';
+        group.members.forEach((member) => {
+          const li = doc.createElement('li');
+          li.textContent = memberText(member, figure.showSurveyorNames);
+          members.appendChild(li);
+        });
+
+        details.appendChild(summary);
+        details.appendChild(members);
+        item.appendChild(details);
+      }
+
       list.appendChild(item);
     });
   }
@@ -251,7 +293,7 @@ export function runtime(): void {
   $('select-none').addEventListener('click', () => {
     const figure = currentFigure();
     if (figure) {
-      figure.paths.forEach((p) => hidden.add(p.observationId));
+      figure.pathGroups.forEach((g) => hidden.add(g.groupId));
       figure.pins.forEach((p) => hiddenPins.add(p.locationId));
     }
     renderFigure();
@@ -277,7 +319,7 @@ export function runtime(): void {
     ctx.lineCap = 'round';
     ctx.lineWidth = Math.max(2, canvas.width * 0.004);
     figure.paths.forEach((path) => {
-      if (hidden.has(path.observationId) || !path.points.length) return;
+      if (hidden.has(path.groupId) || !path.points.length) return;
       ctx.strokeStyle = path.color;
       ctx.beginPath();
       path.points.forEach((p, i) => {

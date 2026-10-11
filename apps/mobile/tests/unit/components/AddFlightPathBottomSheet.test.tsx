@@ -32,12 +32,18 @@ jest.mock('@gorhom/bottom-sheet', () => {
 jest.mock('@components/Interactive/FlightPathCanvas', () => {
     const { TouchableOpacity, Text } = require('react-native');
     return {
-        FlightPathCanvas: (props: { surface: string; onCommitPath: (p: unknown[]) => void }) => (
+        FlightPathCanvas: (props: {
+            surface: string;
+            editable: boolean;
+            paths: { id?: string }[] | null;
+            onCommitPath: (p: unknown[]) => void;
+        }) => (
             <TouchableOpacity
                 accessibilityLabel="canvas-commit"
+                disabled={!props.editable}
                 onPress={() => props.onCommitPath([{ surface: props.surface, points: [{ x: 1, y: 1 }] }])}
             >
-                <Text>canvas</Text>
+                <Text>{`canvas ${props.editable ? 'editable' : 'locked'} paths:${(props.paths ?? []).map((p) => p.id ?? '?').join(',')}`}</Text>
             </TouchableOpacity>
         ),
     };
@@ -51,18 +57,23 @@ const initialPaths = [
     { surface: 'boundary', points: [{ x: 0, y: 0 }, { x: 1, y: 1 }] } as unknown as FlightPath,
 ];
 
+const options = [
+    { letter: 'A', sourceObservationId: 'obs-a', paths: [{ id: 'fp-a', surface: 'boundary', points: [] } as FlightPath] },
+    { letter: 'B', sourceObservationId: 'obs-b', paths: [{ id: 'fp-b', surface: 'boundary', points: [] } as FlightPath] },
+];
+
 const setup = (props: Partial<React.ComponentProps<typeof AddFlightPathBottomSheet>> = {}) => {
-    const onCommitPath = jest.fn();
+    const onCommit = jest.fn();
     render(
         <AddFlightPathBottomSheet
             imageUri="image.jpg"
             surface="boundary"
             initialPaths={initialPaths}
-            onCommitPath={onCommitPath}
+            onCommit={onCommit}
             {...props}
         />,
     );
-    return { onCommitPath };
+    return { onCommit };
 };
 
 describe('AddFlightPathBottomSheet', () => {
@@ -77,12 +88,12 @@ describe('AddFlightPathBottomSheet', () => {
     });
 
     it('defaults to an empty path list when none are provided', () => {
-        const onCommitPath = jest.fn();
+        const onCommit = jest.fn();
         render(
             <AddFlightPathBottomSheet
                 imageUri="image.jpg"
                 surface="boundary"
-                onCommitPath={onCommitPath}
+                onCommit={onCommit}
             />,
         );
         // Opening the sheet loads the (empty) default initial paths.
@@ -115,11 +126,58 @@ describe('AddFlightPathBottomSheet', () => {
     });
 
     it('commits paths drawn on the canvas', () => {
-        const { onCommitPath } = setup();
+        const { onCommit } = setup();
         fireEvent.press(screen.getByLabelText('canvas-commit'));
         fireEvent.press(screen.getByLabelText('Save Flight Path'));
-        expect(onCommitPath).toHaveBeenCalledWith([
-            { surface: 'boundary', points: [{ x: 1, y: 1 }] },
-        ]);
+        expect(onCommit).toHaveBeenCalledWith({
+            paths: [{ surface: 'boundary', points: [{ x: 1, y: 1 }] }],
+        });
+    });
+
+    it('hides the existing path options when there are none', () => {
+        setup();
+        expect(screen.queryByLabelText('Draw new')).toBeNull();
+    });
+
+    it('previews a chosen existing path and blocks drawing over it', () => {
+        setup({ options });
+        expect(screen.getByLabelText('Draw new').props.accessibilityState.selected).toBe(true);
+
+        fireEvent.press(screen.getByLabelText('Flight path B'));
+
+        expect(screen.getByLabelText('Flight path B').props.accessibilityState.selected).toBe(true);
+        expect(screen.getByText('canvas locked paths:fp-b')).toBeOnTheScreen();
+        expect(screen.getByLabelText('Save Flight Path').props.accessibilityState.disabled).toBe(false);
+    });
+
+    it('links the observation to the chosen path on save', () => {
+        const { onCommit } = setup({ options });
+        fireEvent.press(screen.getByLabelText('Flight path A'));
+        fireEvent.press(screen.getByLabelText('Save Flight Path'));
+        expect(onCommit).toHaveBeenCalledWith({
+            link: { surface: 'boundary', observationId: 'obs-a' },
+        });
+    });
+
+    it('restores the drawn paths when the selection is cancelled', () => {
+        const { onCommit } = setup({ options });
+        fireEvent.press(screen.getByLabelText('canvas-commit'));
+        fireEvent.press(screen.getByLabelText('Flight path A'));
+        fireEvent.press(screen.getByLabelText('Draw new'));
+
+        expect(screen.getByText('canvas editable paths:?')).toBeOnTheScreen();
+        fireEvent.press(screen.getByLabelText('Save Flight Path'));
+        expect(onCommit).toHaveBeenCalledWith({
+            paths: [{ surface: 'boundary', points: [{ x: 1, y: 1 }] }],
+        });
+    });
+
+    it('preselects the linked path when the sheet opens and clears it on dismiss', () => {
+        setup({ options, initialLinkId: 'obs-b' });
+        fireEvent.press(screen.getByLabelText('sheet-open'));
+        expect(screen.getByLabelText('Flight path B').props.accessibilityState.selected).toBe(true);
+
+        fireEvent.press(screen.getByLabelText('sheet-dismiss'));
+        expect(screen.getByLabelText('Draw new').props.accessibilityState.selected).toBe(true);
     });
 });

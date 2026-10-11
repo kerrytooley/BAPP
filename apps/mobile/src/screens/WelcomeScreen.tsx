@@ -7,15 +7,13 @@ import { ButtonGroup } from "@components/Common/Button";
 import { Menu } from "@components/Common/Icons";
 import { RecentSurveysPanel } from "@components/Navigation/RecentSurveysPanel";
 import { screen } from "@theme/screen";
-import { NavigatorScreenParams, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "@navigators/index";
-import type { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { forgetRecentSurvey, recordRecentSurvey, type RecentSurvey } from "@services/recentSurveys";
 import { useRecentSurveys } from "../hooks/useRecentSurveys";
-import { routeForSurveyor } from "@utils/surveyorRoute";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -45,10 +43,10 @@ export function WelcomeScreen(): React.JSX.Element {
                 return;
             }
             const surveyor = context.surveyors.find((s) => s.id === entry.surveyorId);
-            const route = surveyor
-                ? routeForSurveyor(context, surveyor)
-                : { name: "SelectSurveyorScreen" as const, params: { surveyId: entry.surveyId } };
-            navigation.navigate("Surveyor", { screen: route.name, params: route.params } as NavigatorScreenParams<SurveyorStackParamList>);
+            navigation.navigate("Surveyor", {
+                screen: "CodeConfirmationScreen",
+                params: { surveyId: entry.surveyId, returning: true, surveyorId: surveyor?.id },
+            });
         } catch (e) {
             console.error("Failed to open recent survey", e);
             setFailed(entry);

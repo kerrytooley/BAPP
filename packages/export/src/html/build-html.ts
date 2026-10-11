@@ -1,4 +1,4 @@
-import type { ReportFigure, ReportModel } from '../model/report-model';
+import type { ReportFigure, ReportModel, ReportPathGroupMember } from '../model/report-model';
 import { renderRuntime } from './runtime';
 
 /**
@@ -46,7 +46,7 @@ export function buildReportHtml(
   const title = escapeHtml(model.survey.name ?? 'Survey report');
   const meta = escapeHtml(surveyMeta(model));
   const staticFigures = shownModel.figures
-    .map((figure) => renderStaticFigure(figure, shownModel, images.get(figure.imageRef)))
+    .map((figure) => renderStaticFigure(figure, images.get(figure.imageRef)))
     .join('\n');
 
   return `<!DOCTYPE html>
@@ -115,7 +115,6 @@ function surveyMeta(model: ReportModel): string {
 /** One figure as plain HTML/SVG: base image, every path and pin, and a legend. */
 function renderStaticFigure(
   figure: ReportFigure,
-  model: ReportModel,
   image: ResolvedImage | undefined,
 ): string {
   const title = escapeHtml(figure.title);
@@ -141,15 +140,14 @@ function renderStaticFigure(
     return `<li class="check-item"><span class="pin-swatch">${PIN_SVG}</span><span class="check-label">${escapeHtml(pin.label + who)}</span></li>`;
   });
 
-  const counts = new Map<string, number>();
-  for (const path of figure.paths) counts.set(path.observationId, (counts.get(path.observationId) ?? 0) + 1);
-  const pathItems = [...counts].map(([obsId, count]) => {
-    const obs = model.observations.find((o) => o.id === obsId);
-    const color = escapeHtml(obs?.color ?? '#888');
-    return `<li class="check-item"><span class="swatch" style="background:${color}"></span><span class="check-label">${escapeHtml(obs?.label ?? obsId)}</span><span class="check-count">${count}</span></li>`;
+  const groupItems = figure.pathGroups.map((group) => {
+    const members = group.members
+      .map((m) => `<li>${escapeHtml(memberText(m, figure.showSurveyorNames))}</li>`)
+      .join('');
+    return `<li class="check-group"><details><summary class="check-item"><span class="swatch" style="background:${escapeHtml(group.color)}"></span><span class="check-label">${escapeHtml(group.label)}</span><span class="check-count">${group.members.length}</span></summary><ul class="group-members">${members}</ul></details></li>`;
   });
 
-  const items = [...pinItems, ...pathItems];
+  const items = [...pinItems, ...groupItems];
   const legend = items.length
     ? items.join('')
     : '<li class="check-item empty">No flight paths on this figure.</li>';
@@ -159,6 +157,13 @@ function renderStaticFigure(
     <div class="figure-stage">${img}<svg class="figure-overlay" viewBox="0 0 1 1" preserveAspectRatio="none">${polylines}</svg>${pins}</div>
     <ul class="legend">${legend}</ul>
   </section>`;
+}
+
+/** Keep in sync with memberText in runtime.ts. */
+function memberText(member: ReportPathGroupMember, showSurveyorName: boolean): string {
+  return [showSurveyorName ? member.surveyorName : null, member.time, member.species]
+    .filter(Boolean)
+    .join(' \u2022 ');
 }
 
 /** Serialize JSON safely for inlining inside a `<script>` element. */
@@ -266,6 +271,15 @@ button:hover { border-color: var(--accent); }
 .pin-marker svg { width: 100%; height: 100%; }
 .check-label { flex: 1; font-size: 13px; }
 .check-count { font-size: 11px; color: var(--muted); }
+.check-group { list-style: none; }
+.check-group summary { list-style: none; }
+.check-group summary::-webkit-details-marker { display: none; }
+.check-group summary::after { content: '\\25B8'; color: var(--muted); font-size: 11px; }
+.check-group details[open] summary::after { content: '\\25BE'; }
+.group-details { margin: 0 0 4px 30px; }
+.group-details summary { font-size: 12px; color: var(--muted); cursor: pointer; padding: 2px 0; }
+.group-members { list-style: none; margin: 2px 0 6px 30px; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); }
+.group-details .group-members { margin-left: 0; }
 @media (max-width: 900px) {
   #report-main { grid-template-columns: 1fr; }
 }

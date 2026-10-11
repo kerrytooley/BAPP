@@ -17,10 +17,19 @@ type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 export function CodeConfirmationScreen(
 ): React.JSX.Element {
     const navigation = useNavigation<Nav>();
-    const { surveyId } = useRoute<RouteProp<SurveyorStackParamList, 'CodeConfirmationScreen'>>().params;
+    const { surveyId, returning = false, surveyorId } = useRoute<RouteProp<SurveyorStackParamList, 'CodeConfirmationScreen'>>().params;
 
     const { context } = useActiveSurvey();
     const survey = context?.survey;
+    const knownSurveyor = surveyorId ? context?.surveyors.find((s) => s.id === surveyorId) : undefined;
+
+    const handleContinue = () => knownSurveyor
+        ? navigation.navigate("WelcomeBackScreen", { surveyId, surveyorId: knownSurveyor.id })
+        : navigation.navigate("SelectSurveyorScreen", { surveyId });
+
+    const handleWrongSurvey = () => returning
+        ? (navigation.navigate as unknown as (name: string) => void)("Welcome")
+        : navigation.goBack();
 
     const surveyTitle = survey?.name && survey?.postcode
         ? `${survey.name} - ${survey.postcode}`
@@ -34,7 +43,7 @@ export function CodeConfirmationScreen(
             <View style={{ width: "100%", gap: 24 }}>
                 <ScreenHeader navigation={navigation} />
                 <ClipboardIllustration width={180} height={180} style={styles.illustration} />
-                <Title testID="confirmation-heading" title="You are joining:" />
+                <Title testID="confirmation-heading" title={returning ? "Is this your survey?" : "You are joining:"} />
                 <View style={{ paddingVertical: 24 }}>
                     <Text testID="confirmation-survey-title" style={styles.text}>{surveyTitle}</Text>
                     <Text testID="confirmation-survey-date" style={styles.text}>{surveyDate.toString()} </Text>
@@ -42,8 +51,8 @@ export function CodeConfirmationScreen(
             </View>
 
             <View style={{ alignItems: "center", gap: 16 }}>
-                <Button label="Continue" variant="light" onPress={() => navigation.navigate("SelectSurveyorScreen", { surveyId })} />
-                <InlineButton label="Doesn't look right?" onPress={navigation.goBack} />
+                <Button label="Continue" variant="light" onPress={handleContinue} />
+                <InlineButton label="Doesn't look right?" onPress={handleWrongSurvey} />
             </View>
         </View>
     );
