@@ -12,3 +12,4 @@ export * from './xlsx/build-xlsx';
 export * from './assemble/ports';
 export * from './assemble/assemble';
 export * from './assemble/jszip-packager';
+export * from './assemble/file-name';

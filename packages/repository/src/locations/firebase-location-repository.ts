@@ -21,12 +21,12 @@ import {
 } from '@react-native-firebase/firestore';
 import { getDb } from '../config/firebase-app';
 import {
-  toDateRequired,
   stripUndefined,
   nowTimestamp,
   queueWrite,
   getDocsCacheFirst,
 } from '../config/firestore-mapping';
+import { locationFromData } from '../mapping/survey-docs';
 
 /** Locations live under `surveys/{surveyId}/locations/{id}` (see FIREBASE_ARCHITECTURE.md). */
 const SUBCOLLECTION = 'locations';
@@ -34,22 +34,7 @@ const SUBCOLLECTION = 'locations';
 /** Map a Firestore document to a domain Location. Exported so the survey repo
  *  can build `getSurveyContext` without re-implementing the mapping. */
 export function fromLocationDoc(snap: FirebaseFirestoreTypes.DocumentSnapshot): Location {
-  const d = (snap.data() ?? {}) as FirebaseFirestoreTypes.DocumentData;
-  return {
-    id: snap.id,
-    surveyId: d.surveyId,
-    name: d.name ?? null,
-    boundaryPosition: d.boundaryPosition ?? null,
-    frontViewImage: d.frontViewImage ?? null,
-    equipmentImage: d.equipmentImage ?? null,
-    equipmentInformation: d.equipmentInformation ?? null,
-    notes: Array.isArray(d.notes)
-      ? d.notes.map((n: { text?: string; time?: unknown }) => ({ text: n.text ?? '', time: toDateRequired(n.time) }))
-      : null,
-    data: d.data ?? {},
-    createdAt: toDateRequired(d.createdAt),
-    updatedAt: toDateRequired(d.updatedAt),
-  };
+  return locationFromData(snap.id, snap.data());
 }
 
 export class FirebaseLocationRepository implements LocationRepository {

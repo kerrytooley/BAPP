@@ -21,39 +21,19 @@ import {
 } from '@react-native-firebase/firestore';
 import { getDb } from '../config/firebase-app';
 import {
-  toDateOrNull,
-  toDateRequired,
   stripUndefined,
   nowTimestamp,
   queueWrite,
   getDocsCacheFirst,
 } from '../config/firestore-mapping';
+import { observationFromData } from '../mapping/survey-docs';
 
 /** Observations live under `surveys/{surveyId}/observations/{id}`. */
 const SUBCOLLECTION = 'observations';
 
 /** Map a Firestore document to a domain Observation. Exported for `getSurveyContext`. */
 export function fromObservationDoc(snap: FirebaseFirestoreTypes.DocumentSnapshot): Observation {
-  const d = (snap.data() ?? {}) as FirebaseFirestoreTypes.DocumentData;
-  return {
-    id: snap.id,
-    surveyId: d.surveyId,
-    locationId: d.locationId,
-    surveyorId: d.surveyorId,
-    species: d.species ?? null,
-    firstSeenAt: toDateOrNull(d.firstSeenAt),
-    lastSeenAt: toDateOrNull(d.lastSeenAt),
-    seenCount: d.seenCount ?? 0,
-    heardCount: d.heardCount ?? 0,
-    frequency: d.frequency ?? null,
-    direction: d.direction ?? null,
-    notes: d.notes ?? null,
-    emergence: d.emergence ?? false,
-    flightPaths: d.flightPaths ?? [],
-    data: d.data ?? {},
-    createdAt: toDateRequired(d.createdAt),
-    updatedAt: toDateRequired(d.updatedAt),
-  };
+  return observationFromData(snap.id, snap.data());
 }
 
 export class FirebaseObservationRepository implements ObservationRepository {

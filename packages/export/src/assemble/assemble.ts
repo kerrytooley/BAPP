@@ -44,22 +44,25 @@ export async function assembleSurveyExport(
 
   const resolvedImages = new Map<string, ResolvedImage>();
   const mediaFiles: PackFile[] = [];
-  const seenRefs = new Set<string>();
-
+  const figureIdByRef = new Map<string, string>();
   for (const figure of model.figures) {
-    if (seenRefs.has(figure.imageRef)) continue;
-    seenRefs.add(figure.imageRef);
+    if (!figureIdByRef.has(figure.imageRef)) figureIdByRef.set(figure.imageRef, figure.figureId);
+  }
 
-    const media = await options.mediaResolver.resolve(figure.imageRef);
-    if (!media) continue;
+  const refs = [...figureIdByRef.keys()];
+  const resolved = await Promise.all(refs.map((ref) => options.mediaResolver.resolve(ref)));
 
-    const mediaPath = `${MEDIA_DIR}/${figure.figureId}.${extensionFor(media.mimeType)}`;
-    resolvedImages.set(figure.imageRef, {
-      dataUri: `data:${media.mimeType};base64,${toBase64(media.bytes)}`,
+  refs.forEach((ref, i) => {
+    const media = resolved[i];
+    if (!media) return;
+
+    const mediaPath = `${MEDIA_DIR}/${figureIdByRef.get(ref)}.${extensionFor(media.mimeType)}`;
+    resolvedImages.set(ref, {
+      dataUri: `data:${media.mimeType};base64,${media.base64 ?? toBase64(media.bytes)}`,
       mediaPath,
     });
     mediaFiles.push({ path: mediaPath, data: media.bytes });
-  }
+  });
 
   const html = buildReportHtml(model, resolvedImages);
   const xlsx = buildReportWorkbook(model, { reportHref: REPORT_HTML });
@@ -86,12 +89,15 @@ function extensionFor(mimeType: string): string {
 }
 
 /** Base64-encode bytes without relying on Node's `Buffer` (RN-safe). */
-function toBase64(bytes: Uint8Array): string {
+export function toBase64(bytes: Uint8Array): string {
   if (typeof Buffer !== 'undefined') {
     return Buffer.from(bytes).toString('base64');
   }
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  const CHUNK = 0x8000;
+  const parts: string[] = [];
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    parts.push(String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK) as unknown as number[]));
+  }
   // btoa exists in browsers and RN (Hermes via polyfill).
-  return btoa(binary);
+  return btoa(parts.join(''));
 }

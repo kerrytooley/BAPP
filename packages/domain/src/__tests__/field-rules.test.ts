@@ -3,6 +3,7 @@ import {
     isBlank,
     validateCount,
     validateFrequencyKhz,
+    validateLastSeen,
     validateNumber,
     validatePostcode,
     validateRain,
@@ -114,6 +115,24 @@ describe('validateCount', () => {
         expect(validateCount(null)).toBeNull();
         expect(validateCount(-1)).toBe('Counts must be a whole number of 0 or more');
         expect(validateCount(1.5)).toBe('Counts must be a whole number of 0 or more');
+    });
+});
+
+describe('validateLastSeen', () => {
+    const at = (h: number, m = 0) => new Date(2026, 9, 11, h, m);
+
+    it('rejects a last seen time before the first seen time', () => {
+        expect(validateLastSeen(at(20, 30), at(20, 29))).toBe("Last seen time can't be before the first seen time");
+    });
+
+    it('accepts equal or later times, including after midnight', () => {
+        expect(validateLastSeen(at(20, 30), at(20, 30))).toBeNull();
+        expect(validateLastSeen(at(23, 55), new Date(2026, 9, 12, 0, 5))).toBeNull();
+    });
+
+    it('ignores missing times', () => {
+        expect(validateLastSeen(null, at(20))).toBeNull();
+        expect(validateLastSeen(at(20), null)).toBeNull();
     });
 });
 

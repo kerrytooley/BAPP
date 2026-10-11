@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import JSZip from 'jszip';
 import * as XLSX from 'xlsx';
 import type {
@@ -14,6 +14,7 @@ import {
   MEDIA_DIR,
   REPORT_HTML,
   REPORT_XLSX,
+  toBase64,
 } from '../assemble';
 import { JsZipPackager } from '../jszip-packager';
 import type { MediaResolver, ResolvedMedia } from '../ports';
@@ -167,5 +168,45 @@ describe('assembleSurveyExport', () => {
 
     await assembleSurveyExport(ctx, { mediaResolver: resolver, packager: new JsZipPackager() });
     expect(resolver.calls.sort()).toEqual(['front.png', 'shared.png']);
+  });
+
+  it('uses the resolver-supplied base64 for the inline image instead of re-encoding', async () => {
+    const resolver = new FakeMediaResolver({
+      'boundary/render.png': { bytes: PNG_BYTES, mimeType: 'image/png', base64: 'NATIVE_B64' },
+    });
+    const { files } = await assembleSurveyExport(context(), {
+      mediaResolver: resolver,
+      packager: new JsZipPackager(),
+    });
+    const html = files.find((f) => f.path === REPORT_HTML)!.data as string;
+    expect(html).toContain('data:image/png;base64,NATIVE_B64');
+  });
+
+  it('encodes base64 without Buffer (Hermes path) identically to Buffer', () => {
+    const big = new Uint8Array(100_000).map((_, i) => (i * 31) % 256);
+    const expected = Buffer.from(big).toString('base64');
+    vi.stubGlobal('Buffer', undefined);
+    try {
+      expect(toBase64(big)).toBe(expected);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('packs without compression when the packager uses STORE', async () => {
+    const resolver = new FakeMediaResolver({
+      'boundary/render.png': { bytes: PNG_BYTES, mimeType: 'image/png' },
+    });
+    const { zip } = await assembleSurveyExport(context(), {
+      mediaResolver: resolver,
+      packager: new JsZipPackager({ compression: 'STORE' }),
+    });
+    const archive = await JSZip.loadAsync(zip);
+    const html = await archive.file(REPORT_HTML)!.async('string');
+    expect(html).toContain(`data:image/png;base64,${Buffer.from(PNG_BYTES).toString('base64')}`);
+    const mediaBytes = await archive.file(`${MEDIA_DIR}/boundary.png`)!.async('uint8array');
+    expect(Array.from(mediaBytes)).toEqual(Array.from(PNG_BYTES));
+    // STORE keeps the HTML verbatim, so the archive is at least as large as it.
+    expect(zip.length).toBeGreaterThan(html.length);
   });
 });

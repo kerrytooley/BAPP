@@ -10,6 +10,8 @@ export interface ResolvedMedia {
   bytes: Uint8Array;
   /** e.g. `image/png`, `image/jpeg`. Drives the data URI and file extension. */
   mimeType: string;
+  /** Base64 of `bytes` when the platform already has it natively; skips a slow JS encode on Hermes. */
+  base64?: string;
 }
 
 /**

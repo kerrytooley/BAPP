@@ -11,3 +11,4 @@ export * from './locations/firebase-location-repository';
 export * from './surveyors/firebase-surveyor-repository';
 export * from './observations/firebase-observation-repository';
 export * from './media/firebase-media-repository';
+export * from './exports/firebase-survey-export-repository';

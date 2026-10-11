@@ -1,7 +1,6 @@
-jest.mock('expo-file-system/legacy', () => ({
-    EncodingType: { Base64: 'base64' },
-    cacheDirectory: 'file:///cache/',
-    writeAsStringAsync: jest.fn(),
+jest.mock('expo-file-system', () => ({
+    File: jest.fn(),
+    Paths: { cache: { uri: 'file:///cache/' } },
 }));
 
 jest.mock('expo-sharing', () => ({
@@ -9,29 +8,36 @@ jest.mock('expo-sharing', () => ({
     shareAsync: jest.fn(),
 }));
 
-import * as FileSystem from 'expo-file-system/legacy';
+import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { shareSurveyExport } from '@services/export/shareExport';
 
-const writeMock = FileSystem.writeAsStringAsync as jest.Mock;
+const FileMock = File as unknown as jest.Mock;
+const createMock = jest.fn();
+const writeMock = jest.fn();
 const isAvailableMock = Sharing.isAvailableAsync as jest.Mock;
 const shareMock = Sharing.shareAsync as jest.Mock;
 
 describe('shareSurveyExport', () => {
     beforeEach(() => {
-        writeMock.mockReset().mockResolvedValue(undefined);
+        createMock.mockReset();
+        writeMock.mockReset();
+        FileMock.mockReset().mockImplementation((dir: { uri: string }, name: string) => ({
+            uri: `${dir.uri}${name}`,
+            create: createMock,
+            write: writeMock,
+        }));
         isAvailableMock.mockReset();
         shareMock.mockReset().mockResolvedValue(undefined);
     });
 
-    it('writes the zip as base64 to the cache directory', async () => {
+    it('writes the zip bytes natively to the cache directory, overwriting any previous file', async () => {
         isAvailableMock.mockResolvedValue(true);
-        await shareSurveyExport(new Uint8Array([77, 97, 110]), 'my-survey-export.zip');
-        expect(writeMock).toHaveBeenCalledWith(
-            'file:///cache/my-survey-export.zip',
-            'TWFu',
-            { encoding: 'base64' },
-        );
+        const zip = new Uint8Array([77, 97, 110]);
+        await shareSurveyExport(zip, 'my-survey-export.zip');
+        expect(FileMock).toHaveBeenCalledWith(Paths.cache, 'my-survey-export.zip');
+        expect(createMock).toHaveBeenCalledWith({ overwrite: true });
+        expect(writeMock).toHaveBeenCalledWith(zip);
     });
 
     it('opens the share sheet and returns true when sharing is available', async () => {

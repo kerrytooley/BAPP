@@ -97,6 +97,11 @@ export function validateCount(value: number | null | undefined): FieldError {
     return Number.isInteger(value) && value >= 0 ? null : 'Counts must be a whole number of 0 or more';
 }
 
+export function validateLastSeen(firstSeenAt: Date | null | undefined, lastSeenAt: Date | null | undefined): FieldError {
+    if (!firstSeenAt || !lastSeenAt) return null;
+    return lastSeenAt.getTime() < firstSeenAt.getTime() ? "Last seen time can't be before the first seen time" : null;
+}
+
 const UK_POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i;
 
 export function validatePostcode(value: string | null | undefined): FieldError {

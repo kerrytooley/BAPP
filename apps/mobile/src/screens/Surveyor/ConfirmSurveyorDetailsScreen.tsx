@@ -26,11 +26,15 @@ export function ConfirmSurveyorDetailsScreen(): React.JSX.Element {
 
     const survey = context?.survey;
     const surveyor = context?.surveyors.find((surveyor) => surveyor?.id == surveyorId);
-    const positions = surveyor?.isLead
-        ? (context?.locations.flatMap((location) => location.boundaryPosition ?? []) ?? [])
-        : (context?.locations
-            .filter((location) => location.id === surveyor?.locationId)
-            .flatMap((location) => location.boundaryPosition ?? []) ?? []);
+    const visibleLocations = (context?.locations ?? [])
+        .filter((location) => surveyor?.isLead || location.id === surveyor?.locationId);
+    const positions = visibleLocations.flatMap((location) => {
+        if (!location.boundaryPosition) return [];
+        const names = (context?.surveyors ?? [])
+            .filter((s) => s.locationId === location.id && !!s.name?.trim())
+            .map((s) => s.name as string);
+        return [{ ...location.boundaryPosition, label: names.join(", ") || undefined }];
+    });
     const type = "start";
     const locationId = surveyor?.locationId || "";
 

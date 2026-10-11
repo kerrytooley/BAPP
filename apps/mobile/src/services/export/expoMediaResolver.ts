@@ -1,4 +1,4 @@
-import * as FileSystem from "expo-file-system/legacy";
+import { File } from "expo-file-system";
 import type { MediaResolver, ResolvedMedia } from "@bapp/export";
 import { base64ToBytes } from "@utils/base64";
 
@@ -19,7 +19,7 @@ const MIME_BY_EXTENSION: Record<string, string> = {
  * Turns a report figure's `imageRef` into bytes by first asking the domain for a
  * locally-available URI (`SurveyService.getMediaUrl`), then decoding it:
  * - `data:` URIs are parsed directly (in-memory / already-embedded images).
- * - `file://` URIs are read as base64 via expo-file-system.
+ * - `file://` URIs are read natively as both bytes and base64 (no JS codec loops).
  *
  * Returns `null` (rather than throwing) when an image cannot be resolved so the
  * export still succeeds with that figure's base image simply omitted.
@@ -38,10 +38,9 @@ export class ExpoMediaResolver implements MediaResolver {
     }
 
     private async readFile(uri: string): Promise<ResolvedMedia> {
-        const base64 = await FileSystem.readAsStringAsync(uri, {
-            encoding: FileSystem.EncodingType.Base64,
-        });
-        return { bytes: base64ToBytes(base64), mimeType: mimeFromUri(uri) };
+        const file = new File(uri);
+        const [bytes, base64] = await Promise.all([file.bytes(), file.base64()]);
+        return { bytes, base64, mimeType: mimeFromUri(uri) };
     }
 }
 

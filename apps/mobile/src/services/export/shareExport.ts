@@ -1,6 +1,5 @@
-import * as FileSystem from "expo-file-system/legacy";
+import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
-import { bytesToBase64 } from "@utils/base64";
 
 const ZIP_MIME = "application/zip";
 
@@ -9,17 +8,20 @@ const ZIP_MIME = "application/zip";
  * can send it wherever they like (email, Drive, AirDrop, etc.).
  *
  * Returns `false` when sharing is unavailable on the device (the file is still
- * written to `fileUri`), otherwise `true`.
+ * written to the cache), otherwise `true`.
  */
 export async function shareSurveyExport(
     zip: Uint8Array,
     fileName: string,
 ): Promise<boolean> {
-    const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
-    await FileSystem.writeAsStringAsync(fileUri, bytesToBase64(zip), {
-        encoding: FileSystem.EncodingType.Base64,
-    });
+    const file = new File(Paths.cache, fileName);
+    file.create({ overwrite: true });
+    file.write(zip);
+    return shareExportFile(file.uri);
+}
 
+/** Open the OS share sheet for an export zip already on disk; `false` if sharing is unavailable. */
+export async function shareExportFile(fileUri: string): Promise<boolean> {
     if (!(await Sharing.isAvailableAsync())) return false;
 
     await Sharing.shareAsync(fileUri, {

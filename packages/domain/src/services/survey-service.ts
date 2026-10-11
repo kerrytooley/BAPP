@@ -9,6 +9,12 @@ import type { LocationRepository } from '../repositories/location-repository';
 import type { SurveyorRepository } from '../repositories/surveyor-repository';
 import type { ObservationRepository } from '../repositories/observation-repository';
 import type { MediaRepository } from '../repositories/media-repository';
+import type { SurveyExportRepository } from '../repositories/survey-export-repository';
+import {
+  isReadySurveyExport,
+  surveyContextFingerprint,
+  type ReadySurveyExport,
+} from '../models/survey-export';
 import type { SurveyValidator, SurveyChange } from '../validation';
 import { ValidationError } from '../validation-error';
 import { generateSurveyCode, normalizeSurveyCode } from '../codes';
@@ -34,6 +40,7 @@ export class SurveyService {
     private readonly observationRepository: ObservationRepository,
     private readonly mediaRepository: MediaRepository,
     private readonly validator: SurveyValidator,
+    private readonly exportRepository?: SurveyExportRepository,
   ) { }
 
   // --- Entry points ---
@@ -295,6 +302,61 @@ export class SurveyService {
    */
   async getMediaUrl(reference: string): Promise<string> {
     return this.mediaRepository.getDownloadUrl(reference);
+  }
+
+  // --- Backend-built exports ---
+
+  supportsServerExport(): boolean {
+    return this.exportRepository != null;
+  }
+
+  /**
+   * The backend-built export for the survey's current data. Reuses the latest
+   * archive when it matches the local data and has every image; otherwise asks
+   * the backend to rebuild and waits for that request to be answered.
+   */
+  async getServerExport(surveyId: string, timeoutMs = 120_000): Promise<ReadySurveyExport> {
+    const repo = this.exportRepository;
+    if (!repo) throw new Error('Server export is not available for this backend');
+
+    const [context, latest] = await Promise.all([
+      this.getSurveyContext(surveyId),
+      repo.getLatest(surveyId),
+    ]);
+    if (
+      isReadySurveyExport(latest) &&
+      latest.missingMedia.length === 0 &&
+      latest.fingerprint === surveyContextFingerprint(context)
+    ) {
+      return latest;
+    }
+
+    const requestId = await repo.requestExport(surveyId);
+    return new Promise<ReadySurveyExport>((resolve, reject) => {
+      let settled = false;
+      let unsubscribe: Unsubscribe | null = null;
+      const finish = (settle: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        unsubscribe?.();
+        settle();
+      };
+      const timer = setTimeout(
+        () => finish(() => reject(new Error('Timed out waiting for the server export'))),
+        timeoutMs,
+      );
+      unsubscribe = repo.subscribeLatest(surveyId, (value) => {
+        if (!value || value.lastRequestId !== requestId) return;
+        if (value.status === 'failed') {
+          finish(() => reject(new Error(value.error ?? 'Server export failed')));
+        } else if (isReadySurveyExport(value)) {
+          finish(() => resolve(value));
+        }
+      });
+      // The subscription may have answered synchronously, before `unsubscribe` was assigned.
+      if (settled) unsubscribe();
+    });
   }
 
 

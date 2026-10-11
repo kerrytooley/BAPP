@@ -108,7 +108,7 @@ export function WeatherConditionsScreen(): React.JSX.Element {
                 keyboardShouldPersistTaps="handled"
                 automaticallyAdjustKeyboardInsets
             >
-                <InputField testID="weather-temperature-input" value={temperature} variant="unit" fieldLabel="Temperature" placeholderText="Input Temperature" unit="°C" keyboardType="numbers-and-punctuation" onChangeText={setTemperature} onEndEditing={touch("temperature")} error={errorFor("temperature")} />
+                <InputField testID="weather-temperature-input" value={temperature} variant="unit" fieldLabel="Temperature" placeholderText="Input Temperature" unit="°C" keyboardType="decimal-pad" allowNegative onChangeText={setTemperature} onEndEditing={touch("temperature")} error={errorFor("temperature")} />
                 <InputField value={cloudCover} variant="unit" fieldLabel="Cloud Cover" placeholderText="Input Cloud Cover" unit="%" keyboardType="decimal-pad" onChangeText={setCloudCover} onEndEditing={touch("cloudCover")} error={errorFor("cloudCover")} />
                 <InputField value={humidity} variant="unit" fieldLabel="Humidity" placeholderText="Input Humidity" unit="%" keyboardType="decimal-pad" onChangeText={setHumidity} onEndEditing={touch("humidity")} error={errorFor("humidity")} />
                 <InputField value={wind} variant="unit" fieldLabel="Wind" placeholderText="Input Wind" unit="Beaufort" keyboardType="number-pad" onChangeText={setWind} onEndEditing={touch("wind")} error={errorFor("wind")} />

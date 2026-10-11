@@ -92,7 +92,32 @@ describe('ConfirmSurveyorDetailsScreen', () => {
 
         await waitFor(() =>
             expect(DocumentPreview).toHaveBeenLastCalledWith(
-                expect.objectContaining({ values: [{ x: 0.3, y: 0.4 }] }),
+                expect.objectContaining({ values: [{ x: 0.3, y: 0.4, label: 'Ada' }] }),
+                undefined,
+            ),
+        );
+    });
+
+    it('labels each pin with the surveyors at that location', async () => {
+        const service = createMockService({
+            subscribeSurveyContext: mockSubscribeContext(
+                buildContext({
+                    surveyors: [
+                        buildSurveyor({ id: 'surveyor-1', name: 'Ada', isLead: true, locationId: 'location-1' }),
+                        buildSurveyor({ id: 'surveyor-2', name: 'Ben', isLead: false, locationId: 'location-1' }),
+                        buildSurveyor({ id: 'surveyor-3', name: ' ', isLead: false, locationId: 'location-2' }),
+                    ],
+                    locations: positionedLocations,
+                }),
+            ),
+        });
+        renderWithActiveSurvey(<ConfirmSurveyorDetailsScreen />, service);
+
+        await waitFor(() =>
+            expect(DocumentPreview).toHaveBeenLastCalledWith(
+                expect.objectContaining({
+                    values: [{ x: 0.1, y: 0.2, label: 'Ada, Ben' }, { x: 0.3, y: 0.4, label: undefined }],
+                }),
                 undefined,
             ),
         );

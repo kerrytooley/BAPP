@@ -90,6 +90,28 @@ changes until you set `EXPO_PUBLIC_USE_FIREBASE=true`.
    emulator**, `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST=10.0.2.2` to reach the host).
    With the flag unset the app uses the in-memory backend exactly as before.
 
+## Server-built survey exports (`functions/`)
+
+The export zip is built by Cloud Functions (reusing `@bapp/export`) so the admin
+just downloads it — no on-device assembly:
+
+- `buildExportOnCompletion` — survey `status` becomes `completed`.
+- `buildExportOnRequest` — the app creates `surveys/{id}/exportRequests/{reqId}`
+  when the latest archive is stale or was missing images; the reply is stamped
+  as `lastRequestId` on `surveys/{id}/exports/latest`.
+- `deleteExportsOnSurveyDelete` — removes export docs + `surveys/{id}/reports/**`.
+
+Archives live at `surveys/{id}/reports/{runId}/{fileName}.zip`. If the backend
+can't answer (offline, timeout, failure) the app falls back to building on-device.
+
+```bash
+cd functions && npm install && npm test   # standalone npm package, not a pnpm workspace member
+cd firebase && firebase deploy --only functions,firestore:rules   # requires the Blaze plan
+```
+
+The functions use the default region (`us-central1`); if the Firestore database
+is elsewhere, set `region` in `setGlobalOptions` (`functions/src/index.ts`).
+
 
 ## Notes on the rules & indexes
 

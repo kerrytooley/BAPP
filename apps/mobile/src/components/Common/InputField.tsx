@@ -1,4 +1,4 @@
-import { KeyboardTypeOptions, StyleProp, StyleSheet, TextInputProps, ViewStyle, View, Text, TextInput } from "react-native";
+import { KeyboardTypeOptions, StyleProp, StyleSheet, TextInputProps, ViewStyle, View, Text, TextInput, TouchableOpacity } from "react-native";
 import { useState } from 'react';
 import { fonts, textStyles } from '@theme/fonts';
 import { colours } from '@theme/colours';
@@ -13,6 +13,8 @@ export interface InputFieldProps {
     testID?: string;
     error?: string | null;
     keyboardType?: KeyboardTypeOptions;
+    /** Shows a ± button, since number pads have no minus key. */
+    allowNegative?: boolean;
     autoCapitalize?: TextInputProps['autoCapitalize'];
     onChangeText?: (text: string) => void;
     onEndEditing?: () => void;
@@ -30,6 +32,7 @@ export const InputField = ({
     testID,
     error,
     keyboardType,
+    allowNegative = false,
     autoCapitalize,
     onChangeText,
     onEndEditing,
@@ -40,6 +43,11 @@ export const InputField = ({
     const isLarge = size === 'large';
     const isUnit = variant === 'unit';
     const [isFocused, setIsFocused] = useState(false);
+    const isNegative = (value ?? '').trim().startsWith('-');
+    const toggleSign = () => {
+        const text = (value ?? '').trim();
+        onChangeText?.(isNegative ? text.slice(1) : `-${text}`);
+    };
 
     return (
         <View style={[styles.inputField, style]}>
@@ -69,6 +77,16 @@ export const InputField = ({
                     keyboardType={keyboardType}
                     autoCapitalize={autoCapitalize}
                 />
+                {allowNegative &&
+                    <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel={isNegative ? "Make positive" : "Make negative"}
+                        hitSlop={8}
+                        onPress={toggleSign}
+                    >
+                        <Text style={styles.unit}>±</Text>
+                    </TouchableOpacity>
+                }
                 {isUnit && <Text style={styles.unit}>{unit}</Text>}
             </View>
             {!!error && <Text style={styles.errorText}>{error}</Text>}

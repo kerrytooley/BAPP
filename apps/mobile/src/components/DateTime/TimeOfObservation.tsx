@@ -1,5 +1,5 @@
 import { colours } from "@theme/colours"
-import { textStyles } from "@theme/fonts"
+import { fonts, textStyles } from "@theme/fonts"
 import { formatTime } from "@utils/dateTimeUtils"
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useState } from "react"
@@ -10,9 +10,10 @@ interface TimeOfObservationProp {
     observationTime: Date,
     onChange: (value: Date) => void,
     label?: string
+    error?: string | null
 }
 
-export function TimeOfObservation({ observationTime, onChange, label = "Time" }: TimeOfObservationProp) {
+export function TimeOfObservation({ observationTime, onChange, label = "Time", error }: TimeOfObservationProp) {
     const [isOpen, setIsOpen] = useState<boolean>(false);
 
     const handleChange = (event: DateTimePickerEvent, selected?: Date) => {
@@ -36,6 +37,7 @@ export function TimeOfObservation({ observationTime, onChange, label = "Time" }:
                     <Text style={textStyles.placeholderText}>Edit</Text>
                 </TouchableOpacity>
             </View>
+            {!!error && <Text style={styles.errorText}>{error}</Text>}
             {
                 isOpen &&
                 <DateTimePicker
@@ -62,5 +64,11 @@ const styles = StyleSheet.create({
     text: {
         ...textStyles.buttonLabel,
         color: colours.light
+    },
+    errorText: {
+        ...textStyles.inputText,
+        fontSize: fonts.size.sm,
+        color: colours.red,
+        paddingTop: 6,
     }
 })

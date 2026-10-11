@@ -1,5 +1,6 @@
 import {
   applySurveyDefaults,
+  compareSurveyors,
   type Survey,
   type CreateSurveyInput,
   type UpdateSurveyInput,
@@ -22,8 +23,6 @@ import {
 } from '@react-native-firebase/firestore';
 import { getDb } from '../config/firebase-app';
 import {
-  toDateOrNull,
-  toDateRequired,
   stripUndefined,
   nowTimestamp,
   queueWrite,
@@ -33,6 +32,7 @@ import {
 import { fromLocationDoc } from '../locations/firebase-location-repository';
 import { fromSurveyorDoc } from '../surveyors/firebase-surveyor-repository';
 import { fromObservationDoc } from '../observations/firebase-observation-repository';
+import { surveyFromData } from '../mapping/survey-docs';
 
 const COLLECTION = 'surveys';
 /** Child subcollections that must be deleted with their parent survey (no
@@ -40,25 +40,7 @@ const COLLECTION = 'surveys';
 const SUBCOLLECTIONS = ['locations', 'surveyors', 'observations'] as const;
 
 function fromSurveyDoc(snap: FirebaseFirestoreTypes.DocumentSnapshot): Survey {
-  const d = (snap.data() ?? {}) as FirebaseFirestoreTypes.DocumentData;
-  return {
-    id: snap.id,
-    adminCode: d.adminCode,
-    surveyorCode: d.surveyorCode,
-    name: d.name ?? null,
-    postcode: d.postcode ?? null,
-    date: toDateOrNull(d.date),
-    sunsetTime: toDateOrNull(d.sunsetTime),
-    startTime: toDateOrNull(d.startTime),
-    endTime: toDateOrNull(d.endTime),
-    boundary: d.boundary ?? null,
-    status: d.status ?? 'draft',
-    startWeather: d.startWeather ?? null,
-    endWeather: d.endWeather ?? null,
-    data: d.data ?? {},
-    createdAt: toDateRequired(d.createdAt),
-    updatedAt: toDateRequired(d.updatedAt),
-  };
+  return surveyFromData(snap.id, snap.data());
 }
 
 export class FirebaseSurveyRepository implements SurveyRepository {
@@ -146,7 +128,7 @@ export class FirebaseSurveyRepository implements SurveyRepository {
     return {
       survey: fromSurveyDoc(surveySnap),
       locations: locationsSnap.docs.map(fromLocationDoc),
-      surveyors: surveyorsSnap.docs.map(fromSurveyorDoc),
+      surveyors: surveyorsSnap.docs.map(fromSurveyorDoc).sort(compareSurveyors),
       observations: observationsSnap.docs.map(fromObservationDoc),
     };
   }
@@ -189,7 +171,7 @@ export class FirebaseSurveyRepository implements SurveyRepository {
         emit('locations');
       }),
       onSnapshot(collection(db, COLLECTION, surveyId, 'surveyors'), options, (snap) => {
-        surveyors = snap.docs.map(fromSurveyorDoc);
+        surveyors = snap.docs.map(fromSurveyorDoc).sort(compareSurveyors);
         emit('surveyors');
       }),
       onSnapshot(collection(db, COLLECTION, surveyId, 'observations'), options, (snap) => {

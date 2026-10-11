@@ -28,6 +28,7 @@ export async function createFirebaseSurveyService(): Promise<SurveyService> {
         FirebaseSurveyorRepository,
         FirebaseObservationRepository,
         FirebaseMediaRepository,
+        FirebaseSurveyExportRepository,
     } = await import('@bapp/repository/firebase');
 
     const host = emulatorOptions(DEFAULT_EMULATOR_CONFIG.host);
@@ -63,6 +64,7 @@ export async function createFirebaseSurveyService(): Promise<SurveyService> {
         surveyorRepo,
         observationRepo,
         mediaRepo,
-        new FieldValidator()
+        new FieldValidator(),
+        new FirebaseSurveyExportRepository(),
     );
 }

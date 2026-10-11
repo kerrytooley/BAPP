@@ -1,5 +1,6 @@
 import {
   applySurveyorDefaults,
+  compareSurveyors,
   type Surveyor,
   type CreateSurveyorInput,
   type UpdateSurveyorInput,
@@ -21,30 +22,19 @@ import {
 } from '@react-native-firebase/firestore';
 import { getDb } from '../config/firebase-app';
 import {
-  toDateRequired,
   stripUndefined,
   nowTimestamp,
   queueWrite,
   getDocsCacheFirst,
 } from '../config/firestore-mapping';
+import { surveyorFromData } from '../mapping/survey-docs';
 
 /** Surveyors live under `surveys/{surveyId}/surveyors/{id}`. */
 const SUBCOLLECTION = 'surveyors';
 
 /** Map a Firestore document to a domain Surveyor. Exported for `getSurveyContext`. */
 export function fromSurveyorDoc(snap: FirebaseFirestoreTypes.DocumentSnapshot): Surveyor {
-  const d = (snap.data() ?? {}) as FirebaseFirestoreTypes.DocumentData;
-  return {
-    id: snap.id,
-    surveyId: d.surveyId,
-    locationId: d.locationId ?? null,
-    name: d.name ?? null,
-    isLead: d.isLead ?? false,
-    status: d.status ?? 'pending',
-    data: d.data ?? {},
-    createdAt: toDateRequired(d.createdAt),
-    updatedAt: toDateRequired(d.updatedAt),
-  };
+  return surveyorFromData(snap.id, snap.data());
 }
 
 export class FirebaseSurveyorRepository implements SurveyorRepository {
@@ -72,7 +62,7 @@ export class FirebaseSurveyorRepository implements SurveyorRepository {
 
   async findBySurveyId(surveyId: string): Promise<Surveyor[]> {
     const snap = await getDocsCacheFirst(collection(getDb(), 'surveys', surveyId, SUBCOLLECTION));
-    return snap.docs.map(fromSurveyorDoc);
+    return snap.docs.map(fromSurveyorDoc).sort(compareSurveyors);
   }
 
   async update(id: string, input: UpdateSurveyorInput): Promise<Surveyor> {
@@ -97,6 +87,6 @@ export class FirebaseSurveyorRepository implements SurveyorRepository {
 
   subscribeBySurveyId(surveyId: string, callback: (surveyors: Surveyor[]) => void): Unsubscribe {
     const col = collection(getDb(), 'surveys', surveyId, SUBCOLLECTION);
-    return onSnapshot(col, (snap) => callback(snap.docs.map(fromSurveyorDoc)));
+    return onSnapshot(col, (snap) => callback(snap.docs.map(fromSurveyorDoc).sort(compareSurveyors)));
   }
 }

@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@bapp/domain": ["../packages/domain/src/index.ts"],
+      "@bapp/export": ["../packages/export/src/index.ts"],
+      "@bapp/repository/mapping": ["../packages/repository/src/mapping/survey-docs.ts"]
+    }
+  },
+  "include": ["src", "vitest.config.ts"]
+}

@@ -88,4 +88,27 @@ describe('InputField', () => {
         render(<InputField placeholderText="Wind" keyboardType="number-pad" />);
         expect(screen.getByPlaceholderText('Wind').props.keyboardType).toBe('number-pad');
     });
+
+    it('toggles a minus sign when negatives are allowed', () => {
+        const onChangeText = jest.fn();
+        const { rerender } = render(<InputField placeholderText="Temp" value="5" allowNegative onChangeText={onChangeText} />);
+        fireEvent.press(screen.getByLabelText('Make negative'));
+        expect(onChangeText).toHaveBeenLastCalledWith('-5');
+
+        rerender(<InputField placeholderText="Temp" value="-5" allowNegative onChangeText={onChangeText} />);
+        fireEvent.press(screen.getByLabelText('Make positive'));
+        expect(onChangeText).toHaveBeenLastCalledWith('5');
+    });
+
+    it('starts a negative number from an empty field', () => {
+        const onChangeText = jest.fn();
+        render(<InputField placeholderText="Temp" allowNegative onChangeText={onChangeText} />);
+        fireEvent.press(screen.getByLabelText('Make negative'));
+        expect(onChangeText).toHaveBeenLastCalledWith('-');
+    });
+
+    it('has no sign toggle by default', () => {
+        render(<InputField placeholderText="Wind" />);
+        expect(screen.queryByLabelText('Make negative')).toBeNull();
+    });
 });

@@ -480,6 +480,21 @@ describe('AddObservationScreen', () => {
         );
     });
 
+    it('blocks saving when the last seen time is before the first seen time', async () => {
+        const updateObservation = jest.fn().mockResolvedValue(observation);
+        renderWithActiveSurvey(<AddObservationScreen />, buildService({ updateObservation }));
+        await waitFor(() => expect(screen.getByText('Noctule')).toBeOnTheScreen());
+
+        fireEvent.press(screen.getAllByText('Edit')[0]);
+        fireEvent(screen.getByTestId('time-picker'), 'onChange', { type: 'set' }, new Date(2026, 6, 13, 21, 0));
+        expect(screen.queryByText("Last seen time can't be before the first seen time")).toBeNull();
+
+        fireEvent.press(screen.getByText('Save Observation'));
+
+        expect(screen.getByText("Last seen time can't be before the first seen time")).toBeOnTheScreen();
+        expect(updateObservation).not.toHaveBeenCalled();
+    });
+
     it('saves blank optional text as null', async () => {
         const updateObservation = jest.fn().mockResolvedValue(observation);
         renderWithActiveSurvey(<AddObservationScreen />, buildService({ updateObservation }));

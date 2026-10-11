@@ -13,6 +13,10 @@
     "./firebase": {
       "types": "./src/firebase.ts",
       "default": "./src/firebase.ts"
+    },
+    "./mapping": {
+      "types": "./src/mapping/survey-docs.ts",
+      "default": "./src/mapping/survey-docs.ts"
     }
   },
   "scripts": {

@@ -1,5 +1,6 @@
 jest.mock('@bapp/export', () => ({
     assembleSurveyExport: jest.fn(),
+    exportFileName: jest.requireActual('@bapp/export').exportFileName,
     JsZipPackager: jest.fn().mockImplementation(() => ({ pack: jest.fn() })),
 }));
 
@@ -9,17 +10,20 @@ jest.mock('@services/export/expoMediaResolver', () => ({
 
 jest.mock('@services/export/shareExport', () => ({
     shareSurveyExport: jest.fn(),
+    shareExportFile: jest.fn(),
 }));
 
-import { assembleSurveyExport } from '@bapp/export';
+import { assembleSurveyExport, JsZipPackager } from '@bapp/export';
 import { ExpoMediaResolver } from '@services/export/expoMediaResolver';
-import { shareSurveyExport } from '@services/export/shareExport';
+import { shareExportFile, shareSurveyExport } from '@services/export/shareExport';
 import { exportSurvey, type ExportSurveyService } from '@services/export/exportSurvey';
 import { buildContext, buildSurvey } from '../../../helpers/factories';
 
 const assembleMock = assembleSurveyExport as jest.Mock;
 const shareMock = shareSurveyExport as jest.Mock;
+const shareFileMock = shareExportFile as jest.Mock;
 const ResolverMock = ExpoMediaResolver as unknown as jest.Mock;
+const PackagerMock = JsZipPackager as unknown as jest.Mock;
 
 function makeService(name: string | null): ExportSurveyService {
     return {
@@ -27,6 +31,8 @@ function makeService(name: string | null): ExportSurveyService {
             buildContext({ survey: buildSurvey({ name, postcode: null, date: null }) }),
         ),
         getMediaUrl: jest.fn().mockResolvedValue('file:///cache/x.png'),
+        supportsServerExport: jest.fn().mockReturnValue(false),
+        getServerExport: jest.fn(),
     };
 }
 
@@ -34,17 +40,52 @@ describe('exportSurvey', () => {
     beforeEach(() => {
         assembleMock.mockReset().mockResolvedValue({ zip: new Uint8Array([1, 2, 3]), files: [] });
         shareMock.mockReset().mockResolvedValue(true);
+        shareFileMock.mockReset().mockResolvedValue(true);
         ResolverMock.mockClear();
+        PackagerMock.mockClear();
     });
 
-    it('assembles the export and shares it, returning the result', async () => {
+    it('assembles the export on-device without compression and shares it', async () => {
         const service = makeService('Dusk count');
         const result = await exportSurvey(service, 'survey-1');
 
         expect(service.getSurveyContext).toHaveBeenCalledWith('survey-1');
         expect(assembleMock).toHaveBeenCalledTimes(1);
+        expect(PackagerMock).toHaveBeenCalledWith({ compression: 'STORE' });
         expect(shareMock).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]), 'dusk-count-results.zip');
         expect(result).toEqual({ fileName: 'dusk-count-results.zip', shared: true });
+    });
+
+    it('downloads and shares the server-built export when available', async () => {
+        const service = makeService('Dusk count');
+        (service.supportsServerExport as jest.Mock).mockReturnValue(true);
+        (service.getServerExport as jest.Mock).mockResolvedValue({
+            status: 'ready',
+            storagePath: 'surveys/survey-1/reports/run/dusk-count-results.zip',
+            fileName: 'dusk-count-results.zip',
+        });
+        (service.getMediaUrl as jest.Mock).mockResolvedValue('file:///cache/dusk-count-results.zip');
+
+        const result = await exportSurvey(service, 'survey-1');
+
+        expect(service.getMediaUrl).toHaveBeenCalledWith('surveys/survey-1/reports/run/dusk-count-results.zip');
+        expect(shareFileMock).toHaveBeenCalledWith('file:///cache/dusk-count-results.zip');
+        expect(assembleMock).not.toHaveBeenCalled();
+        expect(result).toEqual({ fileName: 'dusk-count-results.zip', shared: true });
+    });
+
+    it('falls back to the on-device build when the server export fails', async () => {
+        const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        const service = makeService('Dusk count');
+        (service.supportsServerExport as jest.Mock).mockReturnValue(true);
+        (service.getServerExport as jest.Mock).mockRejectedValue(new Error('offline'));
+
+        const result = await exportSurvey(service, 'survey-1');
+
+        expect(assembleMock).toHaveBeenCalledTimes(1);
+        expect(shareFileMock).not.toHaveBeenCalled();
+        expect(result).toEqual({ fileName: 'dusk-count-results.zip', shared: true });
+        warn.mockRestore();
     });
 
     it('wires a media resolver backed by the service getMediaUrl', async () => {
@@ -83,6 +124,8 @@ describe('exportSurvey', () => {
                 }),
             ),
             getMediaUrl: jest.fn().mockResolvedValue('file:///cache/x.png'),
+            supportsServerExport: jest.fn().mockReturnValue(false),
+            getServerExport: jest.fn(),
         };
         const result = await exportSurvey(service, 'survey-1');
         expect(result.fileName).toBe('dusk-count-sw1a-1aa-2026-07-13-results.zip');

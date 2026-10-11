@@ -5,6 +5,7 @@ import {
     isBlank,
     validateCount,
     validateFrequencyKhz,
+    validateLastSeen,
     validatePostcode,
     validateSurveyEnd,
     validateSurveySunset,
@@ -49,6 +50,9 @@ export class FieldValidator implements SurveyValidator {
                 if (touched('seenCount')) errors.push(validateCount(observation.seenCount));
                 if (touched('heardCount')) errors.push(validateCount(observation.heardCount));
                 if (touched('flightPaths')) errors.push(validateFlightPaths(observation));
+                if (touched('firstSeenAt') || touched('lastSeenAt')) {
+                    errors.push(validateLastSeen(observation.firstSeenAt, observation.lastSeenAt));
+                }
                 break;
             }
             case 'surveyor':

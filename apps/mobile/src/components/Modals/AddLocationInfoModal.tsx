@@ -1,6 +1,6 @@
 import { colours } from "@theme/colours";
 import { textStyles } from "@theme/fonts";
-import { Modal, Pressable, StyleSheet } from "react-native"
+import { Keyboard, Modal, Pressable, StyleSheet } from "react-native"
 import { InputField } from "../Common/InputField";
 import { Button } from "../Common/Button";
 import { useEffect, useState } from "react";
@@ -31,7 +31,7 @@ export const LocationInfoModal = ({ isFullScreen, setIsFullScreen, saveNote }: L
             }}
         >
             <Pressable testID="survey-info-backdrop" style={styles.infoBackdrop} onPress={() => setIsFullScreen(false)}>
-                <Pressable style={styles.infoModal} >
+                <Pressable style={styles.infoModal} onPress={Keyboard.dismiss}>
                     <InputField
                         fieldLabel="Add Survey Note"
                         placeholderText="e.g. Streetlights turned on at 21:52"

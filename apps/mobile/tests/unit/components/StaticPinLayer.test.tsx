@@ -32,6 +32,12 @@ describe('StaticPinLayer', () => {
         expect(screen.UNSAFE_queryByProps({ pointerEvents: 'none' })).toBeNull();
     });
 
+    it('labels a pin when a label is given', () => {
+        render(<StaticPinLayer imageUri="file://boundary.png" values={[{ x: 0.95, y: 0.5, label: 'Ada, Ben' }, { x: 0.2, y: 0.2 }]} />);
+        measure(300, 300);
+        expect(screen.getByText('Ada, Ben')).toBeOnTheScreen();
+    });
+
     it('logs an error when the aspect ratio cannot be resolved', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         (getAspectRatio as jest.Mock).mockRejectedValueOnce(new Error('size failed'));

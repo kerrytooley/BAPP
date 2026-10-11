@@ -2,7 +2,7 @@
 //
 // Three concerns the domain must not see:
 //  - Date ↔ Firestore Timestamp conversion. We write JS Dates directly (the SDK
-//    stores them as Timestamps) and convert Timestamps back to Dates on read.
+//    stores them as Timestamps); reads convert back in mapping/survey-docs.ts.
 //  - `undefined` is not a valid Firestore value; strip it before writing.
 //  - Offline-first writes: native Firestore write promises only resolve after a
 //    server round-trip, so awaiting them hangs indefinitely while offline. The
@@ -11,36 +11,12 @@
 //    from cache. See FIREBASE_ARCHITECTURE.md §Offline persistence.
 
 import {
-  Timestamp,
   getDocFromCache,
   getDocFromServer,
   getDocsFromCache,
   getDocsFromServer,
   type FirebaseFirestoreTypes,
 } from '@react-native-firebase/firestore';
-
-/** Convert a Firestore Timestamp (or Date/null) read back from a document to a Date | null. */
-export function toDateOrNull(value: unknown): Date | null {
-  if (value == null) return null;
-  if (value instanceof Date) return value;
-  if (value instanceof Timestamp) return value.toDate();
-  // Be defensive: RNFB hands back Timestamp instances, but duck-type just in case.
-  if (typeof (value as { toDate?: unknown }).toDate === 'function') {
-    return (value as { toDate: () => Date }).toDate();
-  }
-  return null;
-}
-
-/**
- * Convert a required timestamp field (createdAt/updatedAt). We write these as
- * client-side `Date`s (see `nowTimestamp`) rather than `serverTimestamp()`, so a
- * document read back from cache immediately after a local write already carries a
- * real value — never the null-until-server-ack that would surface as 1970. The
- * epoch fallback is kept only as a defensive last resort for malformed documents.
- */
-export function toDateRequired(value: unknown): Date {
-  return toDateOrNull(value) ?? new Date(0);
-}
 
 /**
  * The timestamp value to write for createdAt/updatedAt.
