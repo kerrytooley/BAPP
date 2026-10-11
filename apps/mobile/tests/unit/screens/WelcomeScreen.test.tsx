@@ -66,7 +66,7 @@ describe('WelcomeScreen', () => {
             await waitFor(() => expect(screen.queryByText('Your recent surveys')).toBeNull());
         });
 
-        it('takes a surveyor who has ended their survey to the completed screen', async () => {
+        it('asks a returning surveyor to confirm the survey first', async () => {
             await recordRecentSurvey(survey, 'surveyor', 's-1');
             const context = buildContext({
                 survey,
@@ -80,13 +80,13 @@ describe('WelcomeScreen', () => {
 
             await waitFor(() =>
                 expect(mockNavigate).toHaveBeenCalledWith('Surveyor', {
-                    screen: 'SurveyorCompleteScreen',
-                    params: { surveyId: 'survey-1', surveyorId: 's-1', locationId: 'location-1' },
+                    screen: 'CodeConfirmationScreen',
+                    params: { surveyId: 'survey-1', returning: true, surveyorId: 's-1' },
                 }),
             );
         });
 
-        it('asks a surveyor to pick themselves when none is remembered', async () => {
+        it('confirms the survey without a surveyor when none is remembered', async () => {
             await recordRecentSurvey(survey, 'surveyor');
             renderWithService(<WelcomeScreen />, createMockService({
                 getSurveyContext: jest.fn().mockResolvedValue(buildContext({ survey })),
@@ -97,8 +97,8 @@ describe('WelcomeScreen', () => {
 
             await waitFor(() =>
                 expect(mockNavigate).toHaveBeenCalledWith('Surveyor', {
-                    screen: 'SelectSurveyorScreen',
-                    params: { surveyId: 'survey-1' },
+                    screen: 'CodeConfirmationScreen',
+                    params: { surveyId: 'survey-1', returning: true, surveyorId: undefined },
                 }),
             );
         });

@@ -44,11 +44,12 @@ const observation: Observation = {
         points: [],
         data: {}
     }],
+    flightPathLinks: [],
     data: {},
     createdAt: new Date,
     updatedAt: new Date
 }
 
 export const Default: Story = {
-    args: observation
+    args: { ...observation, flightPathLetters: ['A', 'C'] }
 }

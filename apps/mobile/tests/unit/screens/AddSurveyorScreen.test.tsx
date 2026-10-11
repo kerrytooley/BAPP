@@ -97,14 +97,11 @@ describe('AddSurveyorScreen', () => {
         );
         const service = createMockService({
             subscribeSurveyContext: sub.subscribe,
-            addSurveyor: jest.fn().mockResolvedValue(lead),
+            ensureLeadSurveyor: jest.fn().mockResolvedValue(lead),
         });
         renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() =>
-            expect(service.addSurveyor).toHaveBeenCalledWith('survey-1', {
-                name: '',
-                isLead: true,
-            }),
+            expect(service.ensureLeadSurveyor).toHaveBeenCalledWith('survey-1'),
         );
         // The created lead arrives via the subscription re-emitting.
         sub.emit(buildContext({ surveyors: [lead] }));
@@ -117,15 +114,15 @@ describe('AddSurveyorScreen', () => {
         );
         const service = createMockService({
             subscribeSurveyContext: sub.subscribe,
-            addSurveyor: jest.fn().mockResolvedValue(
+            ensureLeadSurveyor: jest.fn().mockResolvedValue(
                 buildSurveyor({ id: 'lead-1', isLead: true, name: '' }),
             ),
         });
         renderWithActiveSurvey(<AddSurveyorScreen />, service);
-        await waitFor(() => expect(service.addSurveyor).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(service.ensureLeadSurveyor).toHaveBeenCalledTimes(1));
         // A stale re-emit still reporting zero surveyors must not create another.
         sub.emit(buildContext({ surveyors: [], locations: [] }));
-        expect(service.addSurveyor).toHaveBeenCalledTimes(1);
+        expect(service.ensureLeadSurveyor).toHaveBeenCalledTimes(1);
     });
 
     it('renders existing surveyors without creating a lead', async () => {
@@ -134,7 +131,7 @@ describe('AddSurveyorScreen', () => {
         });
         renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() => expect(screen.getByText('save-lead')).toBeOnTheScreen());
-        expect(service.addSurveyor).not.toHaveBeenCalled();
+        expect(service.ensureLeadSurveyor).not.toHaveBeenCalled();
     });
 
     it('logs an error when creating the lead surveyor fails', async () => {
@@ -143,7 +140,7 @@ describe('AddSurveyorScreen', () => {
             subscribeSurveyContext: mockSubscribeContext(
                 buildContext({ surveyors: [], locations: [] }),
             ),
-            addSurveyor: jest.fn().mockRejectedValue(new Error('create failed')),
+            ensureLeadSurveyor: jest.fn().mockRejectedValue(new Error('create failed')),
         });
         renderWithActiveSurvey(<AddSurveyorScreen />, service);
         await waitFor(() =>

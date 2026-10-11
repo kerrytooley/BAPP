@@ -18,6 +18,8 @@ function obs(overrides: Partial<ReportObservation> & { id: string }): ReportObse
     emergence: false,
     color: '#e6194B',
     label: 'Noctule',
+    overheadPath: null,
+    frontViewPath: null,
     ...overrides,
   };
 }
@@ -46,8 +48,8 @@ function model(overrides: Partial<ReportModel> = {}): ReportModel {
       },
     },
     surveyors: [
-      { id: 'sur_1', name: 'Alex Lead', isLead: true, status: 'done', locationId: 'loc_1' },
-      { id: 'sur_2', name: 'Sam Two', isLead: false, status: 'done', locationId: 'loc_1' },
+      { id: 'sur_1', number: 1, name: 'Alex Lead', isLead: true, status: 'done', locationId: 'loc_1' },
+      { id: 'sur_2', number: 2, name: 'Sam Two', isLead: false, status: 'done', locationId: 'loc_1' },
     ],
     locations: [
       {
@@ -58,8 +60,8 @@ function model(overrides: Partial<ReportModel> = {}): ReportModel {
       },
     ],
     observations: [
-      obs({ id: 'obs_1', surveyorId: 'sur_1', firstSeenAt: new Date('2026-08-20T20:05:00Z') }),
-      obs({ id: 'obs_2', surveyorId: 'sur_2', species: 'Common Pipistrelle', label: 'Common Pipistrelle', firstSeenAt: new Date('2026-08-20T20:12:00Z') }),
+      obs({ id: 'obs_1', surveyorId: 'sur_1', overheadPath: '1A', firstSeenAt: new Date('2026-08-20T20:05:00Z') }),
+      obs({ id: 'obs_2', surveyorId: 'sur_2', species: 'Common Pipistrelle', label: 'Common Pipistrelle', frontViewPath: '2A', firstSeenAt: new Date('2026-08-20T20:12:00Z') }),
     ],
     figures: [
       {
@@ -69,8 +71,12 @@ function model(overrides: Partial<ReportModel> = {}): ReportModel {
         imageRef: 'boundary/render.png',
         locationId: null,
         paths: [
-          { observationId: 'obs_1', color: '#e6194B', label: 'Noctule', points: [{ x: 0, y: 0 }] },
+          { observationId: 'obs_1', groupId: 'boundary:obs_1', color: '#e6194B', label: '1A', points: [{ x: 0, y: 0 }] },
         ],
+        pathGroups: [
+          { groupId: 'boundary:obs_1', label: '1A', color: '#e6194B', members: [{ observationId: 'obs_1', surveyorName: 'Alex Lead', time: '20:05', species: 'Noctule' }] },
+        ],
+        showSurveyorNames: true,
         pins: [],
       },
       {
@@ -80,8 +86,12 @@ function model(overrides: Partial<ReportModel> = {}): ReportModel {
         imageRef: 'loc1/front.png',
         locationId: 'loc_1',
         paths: [
-          { observationId: 'obs_2', color: '#3cb44b', label: 'Common Pipistrelle', points: [{ x: 0, y: 0 }] },
+          { observationId: 'obs_2', groupId: 'frontView:obs_2', color: '#3cb44b', label: '2A', points: [{ x: 0, y: 0 }] },
         ],
+        pathGroups: [
+          { groupId: 'frontView:obs_2', label: '2A', color: '#3cb44b', members: [{ observationId: 'obs_2', surveyorName: 'Sam Two', time: '20:12', species: 'Common Pipistrelle' }] },
+        ],
+        showSurveyorNames: false,
         pins: [],
       },
     ],
@@ -209,6 +219,7 @@ describe('buildReportWorkbook', () => {
               direction: 'N-S',
               emergence: true,
               notes: 'batty',
+              overheadPath: '1A',
             }),
           ],
         }),
@@ -220,7 +231,38 @@ describe('buildReportWorkbook', () => {
     expect(rows[0].Direction).toBe('N-S');
     expect(rows[0].Emergence).toBe('Yes');
     expect(rows[0].Notes).toBe('batty');
-    expect(rows[0]['Flight paths']).toBe('View flight paths');
+    expect(rows[0]['Overhead path']).toBe('1A');
+    expect(rows[0]['Front view path']).toBe('');
+  });
+
+  it('shows each surface\'s flight path label in its own column, linked to that figure', () => {
+    const wb = read(buildReportWorkbook(model()));
+    const sheet = wb.Sheets['Chronological'];
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
+    expect(rows.map((r) => [r['Overhead path'], r['Front view path']])).toEqual([
+      ['1A', ''],
+      ['', '2A'],
+    ]);
+    const header = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 })[0];
+    const overheadCol = XLSX.utils.encode_col(header.indexOf('Overhead path'));
+    const frontCol = XLSX.utils.encode_col(header.indexOf('Front view path'));
+    expect(sheet[`${overheadCol}2`].l?.Target?.replace(/&amp;/g, '&')).toBe('flight-paths.html?fig=boundary&obs=obs_1');
+    expect(sheet[`${frontCol}3`].l?.Target?.replace(/&amp;/g, '&')).toBe('flight-paths.html?fig=loc_loc_1&obs=obs_2');
+  });
+
+  it('leaves a path label unlinked when its figure has no image', () => {
+    const wb = read(buildReportWorkbook(model({ figures: [] })));
+    const sheet = wb.Sheets['Chronological'];
+    const header = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 })[0];
+    const cell = sheet[`${XLSX.utils.encode_col(header.indexOf('Overhead path'))}2`];
+    expect(cell.v).toBe('1A');
+    expect(cell.l).toBeUndefined();
+  });
+
+  it('names surveyor sheets by surveyor number', () => {
+    const wb = read(buildReportWorkbook(model()));
+    expect(wb.SheetNames).toContain('Surveyor 1 - Alex Lead');
+    expect(wb.SheetNames).toContain('Surveyor 2 - Sam Two');
   });
 
   it('deep-links each observation cell into flight-paths.html via ?fig=&obs=', () => {
@@ -245,8 +287,8 @@ describe('buildReportWorkbook', () => {
       buildReportWorkbook(
         model({
           surveyors: [
-            { id: 's1', name: 'Team/A:B', isLead: true, status: 'done', locationId: null },
-            { id: 's2', name: 'Team/A:B', isLead: false, status: 'done', locationId: null },
+            { id: 's1', number: 1, name: 'Team/A:B', isLead: true, status: 'done', locationId: null },
+            { id: 's2', number: 2, name: 'Team/A:B', isLead: false, status: 'done', locationId: null },
           ],
           observations: [],
         }),

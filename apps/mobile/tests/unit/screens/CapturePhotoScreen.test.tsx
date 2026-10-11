@@ -14,6 +14,7 @@ jest.mock('expo-image-picker', () => ({
     launchCameraAsync: jest.fn(),
     requestMediaLibraryPermissionsAsync: jest.fn(),
     launchImageLibraryAsync: jest.fn(),
+    UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' },
 }));
 
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
@@ -285,6 +286,9 @@ describe('CapturePhotoScreen', () => {
 
         await waitFor(() =>
             expect(picker.launchImageLibraryAsync).toHaveBeenCalled(),
+        );
+        expect(picker.launchImageLibraryAsync).toHaveBeenCalledWith(
+            expect.objectContaining({ preferredAssetRepresentationMode: 'compatible' }),
         );
         expect(screen.getByText('Take Photo')).toBeOnTheScreen();
         expect(screen.queryByText('Save photo and continue')).toBeNull();

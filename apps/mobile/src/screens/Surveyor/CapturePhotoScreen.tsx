@@ -66,7 +66,9 @@ export function CapturePhotoScreen(): React.JSX.Element {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'],
             allowsEditing: false,
-            quality: 0.8
+            quality: 0.8,
+            // iOS otherwise hands back HEIC, which has no on-device converter and never becomes ready.
+            preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
         });
 
         if (!result.canceled) {

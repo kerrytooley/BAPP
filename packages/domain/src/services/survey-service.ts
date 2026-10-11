@@ -12,6 +12,11 @@ import type { MediaRepository } from '../repositories/media-repository';
 import type { SurveyValidator, SurveyChange } from '../validation';
 import { ValidationError } from '../validation-error';
 import { generateSurveyCode, normalizeSurveyCode } from '../codes';
+import {
+  planFlightPathTransfer,
+  validateFlightPathLinks,
+  type FlightPathTransfer,
+} from '../models/flight-path-groups';
 
 /**
  * Status-bearing result of resolving an image. Lets the UI show the
@@ -25,6 +30,8 @@ export type ImageResult =
   | { status: 'ready'; url: string };
 
 export class SurveyService {
+  private readonly leadCreations = new Map<string, Promise<Surveyor | null>>();
+
   constructor(
     private readonly surveyRepository: SurveyRepository,
     private readonly locationRepository: LocationRepository,
@@ -357,6 +364,26 @@ export class SurveyService {
     return this.updateSurveyor(surveyorId, { status: 'done' });
   }
 
+  /**
+   * Idempotent: returns the survey's lead, creating an unnamed one only when the
+   * survey has no surveyors yet. Concurrent calls for the same survey share one creation.
+   */
+  async ensureLeadSurveyor(surveyId: string): Promise<Surveyor | null> {
+    const pending = this.leadCreations.get(surveyId);
+    if (pending) return pending;
+    const creation = (async () => {
+      const existing = await this.surveyorRepository.findBySurveyId(surveyId);
+      if (existing.length > 0) return existing.find((s) => s.isLead) ?? null;
+      return this.addSurveyor(surveyId, { name: '', isLead: true });
+    })();
+    this.leadCreations.set(surveyId, creation);
+    try {
+      return await creation;
+    } finally {
+      this.leadCreations.delete(surveyId);
+    }
+  }
+
   async removeSurveyor(surveyorId: string): Promise<void> {
     const surveyId = await this.findSurveyId(this.surveyorRepository, surveyorId);
     const observations = await this.observationRepository.findBySurveyId(surveyId);
@@ -381,18 +408,41 @@ export class SurveyService {
 
   async updateObservation(observationId: string, input: UpdateObservationInput): Promise<Observation> {
     const surveyId = await this.findSurveyId(this.observationRepository, observationId);
+    let transfers: FlightPathTransfer[] = [];
     await this.withContext(surveyId, { type: 'observation', observationId, fields: Object.keys(input) }, (ctx) => {
       const idx = ctx.observations.findIndex(o => o.id === observationId);
-      ctx.observations[idx] = { ...ctx.observations[idx], ...input };
+      const before = ctx.observations[idx];
+      const after = { ...before, ...input };
+      ctx.observations[idx] = after;
+      const linkError = validateFlightPathLinks(after, ctx.observations);
+      if (linkError) throw new ValidationError(linkError);
+      transfers = planFlightPathTransfer(before, after, ctx.observations);
     });
-    return this.observationRepository.update(observationId, input);
+    const updated = await this.observationRepository.update(observationId, input);
+    await this.applyFlightPathTransfers(transfers);
+    return updated;
   }
 
   async removeObservation(observationId: string): Promise<void> {
+    const existing = await this.observationRepository.findById(observationId);
+    const transfers = existing
+      ? planFlightPathTransfer(
+        existing,
+        null,
+        await this.observationRepository.findBySurveyId(existing.surveyId),
+      )
+      : [];
     await this.observationRepository.delete(observationId);
+    await this.applyFlightPathTransfers(transfers);
   }
 
   // --- Helpers ---
+
+  private async applyFlightPathTransfers(transfers: FlightPathTransfer[]): Promise<void> {
+    for (const { observationId, input } of transfers) {
+      await this.observationRepository.update(observationId, input);
+    }
+  }
 
   private async withContext(
     surveyId: string,

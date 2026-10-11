@@ -4,7 +4,7 @@ jest.mock('@react-navigation/native', () =>
 
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { CodeConfirmationScreen } from '@screens/Surveyor/CodeConfirmationScreen';
-import { buildContext, buildSurvey } from '../../helpers/factories';
+import { buildContext, buildSurvey, buildSurveyor } from '../../helpers/factories';
 import {
     createMockService,
     mockSubscribeContext,
@@ -12,6 +12,7 @@ import {
 } from '../../helpers/testUtils';
 import {
     mockGoBack,
+    mockNavigate,
     resetNavigationMock,
     setRouteParams,
 } from '../../helpers/reactNavigationMock';
@@ -62,5 +63,47 @@ describe('CodeConfirmationScreen', () => {
         fireEvent.press(screen.getByText('Continue'));
         fireEvent.press(screen.getByText("Doesn't look right?"));
         expect(mockGoBack).toHaveBeenCalledTimes(1);
+    });
+
+    it('continues to surveyor selection for a new join', () => {
+        renderWithActiveSurvey(<CodeConfirmationScreen />, createMockService());
+        fireEvent.press(screen.getByText('Continue'));
+        expect(mockNavigate).toHaveBeenCalledWith('SelectSurveyorScreen', { surveyId: 'survey-1' });
+    });
+
+    describe('when returning from the recent surveys menu', () => {
+        const service = () => createMockService({
+            subscribeSurveyContext: mockSubscribeContext(
+                buildContext({ surveyors: [buildSurveyor({ id: 's-1', name: 'Ada' })] }),
+            ),
+        });
+
+        it('asks the surveyor to confirm the survey', () => {
+            setRouteParams({ surveyId: 'survey-1', returning: true, surveyorId: 's-1' });
+            renderWithActiveSurvey(<CodeConfirmationScreen />, service());
+            expect(screen.getByText('Is this your survey?')).toBeOnTheScreen();
+        });
+
+        it('welcomes back the remembered surveyor', () => {
+            setRouteParams({ surveyId: 'survey-1', returning: true, surveyorId: 's-1' });
+            renderWithActiveSurvey(<CodeConfirmationScreen />, service());
+            fireEvent.press(screen.getByText('Continue'));
+            expect(mockNavigate).toHaveBeenCalledWith('WelcomeBackScreen', { surveyId: 'survey-1', surveyorId: 's-1' });
+        });
+
+        it('asks who they are when the remembered surveyor is gone', () => {
+            setRouteParams({ surveyId: 'survey-1', returning: true, surveyorId: 'removed' });
+            renderWithActiveSurvey(<CodeConfirmationScreen />, service());
+            fireEvent.press(screen.getByText('Continue'));
+            expect(mockNavigate).toHaveBeenCalledWith('SelectSurveyorScreen', { surveyId: 'survey-1' });
+        });
+
+        it('returns to the welcome screen when it is the wrong survey', () => {
+            setRouteParams({ surveyId: 'survey-1', returning: true, surveyorId: 's-1' });
+            renderWithActiveSurvey(<CodeConfirmationScreen />, service());
+            fireEvent.press(screen.getByText("Doesn't look right?"));
+            expect(mockNavigate).toHaveBeenCalledWith('Welcome');
+            expect(mockGoBack).not.toHaveBeenCalled();
+        });
     });
 });
