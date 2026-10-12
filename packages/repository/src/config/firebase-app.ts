@@ -46,10 +46,11 @@ export interface EmulatorConfig {
   storagePort: number;
 }
 
-/** Default emulator ports (see firebase/firebase.json). `localhost` works on iOS
- *  simulators; Android emulators reach the host machine via `10.0.2.2`. */
+/** Default emulator ports (see firebase/firebase.json). iOS simulators reach the
+ *  host directly; Android emulators reach it via `10.0.2.2`. */
 export const DEFAULT_EMULATOR_CONFIG: EmulatorConfig = {
-  host: 'localhost',
+  // Not `localhost`: it can resolve to IPv6 ::1, but the emulators listen on IPv4 only.
+  host: '127.0.0.1',
   firestorePort: 8080,
   authPort: 9099,
   storagePort: 9199,

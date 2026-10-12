@@ -13,7 +13,7 @@ describe('ObservationSummary', () => {
                     flightPaths: [{ id: 'fp-1', surface: 'boundary', points: [{ x: 0, y: 0 }] }],
                     notes: 'a nice bat',
                 })}
-                flightPathLetters={['A', 'C']}
+                flightPathLetters={{ overhead: 'A', frontView: 'C' }}
             />,
         );
 
@@ -22,6 +22,14 @@ describe('ObservationSummary', () => {
         expect(screen.getByText('Notes: a nice bat')).toBeOnTheScreen();
         expect(screen.getByText('Yes')).toBeOnTheScreen();
         expect(screen.getByText('A, C')).toBeOnTheScreen();
+    });
+
+    it.each([
+        [{ overhead: 'A' }, 'A, None'],
+        [{ frontView: 'A' }, 'None, A'],
+    ])('shows None for a missing surface (%j)', (letters, shown) => {
+        render(<ObservationSummary {...buildObservation()} flightPathLetters={letters} />);
+        expect(screen.getByText(shown)).toBeOnTheScreen();
     });
 
     it('renders fallbacks for missing values (No / N/A)', () => {
@@ -34,7 +42,7 @@ describe('ObservationSummary', () => {
                     flightPaths: [],
                     notes: null,
                 })}
-                flightPathLetters={[]}
+                flightPathLetters={{}}
             />,
         );
 

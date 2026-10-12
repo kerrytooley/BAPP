@@ -9,11 +9,16 @@
   "scripts": {
     "build": "node build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "firebase-admin": "^14.5.0",
-    "firebase-functions": "^7.4.0"
+    "firebase-functions": "^7.4.0",
+    "expo": "~54.0.37",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
@@ -21,5 +26,6 @@
     "jszip": "^3.10.1",
     "typescript": "~5.9.0",
     "vitest": "^3.2.0"
-  }
+  },
+  "version": "1.0.0"
 }

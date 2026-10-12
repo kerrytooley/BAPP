@@ -86,7 +86,7 @@ describe('SurveySummaryScreen', () => {
         });
         renderWithActiveSurvey(<SurveySummaryScreen />, withPaths);
 
-        expect(await screen.findByText('A')).toBeOnTheScreen();
+        expect(await screen.findByText('A, None')).toBeOnTheScreen();
         expect(screen.getByText('B, A')).toBeOnTheScreen();
     });
 

@@ -111,9 +111,10 @@ export function SurveySummaryScreen(): React.JSX.Element {
                         <ObservationSummary
                             key={observation.id}
                             {...observation}
-                            flightPathLetters={(['boundary', 'frontView'] as const)
-                                .map((surface) => flightPathLetter(observation, observations, surface))
-                                .filter((letter): letter is string => !!letter)}
+                            flightPathLetters={{
+                                overhead: flightPathLetter(observation, observations, 'boundary'),
+                                frontView: flightPathLetter(observation, observations, 'frontView'),
+                            }}
                         />
                     ))
                 }

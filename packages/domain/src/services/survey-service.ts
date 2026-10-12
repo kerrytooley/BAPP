@@ -332,17 +332,22 @@ export class SurveyService {
     }
 
     const requestId = await repo.requestExport(surveyId);
+    // The domain compiles against plain ES2020 (no DOM/Node types), so reach timers via globalThis.
+    const timers = globalThis as unknown as {
+      setTimeout(callback: () => void, ms: number): unknown;
+      clearTimeout(handle: unknown): void;
+    };
     return new Promise<ReadySurveyExport>((resolve, reject) => {
       let settled = false;
       let unsubscribe: Unsubscribe | null = null;
       const finish = (settle: () => void) => {
         if (settled) return;
         settled = true;
-        clearTimeout(timer);
+        timers.clearTimeout(timer);
         unsubscribe?.();
         settle();
       };
-      const timer = setTimeout(
+      const timer = timers.setTimeout(
         () => finish(() => reject(new Error('Timed out waiting for the server export'))),
         timeoutMs,
       );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Keyboard, TouchableWithoutFeedback, View } from 'react-native';
+import { Keyboard, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
@@ -51,12 +51,15 @@ export default function App(): React.JSX.Element | null {
       onStateChange={(state) => setActiveSurveyId(findActiveSurveyId(state))}
     >
       <ActiveSurveyProvider surveyId={activeSurveyId}>
-        {/* Taps that no control handles dismiss the keyboard (number pads and multiline notes have no return to close). */}
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <View style={{ flex: 1 }}>
-            <RootNavigator />
-          </View>
-        </TouchableWithoutFeedback>
+        {/* Taps that no control handles dismiss the keyboard (number pads and multiline notes have no return to close).
+            Only claims the touch while the keyboard is open, otherwise it swallows ScrollView drags. */}
+        <View
+          style={{ flex: 1 }}
+          onStartShouldSetResponder={() => Keyboard.isVisible()}
+          onResponderRelease={() => Keyboard.dismiss()}
+        >
+          <RootNavigator />
+        </View>
       </ActiveSurveyProvider>
     </NavigationContainer>
   );
