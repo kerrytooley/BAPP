@@ -48,8 +48,6 @@ export const DocumentUpload = ({ onChange, value }: DocumentUploadProps) => {
             mediaTypes: ["images"],
             allowsEditing: false,
             quality: 0.8,
-            // iOS otherwise hands back HEIC, which has no on-device converter and never becomes ready.
-            preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
         });
 
         if (!result.canceled) {

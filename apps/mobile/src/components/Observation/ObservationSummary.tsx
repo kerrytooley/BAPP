@@ -5,11 +5,7 @@ import { colours } from "@theme/colours";
 import { textStyles } from "@theme/fonts";
 
 
-type ObservationSummaryProps = Observation & {
-    flightPathLetters: string[]
-};
-
-export const ObservationSummary = ({ flightPathLetters, ...observation }: ObservationSummaryProps) => {
+export const ObservationSummary = (observation: Observation) => {
     return (
         <View style={styles.card}>
             <View style={styles.row}>
@@ -26,7 +22,7 @@ export const ObservationSummary = ({ flightPathLetters, ...observation }: Observ
                     <View style={styles.cell}><Text style={styles.text}>Last seen: </Text><Text style={styles.text}>{formatTime(observation.lastSeenAt)}</Text></View>
                     <View style={styles.cell}><Text style={styles.text}>Frequency: </Text><Text style={styles.text}>{observation.frequency ?? 'N/A'}</Text></View>
                     <View style={styles.cell}><Text style={styles.text}>Heard count: </Text><Text style={styles.text}>{observation.heardCount}</Text></View>
-                    <View style={styles.cell}><Text style={styles.text}>Flight paths: </Text><Text style={styles.text}>{flightPathLetters.length > 0 ? flightPathLetters.join(', ') : 'None'}</Text></View>
+                    <View style={styles.cell}><Text style={styles.text}>Flight paths: </Text><Text style={styles.text}>{observation.flightPaths.length > 0 ? 'Yes' : 'No'}</Text></View>
                 </View>
             </View>
 

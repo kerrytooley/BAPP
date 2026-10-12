@@ -3,7 +3,7 @@ import { Button } from "@components/Common/Button";
 import { CountdownClock } from "@components/DateTime/CountdownClock";
 import { PreviousEntriesSection } from "@components/Observation/PreviousEntriesSection";
 import { screen } from "@theme/screen";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { SurveyorStackParamList } from "@navigators/SurveyorNavigator";
 import { RootStackParamList } from "@navigators/index";
@@ -12,7 +12,7 @@ import { CompositeNavigationProp, RouteProp, useNavigation, useRoute } from "@re
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { Toast } from "@components/Common/Toast";
-import { NotesProps, Observation, surveySchedule } from "@bapp/domain";
+import { NotesProps, Observation } from "@bapp/domain";
 import { LocationInfoModal } from "@components/Modals/AddLocationInfoModal";
 import { ConfirmModal } from "@components/Modals/ConfirmModal";
 
@@ -32,15 +32,6 @@ export function SurveyScreen(): React.JSX.Element {
     const survey = context?.survey;
     const surveyor = context?.surveyors.find((surveyor) => surveyor.id === surveyorId);
     const observations = context?.observations.filter((observation) => observation.surveyorId === surveyorId) ?? [];
-    const dateMs = survey?.date?.getTime();
-    const startMs = survey?.startTime?.getTime();
-    const endMs = survey?.endTime?.getTime();
-    const { start: surveyStart, end: surveyEnd } = useMemo(() => surveySchedule({
-        date: dateMs === undefined ? null : new Date(dateMs),
-        startTime: startMs === undefined ? null : new Date(startMs),
-        sunsetTime: null,
-        endTime: endMs === undefined ? null : new Date(endMs),
-    }), [dateMs, startMs, endMs]);
 
     const [addToast, setAddToast] = useState<{ message: string; undo: () => void; }>();
     const [confirmation, setConfirmation] = useState<{
@@ -144,7 +135,7 @@ export function SurveyScreen(): React.JSX.Element {
     };
 
     const confirmEnd = () => {
-        const timeRemaining = !!surveyEnd && surveyEnd.getTime() > Date.now();
+        const timeRemaining = !!survey?.endTime && survey.endTime.getTime() > Date.now();
         setConfirmation({
             title: "End survey?",
             message: timeRemaining
@@ -180,8 +171,8 @@ export function SurveyScreen(): React.JSX.Element {
             .catch((e) => console.error("Error marking surveyor as started", e));
     }, [service, surveyorId, surveyorStatus]);
 
-    const startTimeMs = surveyStart?.getTime();
-    const endTimeMs = surveyEnd?.getTime();
+    const startTimeMs = survey?.startTime?.getTime();
+    const endTimeMs = survey?.endTime?.getTime();
     const isLead = surveyor?.isLead;
 
     useEffect(() => {
@@ -211,8 +202,8 @@ export function SurveyScreen(): React.JSX.Element {
         <View style={screen.justifyScreen} >
             <ScreenHeader navigation={navigation} onHome={returnHome} />
             <View style={styles.content} >
-                {surveyStart && surveyEnd &&
-                    <CountdownClock startTime={surveyStart} endTime={surveyEnd} />
+                {survey?.startTime && survey.endTime &&
+                    <CountdownClock startTime={survey?.startTime} endTime={survey?.endTime} />
                 }
                 <Button label="End Survey" onPress={confirmEnd} />
                 <LocationInfoModal

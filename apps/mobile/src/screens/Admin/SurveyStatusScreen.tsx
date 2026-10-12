@@ -16,7 +16,6 @@ import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { exportSurvey } from "@services/export/exportSurvey";
 import { SurveyorStatus, SurveyStatus } from "@bapp/domain";
 import { displayValue } from "@utils/displayValue";
-import { formatDate, formatTime } from "@utils/dateTimeUtils";
 import { getSetupRows, getSurveyorRows, ItemStatus, StatusRow, worstStatus } from "@utils/surveyStatus";
 import { Expandable } from "@components/Common/Expandable";
 import { StatusDot } from "@components/Common/StatusDot";
@@ -81,14 +80,6 @@ export function SurveyStatusScreen(): React.JSX.Element {
 
     const doneCount = (surveyors ?? []).filter((s) => s.status === "done").length;
     const setupRows = context ? getSetupRows(context) : [];
-    const timingRow = (key: string, label: string, value: string | null): StatusRow =>
-        ({ key, label, status: value ? "complete" : "missing", detail: value ?? "Not set" });
-    const timingRows = survey ? [
-        timingRow("date", "Survey date", survey.date ? formatDate(survey.date) : null),
-        timingRow("startTime", "Start time", survey.startTime ? formatTime(survey.startTime) : null),
-        timingRow("sunsetTime", "Sunrise/sunset time", survey.sunsetTime ? formatTime(survey.sunsetTime) : null),
-        timingRow("endTime", "End time", survey.endTime ? formatTime(survey.endTime) : null),
-    ] : [];
 
     const editSetup = (key: string) => {
         const screenName = setupEditScreens[key as keyof typeof setupEditScreens];
@@ -128,11 +119,6 @@ export function SurveyStatusScreen(): React.JSX.Element {
                 <Card cardLabel="Survey">
                     <Text style={styles.text}>{String(displayValue(survey?.name))}{survey?.postcode ? ` - ${survey.postcode}` : ""}</Text>
                 </Card>
-                {survey &&
-                    <Card cardLabel="Date & Time">
-                        {timingRows.map((row) => renderRow(row, () => editSetup("details")))}
-                    </Card>
-                }
                 <Card cardLabel="Overall Status">
                     <Text style={styles.text}>{survey ? surveyStatusLabels[survey.status] : "Loading…"}</Text>
                     {surveyors && (

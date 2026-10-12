@@ -88,7 +88,6 @@ export const buildObservation = (
     notes: 'a nice bat',
     emergence: false,
     flightPaths: [],
-    flightPathLinks: [],
     data: {},
     createdAt: now,
     updatedAt: now,

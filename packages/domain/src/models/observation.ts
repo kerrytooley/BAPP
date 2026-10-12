@@ -15,15 +15,7 @@ export interface FlightPath {
   id: string;
   surface: FlightPathSurface;
   points: FlightPathPoint[];
-  /** Epoch ms when drawn; orders lettered paths. Older paths fall back to the observation's createdAt. */
-  createdAt?: number;
   data?: Record<string, unknown>;
-}
-
-/** Reuse of another observation's flight path on `surface` instead of drawing a new one. */
-export interface FlightPathLink {
-  surface: FlightPathSurface;
-  observationId: string;
 }
 
 export interface Observation {
@@ -41,7 +33,6 @@ export interface Observation {
   notes: string | null;
   emergence: boolean;
   flightPaths: FlightPath[];
-  flightPathLinks: FlightPathLink[];
   data: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
@@ -61,7 +52,6 @@ export type CreateObservationInput = {
   notes?: string | null;
   emergence?: boolean;
   flightPaths?: FlightPath[];
-  flightPathLinks?: FlightPathLink[];
   data?: Record<string, unknown>;
 };
 
@@ -76,7 +66,6 @@ export type UpdateObservationInput = Partial<{
   notes: string | null;
   emergence: boolean;
   flightPaths: FlightPath[];
-  flightPathLinks: FlightPathLink[];
   data: Record<string, unknown>;
 }>;
 
@@ -102,7 +91,6 @@ export function applyObservationDefaults(input: CreateObservationInput): NewObse
     direction: input.direction ?? null,
     emergence: input.emergence ?? false,
     flightPaths: input.flightPaths ?? [],
-    flightPathLinks: input.flightPathLinks ?? [],
     data: input.data ?? {},
   };
 }

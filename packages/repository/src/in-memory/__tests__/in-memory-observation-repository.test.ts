@@ -22,7 +22,6 @@ describe('InMemoryObservationRepository', () => {
       expect(obs.seenCount).toBe(0);
       expect(obs.heardCount).toBe(0);
       expect(obs.flightPaths).toEqual([]);
-      expect(obs.flightPathLinks).toEqual([]);
       expect(obs.data).toEqual({});
     });
 

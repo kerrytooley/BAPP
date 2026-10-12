@@ -107,42 +107,11 @@ export function validatePostcode(value: string | null | undefined): FieldError {
 // Survey times only carry a time of day; their date part is whenever they were picked.
 const minutesOfDay = (time: Date) => time.getHours() * 60 + time.getMinutes();
 
-const DAY_MINUTES = 24 * 60;
-export const MAX_SURVEY_HOURS = 12;
-
-// A time earlier in the day than `from` is read as the next day, so surveys can cross midnight.
-const minutesAfter = (from: Date, time: Date) =>
-    (minutesOfDay(time) - minutesOfDay(from) + DAY_MINUTES) % DAY_MINUTES;
-
-const withinSurvey = (offset: number) => offset > 0 && offset <= MAX_SURVEY_HOURS * 60;
-
-const SUNSET_AFTER_START = `Sunrise/sunset time must be within ${MAX_SURVEY_HOURS} hours after the start time`;
-const END_AFTER_START = `End time must be within ${MAX_SURVEY_HOURS} hours after the start time`;
-const END_AFTER_SUNSET = 'End time must be after the sunrise/sunset time';
-
-export function validateSurveySunset(startTime: Date | null | undefined, sunsetTime: Date | null | undefined): FieldError {
-    if (!startTime || !sunsetTime) return null;
-    return withinSurvey(minutesAfter(startTime, sunsetTime)) ? null : SUNSET_AFTER_START;
+export function validateSurveyEnd(startTime: Date | null | undefined, endTime: Date | null | undefined): FieldError {
+    if (!startTime || !endTime) return null;
+    return minutesOfDay(endTime) > minutesOfDay(startTime) ? null : 'End time must be after the start time';
 }
 
-export function validateSurveyEnd(
-    startTime: Date | null | undefined,
-    endTime: Date | null | undefined,
-    sunsetTime?: Date | null,
-): FieldError {
-    if (!endTime) return null;
-    if (!startTime) {
-        return sunsetTime && !withinSurvey(minutesAfter(sunsetTime, endTime)) ? END_AFTER_SUNSET : null;
-    }
-    const endOffset = minutesAfter(startTime, endTime);
-    if (!withinSurvey(endOffset)) return END_AFTER_START;
-    // An out-of-range sunset is reported on the sunset field instead.
-    const sunsetOffset = sunsetTime ? minutesAfter(startTime, sunsetTime) : null;
-    if (sunsetOffset !== null && withinSurvey(sunsetOffset) && sunsetOffset >= endOffset) return END_AFTER_SUNSET;
-    return null;
-}
-
-/** The start may be the current minute — times carry no seconds. */
 export function validateSurveyStart(
     date: Date | null | undefined,
     startTime: Date | null | undefined,
@@ -152,35 +121,5 @@ export function validateSurveyStart(
     const start = new Date(date);
     if (startTime) start.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
     else start.setHours(23, 59, 59, 999);
-    const currentMinute = new Date(now);
-    currentMinute.setSeconds(0, 0);
-    return start >= currentMinute ? null : "Survey start can't be in the past";
-}
-
-export interface SurveyTiming {
-    date?: Date | null;
-    startTime?: Date | null;
-    sunsetTime?: Date | null;
-    endTime?: Date | null;
-}
-
-export interface SurveyTimingErrors {
-    start: FieldError;
-    sunset: FieldError;
-    end: FieldError;
-}
-
-/**
- * `checkStart` is off when editing a survey whose date and start are unchanged,
- * so an already-started survey can still have its other times corrected.
- */
-export function validateSurveyTiming(
-    timing: SurveyTiming,
-    { checkStart = true, now = new Date() }: { checkStart?: boolean; now?: Date } = {},
-): SurveyTimingErrors {
-    return {
-        start: checkStart ? validateSurveyStart(timing.date, timing.startTime, now) : null,
-        sunset: validateSurveySunset(timing.startTime, timing.sunsetTime),
-        end: validateSurveyEnd(timing.startTime, timing.endTime, timing.sunsetTime),
-    };
+    return start > now ? null : 'Survey start must be in the future';
 }

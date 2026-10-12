@@ -65,31 +65,6 @@ describe('SurveySummaryScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('WeatherConditionsScreen', { ...params, type: 'end', mode: 'edit' });
     });
 
-    it('shows each observation\'s overhead and front-view flight path letters', async () => {
-        const withPaths = createMockService({
-            subscribeSurveyContext: mockSubscribeContext(buildContext({
-                surveyors: [buildSurveyor({ id: 'surveyor-1', name: 'Ada' })],
-                observations: [
-                    buildObservation({
-                        id: 'obs-1',
-                        flightPaths: [{ id: 'fp-1', surface: 'boundary', points: [] }],
-                    }),
-                    buildObservation({
-                        id: 'obs-2',
-                        flightPaths: [
-                            { id: 'fp-2', surface: 'boundary', points: [] },
-                            { id: 'fp-3', surface: 'frontView', points: [] },
-                        ],
-                    }),
-                ],
-            })),
-        });
-        renderWithActiveSurvey(<SurveySummaryScreen />, withPaths);
-
-        expect(await screen.findByText('A')).toBeOnTheScreen();
-        expect(screen.getByText('B, A')).toBeOnTheScreen();
-    });
-
     it('lets the lead add weather that was skipped', async () => {
         const skipped = createMockService({
             subscribeSurveyContext: mockSubscribeContext(buildContext({

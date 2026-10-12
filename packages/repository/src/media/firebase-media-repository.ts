@@ -314,10 +314,7 @@ export class FirebaseMediaRepository implements MediaRepository {
         // copy/record can't land after (and outlive) this cleanup.
         void persisted.then(() => this.settlePending(reference));
       },
-      (error: unknown) => {
-        // Left in the manifest for launch-time resume.
-        console.warn(`[media] upload of ${reference} did not complete; will retry next launch`, error);
-      },
+      () => undefined, // leave the entry for launch-time resume
     );
   }
 

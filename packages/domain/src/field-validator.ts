@@ -7,7 +7,6 @@ import {
     validateFrequencyKhz,
     validatePostcode,
     validateSurveyEnd,
-    validateSurveySunset,
     validateWeather,
     type FieldError,
 } from './field-rules';
@@ -28,10 +27,7 @@ export class FieldValidator implements SurveyValidator {
                 if (touched('startWeather')) errors.push(...Object.values(validateWeather(survey.startWeather, 'start')));
                 if (touched('endWeather')) errors.push(...Object.values(validateWeather(survey.endWeather, 'end')));
                 if (touched('postcode')) errors.push(validatePostcode(survey.postcode));
-                if (touched('startTime') || touched('sunsetTime') || touched('endTime')) {
-                    errors.push(validateSurveySunset(survey.startTime, survey.sunsetTime));
-                    errors.push(validateSurveyEnd(survey.startTime, survey.endTime, survey.sunsetTime));
-                }
+                if (touched('startTime') || touched('endTime')) errors.push(validateSurveyEnd(survey.startTime, survey.endTime));
                 break;
             }
             case 'location': {

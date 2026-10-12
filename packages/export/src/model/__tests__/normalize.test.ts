@@ -108,7 +108,6 @@ function observation(
     notes: null,
     emergence: false,
     flightPaths: [],
-    flightPathLinks: [],
     data: {},
     createdAt: EPOCH,
     updatedAt: EPOCH,
@@ -152,7 +151,7 @@ describe('normalizeReport', () => {
       },
     });
     expect(model.surveyors).toEqual([
-      { id: 'sur_1', number: 1, name: 'Surveyor sur_1', isLead: false, status: 'ready', locationId: null },
+      { id: 'sur_1', name: 'Surveyor sur_1', isLead: false, status: 'ready', locationId: null },
     ]);
     expect(model.locations).toEqual([
       {
@@ -434,72 +433,5 @@ describe('normalizeReport', () => {
     const flags = new Map(model.observations.map((o) => [o.id, o.emergence]));
     expect(flags.get('obs_1')).toBe(true);
     expect(flags.get('obs_2')).toBe(false);
-  });
-
-  describe('lettered flight paths', () => {
-    const at = (minutes: number) => new Date(EPOCH.getTime() + minutes * 60_000);
-
-    function sharedContext(): SurveyContext {
-      return context({
-        survey: survey({ boundary: media() }),
-        surveyors: [
-          surveyor('sur_1', { name: 'Ada', locationId: 'loc_1' }),
-          surveyor('sur_2', { name: 'Grace', locationId: 'loc_2' }),
-        ],
-        locations: [
-          location('loc_1', { frontViewImage: media({ renderRef: 'loc1/front.png' }) }),
-          location('loc_2', { frontViewImage: media({ renderRef: 'loc2/front.png' }) }),
-        ],
-        observations: [
-          observation('a1', {
-            createdAt: at(1), firstSeenAt: at(1), species: 'Noctule',
-            flightPaths: [flightPath('boundary', 'fp_a1'), flightPath('frontView', 'fp_a1f')],
-          }),
-          observation('a2', {
-            createdAt: at(2), firstSeenAt: at(5), species: 'Serotine',
-            flightPathLinks: [{ surface: 'boundary', observationId: 'a1' }],
-          }),
-          observation('a3', {
-            createdAt: at(3), firstSeenAt: at(3),
-            flightPaths: [flightPath('boundary', 'fp_a3')],
-          }),
-          observation('b1', {
-            surveyorId: 'sur_2', locationId: 'loc_2', createdAt: at(4), firstSeenAt: at(4),
-            flightPaths: [flightPath('boundary', 'fp_b1'), flightPath('frontView', 'fp_b1f')],
-          }),
-        ],
-      });
-    }
-
-    it('labels each surveyor\'s paths per surface as {surveyorNumber}{letter}', () => {
-      const model = normalizeReport(sharedContext());
-      const byId = new Map(model.observations.map((o) => [o.id, o]));
-      expect(byId.get('a1')).toMatchObject({ overheadPath: '1A', frontViewPath: '1A' });
-      expect(byId.get('a2')).toMatchObject({ overheadPath: '1A', frontViewPath: null });
-      expect(byId.get('a3')).toMatchObject({ overheadPath: '1B', frontViewPath: null });
-      expect(byId.get('b1')).toMatchObject({ overheadPath: '2A', frontViewPath: '2A' });
-    });
-
-    it('draws a linked path once and lists every linked observation under it', () => {
-      const boundary = normalizeReport(sharedContext()).figures.find((f) => f.kind === 'boundary')!;
-      expect(boundary.pathGroups.map((g) => g.label)).toEqual(['1A', '1B', '2A']);
-      expect(boundary.paths.map((p) => p.groupId)).toEqual(['boundary:a1', 'boundary:a3', 'boundary:b1']);
-      expect(boundary.showSurveyorNames).toBe(true);
-      expect(boundary.pathGroups[0].members).toEqual([
-        { observationId: 'a1', surveyorName: 'Ada', time: '00:01', species: 'Noctule' },
-        { observationId: 'a2', surveyorName: 'Ada', time: '00:05', species: 'Serotine' },
-      ]);
-      expect(new Set(boundary.pathGroups.map((g) => g.color)).size).toBe(3);
-      expect(boundary.paths[0].color).toBe(boundary.pathGroups[0].color);
-    });
-
-    it('keeps front-view groups to their location and hides surveyor names', () => {
-      const model = normalizeReport(sharedContext());
-      const loc1 = model.figures.find((f) => f.figureId === 'loc_loc_1')!;
-      const loc2 = model.figures.find((f) => f.figureId === 'loc_loc_2')!;
-      expect(loc1.pathGroups.map((g) => g.label)).toEqual(['1A']);
-      expect(loc2.pathGroups.map((g) => g.label)).toEqual(['2A']);
-      expect(loc1.showSurveyorNames).toBe(false);
-    });
   });
 });

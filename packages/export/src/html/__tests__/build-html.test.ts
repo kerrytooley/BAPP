@@ -25,7 +25,7 @@ function baseModel(overrides: Partial<ReportModel> = {}): ReportModel {
         cloudCover: null,
       },
     },
-    surveyors: [{ id: 'sur_1', number: 1, name: 'Alex', isLead: true, status: 'done', locationId: 'loc_1' }],
+    surveyors: [{ id: 'sur_1', name: 'Alex', isLead: true, status: 'done', locationId: 'loc_1' }],
     locations: [{ id: 'loc_1', name: 'North elevation', equipmentInformation: { audioLabel: '', videoLabel: '', otherInfo: '' }, notes: [] }],
     observations: [
       {
@@ -43,8 +43,6 @@ function baseModel(overrides: Partial<ReportModel> = {}): ReportModel {
         emergence: false,
         color: '#ff0000',
         label: 'Noctule',
-        overheadPath: '1A',
-        frontViewPath: null,
       },
     ],
     figures: [
@@ -57,27 +55,14 @@ function baseModel(overrides: Partial<ReportModel> = {}): ReportModel {
         paths: [
           {
             observationId: 'obs_1',
-            groupId: 'boundary:obs_1',
             color: '#ff0000',
-            label: '1A',
+            label: 'Noctule',
             points: [
               { x: 0.1, y: 0.2 },
               { x: 0.3, y: 0.4 },
             ],
           },
         ],
-        pathGroups: [
-          {
-            groupId: 'boundary:obs_1',
-            label: '1A',
-            color: '#ff0000',
-            members: [
-              { observationId: 'obs_1', surveyorName: 'Alex', time: '20:00', species: 'Noctule' },
-              { observationId: 'obs_2', surveyorName: 'Alex', time: '20:10', species: 'Pipistrelle' },
-            ],
-          },
-        ],
-        showSurveyorNames: true,
         pins: [],
       },
     ],
@@ -109,23 +94,8 @@ describe('buildReportHtml', () => {
     expect(staticReport).toContain('<h2>Boundary (birds-eye)</h2>');
     expect(staticReport).toContain('<img data-figure-id="boundary" src="data:image/png;base64,AAAA"');
     expect(staticReport).toContain('<polyline points="0.1,0.2 0.3,0.4" stroke="#ff0000"');
-    expect(staticReport).toMatch(/class="check-label">1A<\/span><span class="check-count">2</);
+    expect(staticReport).toMatch(/class="check-label">Noctule<\/span><span class="check-count">1</);
     expect(html).toContain('<main id="report-main" hidden>');
-  });
-
-  it('lists each lettered path\'s observations in an expandable static entry', () => {
-    const html = buildReportHtml(baseModel(), images());
-    const staticReport = html.split('<div id="static-report">')[1].split('<main')[0];
-    expect(staticReport).toContain('<li class="check-group"><details><summary class="check-item">');
-    expect(staticReport).toContain('<li>Alex \u2022 20:00 \u2022 Noctule</li><li>Alex \u2022 20:10 \u2022 Pipistrelle</li>');
-  });
-
-  it('omits surveyor names on single-surveyor (front view) figures', () => {
-    const model = baseModel();
-    model.figures[0] = { ...model.figures[0], showSurveyorNames: false };
-    const html = buildReportHtml(model, images());
-    expect(html).toContain('<li>20:00 \u2022 Noctule</li>');
-    expect(html).not.toContain('<li>Alex \u2022 20:00');
   });
 
   it('inlines each base image only once', () => {
@@ -138,7 +108,6 @@ describe('buildReportHtml', () => {
     model.figures[0] = {
       ...model.figures[0],
       paths: [],
-      pathGroups: [],
       pins: [{ locationId: 'loc_1', label: 'North elevation', x: 0.5, y: 0.5, surveyorNames: ['Alex'] }],
     };
     const html = buildReportHtml(model, images());

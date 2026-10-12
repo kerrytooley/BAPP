@@ -13,15 +13,14 @@ describe('ObservationSummary', () => {
                     flightPaths: [{ id: 'fp-1', surface: 'boundary', points: [{ x: 0, y: 0 }] }],
                     notes: 'a nice bat',
                 })}
-                flightPathLetters={['A', 'C']}
             />,
         );
 
         expect(screen.getByText('N->S')).toBeOnTheScreen();
         expect(screen.getByText('45')).toBeOnTheScreen();
         expect(screen.getByText('Notes: a nice bat')).toBeOnTheScreen();
-        expect(screen.getByText('Yes')).toBeOnTheScreen();
-        expect(screen.getByText('A, C')).toBeOnTheScreen();
+        // emergence 'Yes' and flight paths 'Yes'
+        expect(screen.getAllByText('Yes').length).toBeGreaterThanOrEqual(2);
     });
 
     it('renders fallbacks for missing values (No / N/A)', () => {
@@ -34,13 +33,13 @@ describe('ObservationSummary', () => {
                     flightPaths: [],
                     notes: null,
                 })}
-                flightPathLetters={[]}
             />,
         );
 
         expect(screen.getByText('Notes: N/A')).toBeOnTheScreen();
+        // direction + frequency show 'N/A'
         expect(screen.getAllByText('N/A').length).toBeGreaterThanOrEqual(2);
-        expect(screen.getByText('No')).toBeOnTheScreen();
-        expect(screen.getByText('None')).toBeOnTheScreen();
+        // emergence 'No' and flight paths 'No'
+        expect(screen.getAllByText('No').length).toBeGreaterThanOrEqual(2);
     });
 });

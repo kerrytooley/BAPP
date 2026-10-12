@@ -4,7 +4,6 @@ export * from './models/survey';
 export * from './models/location';
 export * from './models/surveyor';
 export * from './models/observation';
-export * from './models/flight-path-groups';
 
 // Survey context
 export * from './survey-context';

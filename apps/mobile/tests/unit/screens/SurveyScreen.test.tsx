@@ -77,34 +77,15 @@ describe('SurveyScreen', () => {
     });
 
     describe('survey timing', () => {
-        // Survey times are anchored to the survey date at whole minutes.
-        const NOW = new Date(2026, 9, 11, 18, 0);
-        const fromNow = (ms: number) => new Date(NOW.getTime() + ms);
+        const fromNow = (ms: number) => new Date(Date.now() + ms);
         const timedService = (startInMs: number, endInMs: number) =>
             serviceWith(jest.fn(), buildContext({
-                survey: buildSurvey({ date: new Date(2026, 9, 11), startTime: fromNow(startInMs), endTime: fromNow(endInMs) }),
+                survey: buildSurvey({ startTime: fromNow(startInMs), endTime: fromNow(endInMs) }),
                 observations: [observation],
             }));
 
-        beforeEach(() => jest.useFakeTimers({ now: NOW }));
+        beforeEach(() => jest.useFakeTimers());
         afterEach(() => jest.useRealTimers());
-
-        it('counts down to an end time after midnight', async () => {
-            const service = serviceWith(jest.fn(), buildContext({
-                survey: buildSurvey({
-                    date: new Date(2026, 9, 11),
-                    startTime: new Date(2026, 9, 11, 17, 0),
-                    endTime: new Date(2026, 9, 11, 0, 30),
-                }),
-                observations: [observation],
-            }));
-            renderWithActiveSurvey(<SurveyScreen />, service);
-            await waitFor(() => expect(screen.getByText('End Survey')).toBeOnTheScreen());
-
-            fireEvent.press(screen.getByText('End Survey'));
-
-            expect(screen.getByText('This survey still has time remaining. Are you sure you want to end it?')).toBeOnTheScreen();
-        });
 
         it('warns that time remains when ending before the end time', async () => {
             renderWithActiveSurvey(<SurveyScreen />, timedService(-60_000, 60 * 60_000));

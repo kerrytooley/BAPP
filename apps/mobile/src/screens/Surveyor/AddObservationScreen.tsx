@@ -9,14 +9,14 @@ import { Title } from "@components/Common/Titles";
 import { TimeOfObservation } from "@components/DateTime/TimeOfObservation";
 import { HeardAndSeenCount } from "@components/Observation/HeardAndSeenCount";
 import React, { useEffect, useRef, useState } from "react";
-import { buildFlightPathGroups, FlightPath, FlightPathLink, FlightPathSurface, sameFlightPathIds, UpdateObservationInput, validateFrequencyKhz } from "@bapp/domain";
+import { FlightPath, FlightPathSurface, UpdateObservationInput, validateFrequencyKhz } from "@bapp/domain";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { InputField } from "@components/Common/InputField";
 import { Card } from "@components/Common/Card";
 import { PlusButton as PlusIcon } from "@components/Common/Icons"
 import { textStyles } from "@theme/fonts";
-import { AddFlightPathBottomSheet, FlightPathCommit, FlightPathOption } from "@components/BottomSheets/AddFlightPathBottomSheet";
+import { AddFlightPathBottomSheet } from "@components/BottomSheets/AddFlightPathBottomSheet";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { ConfirmModal } from "@components/Modals/ConfirmModal";
 import { colours } from "@theme/colours";
@@ -45,7 +45,6 @@ export function AddObservationScreen(): React.JSX.Element {
     const [notes, setNotes] = useState<string>();
     const [emergence, setEmergence] = useState<boolean>(false);
     const [flightPaths, setFlightPaths] = useState<FlightPath[]>([]);
-    const [flightPathLinks, setFlightPathLinks] = useState<FlightPathLink[]>([]);
     const [boundaryImageUri, setBoundaryImageUri] = useState<string>();
     const [frontViewImageUri, setFrontViewImageUri] = useState<string>();
     const [activeSurface, setActiveSurface] = useState<FlightPathSurface>();
@@ -80,7 +79,6 @@ export function AddObservationScreen(): React.JSX.Element {
         if (observation.notes) setNotes(observation.notes);
         setEmergence(observation.emergence);
         setFlightPaths(observation.flightPaths);
-        setFlightPathLinks(observation.flightPathLinks);
     }, [observation]);
 
     useEffect(() => {
@@ -119,65 +117,19 @@ export function AddObservationScreen(): React.JSX.Element {
         if (activeSurface) sheetRef.current?.present();
     }, [activeSurface]);
 
-    const surveyObservations = context?.observations ?? [];
-    const groupsFor = (surface: FlightPathSurface) =>
-        buildFlightPathGroups(surveyObservations, surveyorId, surface)
-            .filter((group) =>
-                surface === "boundary" ||
-                surveyObservations.find((o) => o.id === group.sourceObservationId)!.locationId === locationId,
-            );
-    const pathsOn = (surface: FlightPathSurface) => flightPaths.filter((path) => path.surface === surface);
-    // This observation's saved path, while its strokes are still the saved ones.
-    const ownSavedGroup = (surface: FlightPathSurface) => {
-        const group = groupsFor(surface).find((g) => g.sourceObservationId === observationId);
-        return group && sameFlightPathIds(pathsOn(surface), group.paths) ? group : undefined;
-    };
-
-    // Drawing and linking are exclusive per surface; choosing its own saved path keeps it.
-    const commitFlightPath = (surface: FlightPathSurface, commit: FlightPathCommit) => {
-        const keepsOwn = "link" in commit && commit.link.observationId === observationId;
-        const paths = "paths" in commit
-            ? commit.paths
-            : keepsOwn
-                ? groupsFor(surface).find((g) => g.sourceObservationId === observationId)!.paths
-                : [];
-        setFlightPaths((current) => [
-            ...current.filter((path) => path.surface !== surface),
+    const commitPaths = (surface: FlightPathSurface, paths: FlightPath[]) => {
+        setFlightPaths((currentPaths) => [
+            ...currentPaths.filter((path) => path.surface !== surface),
             ...paths,
         ]);
-        setFlightPathLinks((current) => [
-            ...current.filter((link) => link.surface !== surface),
-            ...("link" in commit && !keepsOwn ? [commit.link] : []),
-        ]);
     };
-
-    const letterFor = (surface: FlightPathSurface): string | undefined => {
-        const linkedId = flightPathLinks.find((link) => link.surface === surface)?.observationId;
-        if (!linkedId) return ownSavedGroup(surface)?.letter;
-        return groupsFor(surface).find((group) => group.sourceObservationId === linkedId)?.letter;
-    };
-
-    const activeOptions: FlightPathOption[] = activeSurface
-        ? groupsFor(activeSurface)
-            .map(({ letter, sourceObservationId, paths }) => ({ letter, sourceObservationId, paths }))
-        : [];
-    const activeKeepsOwn = !!activeSurface && !!ownSavedGroup(activeSurface);
-    const activeLinkId = activeSurface
-        ? flightPathLinks.find((link) => link.surface === activeSurface)?.observationId
-            ?? (activeKeepsOwn ? observationId : null)
-        : null;
 
     const activeImageUri = activeSurface === "boundary" ? boundaryImageUri : frontViewImageUri;
-    // A saved path is chosen as an option, never edited; only unsaved strokes reopen for drawing.
-    const activePaths = activeSurface && !activeKeepsOwn ? pathsOn(activeSurface) : [];
-    const hasPath = (surface: FlightPathSurface) =>
-        flightPaths.some((path) => path.surface === surface) ||
-        flightPathLinks.some((link) => link.surface === surface);
-    const flightPathLabel = (surface: FlightPathSurface, name: string) => {
-        if (!hasPath(surface)) return `Add ${name} flight path`;
-        const letter = letterFor(surface);
-        return letter ? `Edit ${name} flight path ${letter}` : `Edit ${name} flight path`;
-    };
+    const activePaths = activeSurface
+        ? flightPaths.filter((path) => path.surface === activeSurface)
+        : [];
+    const hasBoundaryPath = flightPaths.some((path) => path.surface === "boundary");
+    const hasFrontViewPath = flightPaths.some((path) => path.surface === "frontView");
 
     const isSubmitting = useRef(false);
     const [frequencyTouched, setFrequencyTouched] = useState(false);
@@ -198,7 +150,6 @@ export function AddObservationScreen(): React.JSX.Element {
                 notes: optionalText(notes),
                 emergence: emergence,
                 flightPaths,
-                flightPathLinks,
             } satisfies UpdateObservationInput;
             const updatedObservation = await service.updateObservation(observationId, observationInput);
             console.log("Successfully updated observation: ", observationId, updatedObservation);
@@ -301,7 +252,7 @@ export function AddObservationScreen(): React.JSX.Element {
                                 <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.imageTextOverlay]}>
                                     <PlusIcon width={24} />
                                     <Text style={[styles.previewText]}>
-                                        {flightPathLabel("boundary", "overhead")}
+                                        {`${hasBoundaryPath ? "Edit" : "Add"} overhead flight path`}
                                     </Text>
                                 </View>
                             </TouchableOpacity>
@@ -312,7 +263,7 @@ export function AddObservationScreen(): React.JSX.Element {
                                 <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.imageTextOverlay]}>
                                     <PlusIcon width={24} />
                                     <Text style={[styles.previewText]}>
-                                        {flightPathLabel("frontView", "front-view")}
+                                        {`${hasFrontViewPath ? "Edit" : "Add"} front-view flight path`}
                                     </Text>
                                 </View>
                             </TouchableOpacity>
@@ -345,10 +296,8 @@ export function AddObservationScreen(): React.JSX.Element {
                     imageUri={activeImageUri}
                     surface={activeSurface}
                     initialPaths={activePaths}
-                    initialLinkId={activeLinkId}
-                    options={activeOptions}
-                    onCommit={(commit) => {
-                        commitFlightPath(activeSurface, commit)
+                    onCommitPath={(paths) => {
+                        commitPaths(activeSurface, paths)
                         sheetRef.current?.dismiss()
                     }}
                 />

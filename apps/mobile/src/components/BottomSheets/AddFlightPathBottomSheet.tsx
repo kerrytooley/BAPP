@@ -1,41 +1,25 @@
-import { StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native"
+import { StyleSheet, useWindowDimensions, View } from "react-native"
 import { Title } from "../Common/Titles"
 import { forwardRef, useMemo, useState } from "react"
 import { BottomSheetBackdrop, BottomSheetBackdropProps, BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet"
 import { colours } from "@theme/colours"
-import { textStyles } from "@theme/fonts"
-import { FlightPath, FlightPathLink, FlightPathSurface } from "@bapp/domain"
+import { FlightPath, FlightPathSurface } from "@bapp/domain"
 import { Button } from "../Common/Button";
 import { FlightPathCanvas } from "../Interactive/FlightPathCanvas"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-// Gesture-handler's ScrollView so horizontal swipes cooperate with the sheet's pan gesture.
-import { ScrollView } from "react-native-gesture-handler"
-
-/** An earlier flight path the surveyor can reuse instead of drawing. */
-export interface FlightPathOption {
-    letter: string
-    sourceObservationId: string
-    paths: FlightPath[]
-}
-
-export type FlightPathCommit = { paths: FlightPath[] } | { link: FlightPathLink }
 
 export interface AddFlightPathProps {
     imageUri: string
     surface: FlightPathSurface
     isEditing?: boolean
     initialPaths?: FlightPath[]
-    /** Source observation id of the path this observation already links to. */
-    initialLinkId?: string | null
-    options?: FlightPathOption[]
-    onCommit: (commit: FlightPathCommit) => void
+    onCommitPath: (paths: FlightPath[]) => void
 }
 
 export const AddFlightPathBottomSheet = forwardRef<BottomSheetModal, AddFlightPathProps>(
-    ({ imageUri, surface, isEditing = false, initialPaths = [], initialLinkId = null, options = [], onCommit }, ref) => {
+    ({ imageUri, surface, isEditing = false, initialPaths = [], onCommitPath }, ref) => {
 
         const [paths, setPaths] = useState<FlightPath[]>([]);
-        const [selectedId, setSelectedId] = useState<string | null>(null);
         const insets = useSafeAreaInsets();
         const { height: windowHeight } = useWindowDimensions();
         const snapPoints = useMemo(() => ["100%"], []);
@@ -52,43 +36,11 @@ export const AddFlightPathBottomSheet = forwardRef<BottomSheetModal, AddFlightPa
             />
         )
 
-        const selected = options.find((option) => option.sourceObservationId === selectedId);
-        const canSave = selected ? true : paths.length > 0;
-
-        const save = () => {
-            if (selected) {
-                onCommit({ link: { surface, observationId: selected.sourceObservationId } });
-            } else {
-                onCommit({ paths });
-            }
-        };
-
-        const renderChip = (label: string, isSelected: boolean, onPress: () => void) => (
-            <TouchableOpacity
-                key={label}
-                style={[styles.chip, isSelected && styles.chipSelected]}
-                onPress={onPress}
-                accessibilityRole="radio"
-                accessibilityLabel={label === "Draw new" ? label : `Flight path ${label}`}
-                accessibilityState={{ selected: isSelected }}
-            >
-                <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{label}</Text>
-            </TouchableOpacity>
-        )
-
         return (
             <BottomSheetModal
                 ref={ref}
-                onChange={(index) => {
-                    if (index >= 0) {
-                        setPaths(initialPaths)
-                        setSelectedId(initialLinkId)
-                    }
-                }}
-                onDismiss={() => {
-                    setPaths([])
-                    setSelectedId(null)
-                }}
+                onChange={(index) => { if (index >= 0) setPaths(initialPaths) }}
+                onDismiss={() => setPaths([])}
                 snapPoints={snapPoints}
                 topInset={insets.top}
                 enablePanDownToClose
@@ -98,43 +50,26 @@ export const AddFlightPathBottomSheet = forwardRef<BottomSheetModal, AddFlightPa
                 backgroundStyle={styles.sheetBackground}
             >
                 <BottomSheetView style={[styles.content, { height: sheetHeight, paddingBottom: 16 + insets.bottom }]}>
-                    <Title
-                        title={isEditing ? "Edit Flight Path" : "Add Flight Path"}
-                        subtitle={"Draw on the image to record a new flight path, or re-use an existing path"}
-                    />
+                    <Title title={isEditing ? "Edit Flight Path" : "Add Flight Path"} subtitle="Draw on the image to record a flight path" />
                     {imageUri &&
                         <View style={styles.canvasContainer}>
                             <FlightPathCanvas
                                 imageUri={imageUri}
                                 surface={surface}
-                                paths={selected ? selected.paths : paths}
+                                paths={paths}
                                 onCommitPath={(committed) =>
                                     setPaths((prev) => [...prev, ...committed])
                                 }
-                                editable={!selected}
+                                editable
                             />
                         </View>
-                    }
-                    {options.length > 0 &&
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            style={styles.chipScroll}
-                            contentContainerStyle={styles.chipRow}
-                            accessibilityRole="radiogroup"
-                        >
-                            {renderChip("Draw new", !selected, () => setSelectedId(null))}
-                            {options.map((option) =>
-                                renderChip(option.letter, option === selected, () => setSelectedId(option.sourceObservationId))
-                            )}
-                        </ScrollView>
                     }
                     <View style={styles.saveButton}>
                         <Button
                             label="Save Flight Path"
                             variant="light"
-                            onPress={save}
-                            disabled={!canSave}
+                            onPress={() => onCommitPath(paths as FlightPath[])}
+                            disabled={paths.length === 0}
                         />
                     </View>
                 </BottomSheetView>
@@ -165,34 +100,6 @@ const styles = StyleSheet.create({
         flex: 1,
         minHeight: 0,
         overflow: "hidden",
-    },
-    chipScroll: {
-        flexGrow: 0,
-    },
-    chipRow: {
-        flexDirection: "row",
-        gap: 8,
-    },
-    chip: {
-        minWidth: 44,
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: colours.buttonBorder,
-        backgroundColor: colours.inputBackground,
-        alignItems: "center",
-    },
-    chipSelected: {
-        backgroundColor: colours.light,
-        borderColor: colours.light,
-    },
-    chipText: {
-        ...textStyles.inputText,
-        color: colours.light,
-    },
-    chipTextSelected: {
-        color: colours.dark,
     },
 
 })

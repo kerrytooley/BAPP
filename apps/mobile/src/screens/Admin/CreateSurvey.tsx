@@ -12,7 +12,7 @@ import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { DatePickerInput } from "@components/DateTime/DatePickerInput";
 import { TimePickerInput } from "@components/DateTime/TimePickerInput";
-import { validatePostcode, validateRequiredText, validateSurveyTiming } from "@bapp/domain";
+import { validatePostcode, validateRequiredText, validateSurveyEnd, validateSurveyStart } from "@bapp/domain";
 import { recordRecentSurvey } from "@services/recentSurveys";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
@@ -39,11 +39,9 @@ export function CreateSurvey(): React.JSX.Element {
     const timingChanged = !editing
         || date?.getTime() !== originalTiming.date
         || startTime?.getTime() !== originalTiming.start;
-    const { start: startError, sunset: sunsetError, end: endError } = validateSurveyTiming(
-        { date, startTime, sunsetTime, endTime },
-        { checkStart: timingChanged },
-    );
-    const hasErrors = !!(nameError || postcodeError || startError || sunsetError || endError);
+    const startError = timingChanged ? validateSurveyStart(date, startTime) : null;
+    const endError = validateSurveyEnd(startTime, endTime);
+    const hasErrors = !!(nameError || postcodeError || startError || endError);
 
     const scrollRef = useRef<ScrollView>(null);
     const fieldY = useRef<Record<string, number>>({});
@@ -114,7 +112,7 @@ export function CreateSurvey(): React.JSX.Element {
                     <TimePickerInput fieldLabel="Start Time" value={startTime} onChange={setStartTime} onOpen={() => scrollToField("start")} error={startTime ? startError : null} />
                 </View>
                 <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.sunset = e.nativeEvent.layout.y; }}>
-                    <TimePickerInput fieldLabel="Sunrise/Sunset Time" value={sunsetTime} onChange={setSunsetTime} onOpen={() => scrollToField("sunset")} error={sunsetError} />
+                    <TimePickerInput fieldLabel="Sunrise/Sunset Time" value={sunsetTime} onChange={setSunsetTime} onOpen={() => scrollToField("sunset")} />
                 </View>
                 <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.end = e.nativeEvent.layout.y; }}>
                     <TimePickerInput fieldLabel="End Time" value={endTime} onChange={setEndTime} onOpen={() => scrollToField("end")} error={endError} />
