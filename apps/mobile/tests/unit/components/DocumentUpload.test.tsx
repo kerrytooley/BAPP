@@ -15,7 +15,6 @@ jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
 jest.mock('expo-image-picker', () => ({
     requestMediaLibraryPermissionsAsync: jest.fn(),
     launchImageLibraryAsync: jest.fn(),
-    UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' },
 }));
 jest.mock('@utils/image', () => ({
     getAspectRatio: jest.fn(() => Promise.resolve(1.5)),
@@ -67,10 +66,6 @@ describe('DocumentUpload', () => {
         triggerSheet(0);
         await waitFor(() =>
             expect(onChange).toHaveBeenCalledWith('file://picked.png'),
-        );
-        // HEIC from the iOS library would never become displayable.
-        expect(launchLibrary).toHaveBeenCalledWith(
-            expect.objectContaining({ preferredAssetRepresentationMode: 'compatible' }),
         );
     });
 

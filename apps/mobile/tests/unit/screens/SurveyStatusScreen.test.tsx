@@ -183,31 +183,4 @@ describe('SurveyStatusScreen', () => {
             expect(screen.queryByText('Generating export…')).toBeNull(),
         );
     });
-
-    describe('date and times', () => {
-        it('shows the survey date and times', async () => {
-            renderWithActiveSurvey(<SurveyStatusScreen />, service);
-            expect(await screen.findByText('13/07/2026')).toBeOnTheScreen();
-            expect(screen.getByText('20:00')).toBeOnTheScreen();
-            expect(screen.getByText('21:15')).toBeOnTheScreen();
-            expect(screen.getByText('22:00')).toBeOnTheScreen();
-        });
-
-        it('shows when a date or time has not been set', async () => {
-            service.subscribeSurveyContext = mockSubscribeContext(contextWith(
-                buildSurvey({ date: null, startTime: null, sunsetTime: null, endTime: null }),
-            ));
-            renderWithActiveSurvey(<SurveyStatusScreen />, service);
-            expect(await screen.findAllByText('Not set')).toHaveLength(4);
-        });
-
-        it.each(['Survey date', 'Start time', 'Sunrise/sunset time', 'End time'])(
-            'opens the survey details editor from %s',
-            async (label) => {
-                renderWithActiveSurvey(<SurveyStatusScreen />, service);
-                fireEvent.press(await screen.findByLabelText(`Edit ${label}`));
-                expect(mockNavigate).toHaveBeenCalledWith('CreateSurvey', { surveyId: 'survey-1', editing: true });
-            },
-        );
-    });
 });

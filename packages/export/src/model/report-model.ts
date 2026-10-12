@@ -40,8 +40,6 @@ export interface ReportWeather {
 
 export interface ReportSurveyor {
   id: string;
-  /** 1-based; prefixes flight path labels (`1A`) and names the XLSX surveyor sheets. */
-  number: number;
   name: string | null;
   isLead: boolean;
   status: SurveyorStatus;
@@ -80,10 +78,6 @@ export interface ReportObservation {
   emergence: boolean;
   color: string;
   label: string;
-  /** Label (e.g. `1A`) of the overhead flight path this observation drew or links to. */
-  overheadPath: string | null;
-  /** Label (e.g. `1A`) of the front-view flight path this observation drew or links to. */
-  frontViewPath: string | null;
 }
 
 export interface LocationNotes {
@@ -112,31 +106,8 @@ export interface ReportFigure {
   /** `null` for the boundary figure; the location id for per-location figures. */
   locationId: string | null;
   paths: ReportFigurePath[];
-  /** One checklist entry per lettered flight path drawn on this figure. */
-  pathGroups: ReportPathGroup[];
-  /** False on front-view figures, which belong to a single surveyor. */
-  showSurveyorNames: boolean;
   /** Location markers drawn on this figure (boundary figure only). */
   pins: ReportFigurePin[];
-}
-
-/**
- * A lettered flight path (`1A` = surveyor 1, path A) shared by every
- * observation that drew or linked to it.
- */
-export interface ReportPathGroup {
-  groupId: string;
-  label: string;
-  color: string;
-  members: ReportPathGroupMember[];
-}
-
-export interface ReportPathGroupMember {
-  observationId: string;
-  surveyorName: string | null;
-  /** UTC HH:MM of first sighting, or '' when unknown. */
-  time: string;
-  species: string;
 }
 
 /**
@@ -154,13 +125,12 @@ export interface ReportFigurePin {
 }
 
 /**
- * A single polyline on a figure, tagged with its {@link ReportPathGroup} so the
- * HTML can toggle a lettered path as one. `observationId` is the observation
- * that drew it. Points are the domain's normalized `[0,1]` coordinates.
+ * A single polyline on a figure, tagged with the observation it belongs to so
+ * the HTML can group them into a per-observation checklist. Points are the
+ * domain's normalized `[0,1]` coordinates — never pixels.
  */
 export interface ReportFigurePath {
   observationId: string;
-  groupId: string;
   color: string;
   label: string;
   points: FlightPathPoint[];

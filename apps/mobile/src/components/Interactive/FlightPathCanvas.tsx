@@ -125,7 +125,7 @@ export const FlightPathCanvas = ({ imageUri, surface, paths, onCommitPath, edita
         currentRef.current = [];
         setCurrent([]);
         if (points.length > 1) {
-            onCommitPath([{ id: makeId(), surface, points, createdAt: Date.now(), data: {} }]);
+            onCommitPath([{ id: makeId(), surface, points, data: {} }]);
         }
     };
 

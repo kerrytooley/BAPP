@@ -173,35 +173,21 @@ describe('CreateSurvey', () => {
         expect(screen.getByLabelText('Continue')).toBeEnabled();
     });
 
-    it('allows the survey to start now but not in the past', () => {
+    it('requires the survey to start in the future', () => {
         jest.useFakeTimers({ now: new Date(2026, 9, 11, 18, 0, 30) });
         try {
             renderWithService(<CreateSurvey />, createMockService());
             fireEvent.changeText(screen.getByPlaceholderText('Input survey name'), 'Dusk count');
             fireEvent.press(screen.getByText('DD/MM/YYYY'));
+            expect(screen.queryByText('Survey start must be in the future')).toBeNull();
 
-            // Opening an empty time picker seeds it with the current time, which is allowed.
+            // Opening an empty time picker seeds it with the current time, which is already past.
             fireEvent.press(screen.getAllByText('HH:MM')[0]);
-            expect(screen.queryByText("Survey start can't be in the past")).toBeNull();
-
-            jest.setSystemTime(new Date(2026, 9, 11, 18, 2));
-            fireEvent.changeText(screen.getByPlaceholderText('Input survey name'), 'Dusk count 2');
-            expect(screen.getByText("Survey start can't be in the past")).toBeOnTheScreen();
+            expect(screen.getByText('Survey start must be in the future')).toBeOnTheScreen();
             expect(screen.getByLabelText('Continue')).toBeDisabled();
         } finally {
             jest.useRealTimers();
         }
-    });
-
-    it('requires the sunrise/sunset time to be after the start time', () => {
-        renderWithService(<CreateSurvey />, createMockService());
-        fireEvent.changeText(screen.getByPlaceholderText('Input survey name'), 'Dusk count');
-        const [start, sunset] = screen.getAllByText('HH:MM');
-        fireEvent.press(start);
-        fireEvent.press(sunset);
-
-        expect(screen.getByText('Sunrise/sunset time must be within 12 hours after the start time')).toBeOnTheScreen();
-        expect(screen.getByLabelText('Continue')).toBeDisabled();
     });
 
     it('requires the end time to be after the start time', () => {
@@ -211,7 +197,7 @@ describe('CreateSurvey', () => {
         fireEvent.press(start);
         fireEvent.press(end);
 
-        expect(screen.getByText('End time must be within 12 hours after the start time')).toBeOnTheScreen();
+        expect(screen.getByText('End time must be after the start time')).toBeOnTheScreen();
         expect(screen.getByLabelText('Continue')).toBeDisabled();
     });
 

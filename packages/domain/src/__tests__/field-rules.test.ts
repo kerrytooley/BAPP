@@ -10,8 +10,6 @@ import {
     validateSurveyCode,
     validateSurveyEnd,
     validateSurveyStart,
-    validateSurveySunset,
-    validateSurveyTiming,
     validateWeather,
 } from '../field-rules';
 
@@ -129,98 +127,32 @@ describe('validatePostcode', () => {
 
 describe('validateSurveyEnd', () => {
     const at = (h: number, m = 0) => new Date(2026, 0, 1, h, m);
-    const END_AFTER_START = 'End time must be within 12 hours after the start time';
 
-    it('requires the end time to be within 12 hours after the start time of day', () => {
+    it('requires the end time to be after the start time of day', () => {
         expect(validateSurveyEnd(at(20), at(22))).toBeNull();
         expect(validateSurveyEnd(at(20), new Date(2025, 5, 5, 22, 0))).toBeNull();
-        expect(validateSurveyEnd(at(20), at(8))).toBeNull();
-        expect(validateSurveyEnd(at(20), at(20))).toBe(END_AFTER_START);
-        expect(validateSurveyEnd(at(20), at(19, 59))).toBe(END_AFTER_START);
-        expect(validateSurveyEnd(at(20), at(8, 1))).toBe(END_AFTER_START);
-    });
-
-    it('allows the survey to cross midnight', () => {
-        expect(validateSurveyEnd(at(22, 30), at(0, 30))).toBeNull();
-        expect(validateSurveyEnd(at(22, 30), at(0, 30), at(23, 45))).toBeNull();
-        expect(validateSurveyEnd(at(22, 30), at(1), at(0, 15))).toBeNull();
+        expect(validateSurveyEnd(at(20), at(20))).toBe('End time must be after the start time');
+        expect(validateSurveyEnd(at(20), at(19, 59))).toBe('End time must be after the start time');
     });
 
     it('ignores missing times', () => {
         expect(validateSurveyEnd(null, at(20))).toBeNull();
         expect(validateSurveyEnd(at(20), undefined)).toBeNull();
     });
-
-    it('requires the end time to be after the sunrise/sunset time', () => {
-        expect(validateSurveyEnd(at(20), at(22), at(21))).toBeNull();
-        expect(validateSurveyEnd(at(20), at(21), at(21))).toBe('End time must be after the sunrise/sunset time');
-        expect(validateSurveyEnd(at(23), at(0, 30), at(1))).toBe('End time must be after the sunrise/sunset time');
-        expect(validateSurveyEnd(null, at(21), at(22))).toBe('End time must be after the sunrise/sunset time');
-        expect(validateSurveyEnd(null, at(0, 30), at(23))).toBeNull();
-        expect(validateSurveyEnd(at(20), at(19), at(21))).toBe(END_AFTER_START);
-    });
-
-    it('leaves an out-of-range sunrise/sunset to its own field', () => {
-        expect(validateSurveyEnd(at(20), at(22), at(19))).toBeNull();
-    });
-});
-
-describe('validateSurveySunset', () => {
-    const at = (h: number, m = 0) => new Date(2026, 0, 1, h, m);
-    const SUNSET_AFTER_START = 'Sunrise/sunset time must be within 12 hours after the start time';
-
-    it('requires sunrise/sunset to be within 12 hours after the start time', () => {
-        expect(validateSurveySunset(at(20), at(20, 15))).toBeNull();
-        expect(validateSurveySunset(at(23), at(0, 15))).toBeNull();
-        expect(validateSurveySunset(at(20), at(20))).toBe(SUNSET_AFTER_START);
-        expect(validateSurveySunset(at(4), at(3, 30))).toBe(SUNSET_AFTER_START);
-    });
-
-    it('ignores missing times', () => {
-        expect(validateSurveySunset(null, at(20))).toBeNull();
-        expect(validateSurveySunset(at(20), null)).toBeNull();
-    });
-});
-
-describe('validateSurveyTiming', () => {
-    const at = (h: number, m = 0) => new Date(2026, 0, 1, h, m);
-    const now = new Date(2026, 9, 11, 18, 0);
-
-    it('reports each timing error', () => {
-        expect(validateSurveyTiming(
-            { date: new Date(2026, 9, 10), startTime: at(20), sunsetTime: at(19), endTime: at(19, 30) },
-            { now },
-        )).toEqual({
-            start: "Survey start can't be in the past",
-            sunset: 'Sunrise/sunset time must be within 12 hours after the start time',
-            end: 'End time must be within 12 hours after the start time',
-        });
-    });
-
-    it('skips the start check when asked', () => {
-        expect(validateSurveyTiming({ date: new Date(2026, 9, 10), startTime: at(20) }, { checkStart: false, now }))
-            .toEqual({ start: null, sunset: null, end: null });
-    });
 });
 
 describe('validateSurveyStart', () => {
     const now = new Date(2026, 9, 11, 18, 0);
 
-    it('requires the start date and time to be now or later', () => {
+    it('requires the start date and time to be in the future', () => {
         expect(validateSurveyStart(new Date(2026, 9, 11), new Date(2020, 0, 1, 20, 0), now)).toBeNull();
-        expect(validateSurveyStart(new Date(2026, 9, 11), new Date(2020, 0, 1, 17, 0), now)).toBe("Survey start can't be in the past");
-        expect(validateSurveyStart(new Date(2026, 9, 10), new Date(2020, 0, 1, 20, 0), now)).toBe("Survey start can't be in the past");
-    });
-
-    it('accepts the current minute', () => {
-        const midMinute = new Date(2026, 9, 11, 18, 0, 42);
-        expect(validateSurveyStart(new Date(2026, 9, 11), new Date(2020, 0, 1, 18, 0), midMinute)).toBeNull();
-        expect(validateSurveyStart(new Date(2026, 9, 11), new Date(2020, 0, 1, 17, 59), midMinute)).toBe("Survey start can't be in the past");
+        expect(validateSurveyStart(new Date(2026, 9, 11), new Date(2020, 0, 1, 17, 0), now)).toBe('Survey start must be in the future');
+        expect(validateSurveyStart(new Date(2026, 9, 10), new Date(2020, 0, 1, 20, 0), now)).toBe('Survey start must be in the future');
     });
 
     it('treats today as valid when no start time is chosen', () => {
         expect(validateSurveyStart(new Date(2026, 9, 11), null, now)).toBeNull();
-        expect(validateSurveyStart(new Date(2026, 9, 10), null, now)).toBe("Survey start can't be in the past");
+        expect(validateSurveyStart(new Date(2026, 9, 10), null, now)).toBe('Survey start must be in the future');
         expect(validateSurveyStart(null, null, now)).toBeNull();
     });
 });
