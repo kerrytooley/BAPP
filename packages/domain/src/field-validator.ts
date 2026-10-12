@@ -7,9 +7,11 @@ import {
     validateFrequencyKhz,
     validatePostcode,
     validateSurveyEnd,
+    validateSurveySunset,
     validateWeather,
     type FieldError,
 } from './field-rules';
+import { validateFlightPaths } from './models/flight-path-groups';
 
 /**
  * Enforces field formats (see field-rules.ts) on the changed entity only, and —
@@ -27,7 +29,10 @@ export class FieldValidator implements SurveyValidator {
                 if (touched('startWeather')) errors.push(...Object.values(validateWeather(survey.startWeather, 'start')));
                 if (touched('endWeather')) errors.push(...Object.values(validateWeather(survey.endWeather, 'end')));
                 if (touched('postcode')) errors.push(validatePostcode(survey.postcode));
-                if (touched('startTime') || touched('endTime')) errors.push(validateSurveyEnd(survey.startTime, survey.endTime));
+                if (touched('startTime') || touched('sunsetTime') || touched('endTime')) {
+                    errors.push(validateSurveySunset(survey.startTime, survey.sunsetTime));
+                    errors.push(validateSurveyEnd(survey.startTime, survey.endTime, survey.sunsetTime));
+                }
                 break;
             }
             case 'location': {
@@ -43,6 +48,7 @@ export class FieldValidator implements SurveyValidator {
                 if (touched('frequency')) errors.push(validateFrequencyKhz(observation.frequency));
                 if (touched('seenCount')) errors.push(validateCount(observation.seenCount));
                 if (touched('heardCount')) errors.push(validateCount(observation.heardCount));
+                if (touched('flightPaths')) errors.push(validateFlightPaths(observation));
                 break;
             }
             case 'surveyor':

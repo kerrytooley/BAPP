@@ -73,6 +73,37 @@ export function applySurveyDefaults(input: CreateSurveyInput): NewSurveyFields {
   };
 }
 
+/** A survey's times as real moments, anchored to its date. */
+export interface SurveySchedule {
+  start: Date | null;
+  sunset: Date | null;
+  end: Date | null;
+}
+
+const atTimeOf = (day: Date, time: Date): Date => {
+  const moment = new Date(day);
+  moment.setHours(time.getHours(), time.getMinutes(), 0, 0);
+  return moment;
+};
+
+/**
+ * Stored times carry only a time of day. Sunrise/sunset and end that fall
+ * earlier in the day than the start are the next day (surveys can cross midnight).
+ */
+export function surveySchedule(
+  survey: Pick<Survey, 'date' | 'startTime' | 'sunsetTime' | 'endTime'>,
+): SurveySchedule {
+  const { date, startTime, sunsetTime, endTime } = survey;
+  const start = startTime ? atTimeOf(date ?? startTime, startTime) : null;
+  const afterStart = (time: Date | null): Date | null => {
+    if (!time) return null;
+    const moment = atTimeOf(start ?? date ?? time, time);
+    if (start && moment <= start) moment.setDate(moment.getDate() + 1);
+    return moment;
+  };
+  return { start, sunset: afterStart(sunsetTime), end: afterStart(endTime) };
+}
+
 export type UpdateSurveyInput = Partial<{
   name: string | null;
   postcode: string | null;

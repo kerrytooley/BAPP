@@ -25,6 +25,8 @@ export type ImageResult =
   | { status: 'ready'; url: string };
 
 export class SurveyService {
+  private readonly leadCreations = new Map<string, Promise<Surveyor | null>>();
+
   constructor(
     private readonly surveyRepository: SurveyRepository,
     private readonly locationRepository: LocationRepository,
@@ -355,6 +357,26 @@ export class SurveyService {
 
   async completeSurveyor(surveyorId: string): Promise<Surveyor> {
     return this.updateSurveyor(surveyorId, { status: 'done' });
+  }
+
+  /**
+   * Idempotent: returns the survey's lead, creating an unnamed one only when the
+   * survey has no surveyors yet. Concurrent calls for the same survey share one creation.
+   */
+  async ensureLeadSurveyor(surveyId: string): Promise<Surveyor | null> {
+    const pending = this.leadCreations.get(surveyId);
+    if (pending) return pending;
+    const creation = (async () => {
+      const existing = await this.surveyorRepository.findBySurveyId(surveyId);
+      if (existing.length > 0) return existing.find((s) => s.isLead) ?? null;
+      return this.addSurveyor(surveyId, { name: '', isLead: true });
+    })();
+    this.leadCreations.set(surveyId, creation);
+    try {
+      return await creation;
+    } finally {
+      this.leadCreations.delete(surveyId);
+    }
   }
 
   async removeSurveyor(surveyorId: string): Promise<void> {

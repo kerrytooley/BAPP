@@ -9,14 +9,14 @@ import { Title } from "@components/Common/Titles";
 import { TimeOfObservation } from "@components/DateTime/TimeOfObservation";
 import { HeardAndSeenCount } from "@components/Observation/HeardAndSeenCount";
 import React, { useEffect, useRef, useState } from "react";
-import { FlightPath, FlightPathSurface, UpdateObservationInput, validateFrequencyKhz } from "@bapp/domain";
+import { buildFlightPathGroups, copyFlightPath, FlightPath, flightPathKey, FlightPathSurface, newFlightPath, UpdateObservationInput, validateFrequencyKhz } from "@bapp/domain";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { InputField } from "@components/Common/InputField";
 import { Card } from "@components/Common/Card";
 import { PlusButton as PlusIcon } from "@components/Common/Icons"
 import { textStyles } from "@theme/fonts";
-import { AddFlightPathBottomSheet } from "@components/BottomSheets/AddFlightPathBottomSheet";
+import { AddFlightPathBottomSheet, FlightPathOption } from "@components/BottomSheets/AddFlightPathBottomSheet";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { ConfirmModal } from "@components/Modals/ConfirmModal";
 import { colours } from "@theme/colours";
@@ -117,19 +117,48 @@ export function AddObservationScreen(): React.JSX.Element {
         if (activeSurface) sheetRef.current?.present();
     }, [activeSurface]);
 
-    const commitPaths = (surface: FlightPathSurface, paths: FlightPath[]) => {
-        setFlightPaths((currentPaths) => [
-            ...currentPaths.filter((path) => path.surface !== surface),
-            ...paths,
+    const surveyObservations = context?.observations ?? [];
+    const groupsFor = (surface: FlightPathSurface) =>
+        buildFlightPathGroups(surveyObservations, surveyorId, surface)
+            .filter((group) =>
+                surface === "boundary" ||
+                surveyObservations.find((o) => o.id === group.sourceObservationId)!.locationId === locationId,
+            );
+    const pathsOn = (surface: FlightPathSurface) => flightPaths.filter((path) => path.surface === surface);
+    // The saved path the draft currently holds on `surface`, if its strokes are a saved path.
+    const savedGroup = (surface: FlightPathSurface) => {
+        const key = observation && flightPathKey({ ...observation, flightPaths }, surface);
+        return key ? groupsFor(surface).find((group) => group.key === key) : undefined;
+    };
+
+    // Reusing a path stores a copy of it; freshly drawn strokes become a new lettered path.
+    const commitFlightPath = (surface: FlightPathSurface, paths: FlightPath[]) => {
+        const stamped = paths.some((path) => !path.pathKey)
+            ? newFlightPath(paths, surveyObservations, surveyorId, surface)
+            : paths;
+        setFlightPaths((current) => [
+            ...current.filter((path) => path.surface !== surface),
+            ...stamped,
         ]);
     };
 
-    const activeImageUri = activeSurface === "boundary" ? boundaryImageUri : frontViewImageUri;
-    const activePaths = activeSurface
-        ? flightPaths.filter((path) => path.surface === activeSurface)
+    const letterFor = (surface: FlightPathSurface): string | undefined =>
+        savedGroup(surface)?.letter ?? pathsOn(surface)[0]?.label;
+
+    const activeOptions: FlightPathOption[] = activeSurface
+        ? groupsFor(activeSurface).map((group) => ({ letter: group.letter, key: group.key, paths: copyFlightPath(group) }))
         : [];
-    const hasBoundaryPath = flightPaths.some((path) => path.surface === "boundary");
-    const hasFrontViewPath = flightPaths.some((path) => path.surface === "frontView");
+    const activeSavedKey = activeSurface ? savedGroup(activeSurface)?.key ?? null : null;
+
+    const activeImageUri = activeSurface === "boundary" ? boundaryImageUri : frontViewImageUri;
+    // A saved path is chosen as an option, never edited; only unsaved strokes reopen for drawing.
+    const activePaths = activeSurface && !activeSavedKey ? pathsOn(activeSurface) : [];
+    const hasPath = (surface: FlightPathSurface) => pathsOn(surface).length > 0;
+    const flightPathLabel = (surface: FlightPathSurface, name: string) => {
+        if (!hasPath(surface)) return `Add ${name} flight path`;
+        const letter = letterFor(surface);
+        return letter ? `Edit ${name} flight path ${letter}` : `Edit ${name} flight path`;
+    };
 
     const isSubmitting = useRef(false);
     const [frequencyTouched, setFrequencyTouched] = useState(false);
@@ -252,7 +281,7 @@ export function AddObservationScreen(): React.JSX.Element {
                                 <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.imageTextOverlay]}>
                                     <PlusIcon width={24} />
                                     <Text style={[styles.previewText]}>
-                                        {`${hasBoundaryPath ? "Edit" : "Add"} overhead flight path`}
+                                        {flightPathLabel("boundary", "overhead")}
                                     </Text>
                                 </View>
                             </TouchableOpacity>
@@ -263,7 +292,7 @@ export function AddObservationScreen(): React.JSX.Element {
                                 <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.imageTextOverlay]}>
                                     <PlusIcon width={24} />
                                     <Text style={[styles.previewText]}>
-                                        {`${hasFrontViewPath ? "Edit" : "Add"} front-view flight path`}
+                                        {flightPathLabel("frontView", "front-view")}
                                     </Text>
                                 </View>
                             </TouchableOpacity>
@@ -296,8 +325,10 @@ export function AddObservationScreen(): React.JSX.Element {
                     imageUri={activeImageUri}
                     surface={activeSurface}
                     initialPaths={activePaths}
-                    onCommitPath={(paths) => {
-                        commitPaths(activeSurface, paths)
+                    initialKey={activeSavedKey}
+                    options={activeOptions}
+                    onCommit={(paths) => {
+                        commitFlightPath(activeSurface, paths)
                         sheetRef.current?.dismiss()
                     }}
                 />

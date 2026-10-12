@@ -37,11 +37,21 @@ export function buildReportWorkbook(
   const locationName = new Map(model.locations.map((l) => [l.id, l.name ?? l.id]));
   const notesByLocation = new Map(model.locations.map((l) => [l.id, l.notes]));
   const figureForObs = buildFigureIndex(model);
+  const figureIds = new Set(model.figures.map((f) => f.figureId));
+
+  const linkTo = (figureId: string, obs: ReportObservation): string =>
+    `${reportHref}?fig=${encodeURIComponent(figureId)}&obs=${encodeURIComponent(obs.id)}`;
 
   const deepLink = (obs: ReportObservation): string | undefined => {
     const figureId = figureForObs.get(obs.id);
-    if (!figureId) return undefined;
-    return `${reportHref}?fig=${encodeURIComponent(figureId)}&obs=${encodeURIComponent(obs.id)}`;
+    return figureId ? linkTo(figureId, obs) : undefined;
+  };
+
+  const pathCell = (obs: ReportObservation, surface: 'boundary' | 'frontView'): CellValue => {
+    const label = surface === 'boundary' ? obs.overheadPath : obs.frontViewPath;
+    if (!label) return '';
+    const figureId = surface === 'boundary' ? 'boundary' : `loc_${obs.locationId}`;
+    return figureIds.has(figureId) ? { v: label, l: linkTo(figureId, obs) } : label;
   };
 
   // ---- Overview ---------------------------------------------------------
@@ -77,7 +87,7 @@ export function buildReportWorkbook(
 
   // ---- One sheet per surveyor ------------------------------------------
   const usedNames = new Set<string>(['Overview']);
-  model.surveyors.forEach((surveyor, index) => {
+  model.surveyors.forEach((surveyor) => {
     const rows = model.observations.filter((o) => o.surveyorId === surveyor.id);
     const notes = surveyor.locationId ? notesByLocation.get(surveyor.locationId) ?? [] : [];
     const sheet = observationSheet(rows, notes, {
@@ -85,9 +95,10 @@ export function buildReportWorkbook(
       surveyorName,
       locationName,
       deepLink,
+      pathCell,
     });
     const name = uniqueSheetName(
-      `Surveyor ${index + 1} - ${surveyor.name ?? surveyor.id}`,
+      `Surveyor ${surveyor.number} - ${surveyor.name ?? surveyor.id}`,
       usedNames,
     );
     XLSX.utils.book_append_sheet(wb, sheet, name);
@@ -99,6 +110,7 @@ export function buildReportWorkbook(
     surveyorName,
     locationName,
     deepLink,
+    pathCell,
   });
   XLSX.utils.book_append_sheet(wb, chronological, 'Chronological');
 
@@ -111,6 +123,7 @@ interface ObservationSheetContext {
   surveyorName: Map<string, string>;
   locationName: Map<string, string>;
   deepLink: (obs: ReportObservation) => string | undefined;
+  pathCell: (obs: ReportObservation, surface: 'boundary' | 'frontView') => CellValue;
 }
 
 function observationSheet(
@@ -140,7 +153,8 @@ function observationSheet(
     'Direction',
     'Emergence',
     'Notes',
-    'Flight paths',
+    'Overhead path',
+    'Front view path',
   );
   rows.push(observationHeader);
 
@@ -164,7 +178,8 @@ function observationSheet(
       obs.direction ?? '',
       obs.emergence ? 'Yes' : 'No',
       obs.notes ?? '',
-      link ? 'View flight paths' : '',
+      ctx.pathCell(obs, 'boundary'),
+      ctx.pathCell(obs, 'frontView'),
     );
     rows.push(row);
   });
@@ -208,8 +223,10 @@ function buildFigureIndex(model: ReportModel): Map<string, string> {
     a.kind === b.kind ? 0 : a.kind === 'boundary' ? -1 : 1,
   );
   for (const figure of ordered) {
-    for (const path of figure.paths) {
-      if (!index.has(path.observationId)) index.set(path.observationId, figure.figureId);
+    for (const group of figure.pathGroups) {
+      for (const member of group.members) {
+        if (!index.has(member.observationId)) index.set(member.observationId, figure.figureId);
+      }
     }
   }
   return index;

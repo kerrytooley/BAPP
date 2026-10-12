@@ -9,7 +9,7 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSurveyService } from "../../services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
-import { ValidationError } from "@bapp/domain";
+import { flightPathLetter, ValidationError } from "@bapp/domain";
 import { RootStackParamList } from "@navigators/index";
 import { CompositeNavigationProp } from "@react-navigation/native";
 import { ObservationSummary } from "@components/Observation/ObservationSummary";
@@ -107,7 +107,15 @@ export function SurveySummaryScreen(): React.JSX.Element {
                 <Text style={styles.header}>Bat Observations:</Text>
                 {
                     observations &&
-                    observations.map((observation) => <ObservationSummary key={observation.id} {...observation} />)
+                    observations.map((observation) => (
+                        <ObservationSummary
+                            key={observation.id}
+                            {...observation}
+                            flightPathLetters={(['boundary', 'frontView'] as const)
+                                .map((surface) => flightPathLetter(observation, observations, surface))
+                                .filter((letter): letter is string => !!letter)}
+                        />
+                    ))
                 }
                 {location && location.notes && <Text style={styles.header}>Location Notes:</Text>}
                 {

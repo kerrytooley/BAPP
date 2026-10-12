@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { SurveyService } from '../survey-service';
 import { NoOpValidator } from '../../validation';
+import { FieldValidator } from '../../field-validator';
 import { ValidationError } from '../../validation-error';
 import type { SurveyContext } from '../../survey-context';
 import type { SurveyChange, SurveyValidator } from '../../validation';
@@ -558,6 +559,43 @@ describe('SurveyService', () => {
     });
   });
 
+  describe('ensureLeadSurveyor', () => {
+    it('creates an unnamed lead when the survey has no surveyors', async () => {
+      const { service, surveyorRepo } = createService();
+      const survey = await service.createSurvey();
+      const lead = await service.ensureLeadSurveyor(survey.id);
+      expect(lead).toMatchObject({ isLead: true, name: '' });
+      expect(await surveyorRepo.findBySurveyId(survey.id)).toHaveLength(1);
+    });
+
+    it('returns the existing lead instead of creating another', async () => {
+      const { service, surveyorRepo } = createService();
+      const survey = await service.createSurvey();
+      const existing = await service.addSurveyor(survey.id, { name: 'Ada', isLead: true });
+      expect((await service.ensureLeadSurveyor(survey.id))?.id).toBe(existing.id);
+      expect(await surveyorRepo.findBySurveyId(survey.id)).toHaveLength(1);
+    });
+
+    it('does not create a lead when only other surveyors exist', async () => {
+      const { service, surveyorRepo } = createService();
+      const survey = await service.createSurvey();
+      await service.addSurveyor(survey.id, { name: 'Bob', isLead: false });
+      expect(await service.ensureLeadSurveyor(survey.id)).toBeNull();
+      expect(await surveyorRepo.findBySurveyId(survey.id)).toHaveLength(1);
+    });
+
+    it('creates a single lead when called concurrently', async () => {
+      const { service, surveyorRepo } = createService();
+      const survey = await service.createSurvey();
+      const [a, b] = await Promise.all([
+        service.ensureLeadSurveyor(survey.id),
+        service.ensureLeadSurveyor(survey.id),
+      ]);
+      expect(a?.id).toBe(b?.id);
+      expect(await surveyorRepo.findBySurveyId(survey.id)).toHaveLength(1);
+    });
+  });
+
   describe('removeSurveyor', () => {
     it('deletes a surveyor with no observations', async () => {
       const { service, surveyorRepo } = createService();
@@ -634,7 +672,55 @@ describe('SurveyService', () => {
       expect(updatedObs.seenCount).toBe(10);
       expect(change).toEqual({ type: 'observation', observationId: obs.id, fields: ['seenCount'] });
     });
+
+    it('reuses a flight path by copying it, leaving the original observation untouched', async () => {
+      const { service, observationRepo } = createService(new FieldValidator());
+      const { source, other } = await twoObservationsWithSourcePath(service);
+      const copy = { ...source.flightPaths[0] };
+      await service.updateObservation(other.id, { flightPaths: [copy] });
+
+      expect((await observationRepo.findById(other.id))!.flightPaths).toEqual([copy]);
+      expect((await observationRepo.findById(source.id))!.flightPaths).toEqual(source.flightPaths);
+    });
+
+    it('rejects two different flight paths on the same image', async () => {
+      const { service } = createService(new FieldValidator());
+      const { other } = await twoObservationsWithSourcePath(service);
+      await expect(service.updateObservation(other.id, {
+        flightPaths: [
+          { id: 's1', surface: 'boundary', points: [], pathKey: 'k1', label: 'A' },
+          { id: 's2', surface: 'boundary', points: [], pathKey: 'k2', label: 'B' },
+        ],
+      })).rejects.toThrow(ValidationError);
+    });
+
+    it('does not re-check flight paths on unrelated updates', async () => {
+      const { service, observationRepo } = createService(new FieldValidator());
+      const { other } = await twoObservationsWithSourcePath(service);
+      // Pre-existing inconsistent strokes must not block e.g. a count increment.
+      await observationRepo.update(other.id, {
+        flightPaths: [
+          { id: 's1', surface: 'boundary', points: [], pathKey: 'k1' },
+          { id: 's2', surface: 'boundary', points: [], pathKey: 'k2' },
+        ],
+      });
+      await expect(service.updateObservation(other.id, { heardCount: 1 })).resolves.toMatchObject({ heardCount: 1 });
+    });
   });
+
+  async function twoObservationsWithSourcePath(service: SurveyService) {
+    const survey = await service.createSurvey();
+    const loc = await service.addLocation(survey.id, {});
+    const surveyor = await service.addSurveyor(survey.id, {});
+    const source = await service.addObservation({
+      surveyId: survey.id, locationId: loc.id, surveyorId: surveyor.id,
+      flightPaths: [{ id: 'fp-1', surface: 'boundary', points: [{ x: 0, y: 0 }], pathKey: 'fp-1', label: 'A' }],
+    });
+    const other = await service.addObservation({
+      surveyId: survey.id, locationId: loc.id, surveyorId: surveyor.id,
+    });
+    return { survey, loc, surveyor, source, other };
+  }
 
   describe('removeObservation', () => {
     it('deletes an observation', async () => {
@@ -647,6 +733,23 @@ describe('SurveyService', () => {
       });
       await service.removeObservation(obs.id);
       expect(await observationRepo.findById(obs.id)).toBeNull();
+    });
+
+    it('leaves copies of a reused flight path intact when the first holder is deleted', async () => {
+      const { service, observationRepo } = createService();
+      const { source, other } = await twoObservationsWithSourcePath(service);
+      await service.updateObservation(other.id, { flightPaths: [{ ...source.flightPaths[0] }] });
+      const update = vi.spyOn(observationRepo, 'update');
+
+      await service.removeObservation(source.id);
+
+      expect(update).not.toHaveBeenCalled();
+      expect((await observationRepo.findById(other.id))!.flightPaths).toEqual(source.flightPaths);
+    });
+
+    it('ignores an unknown observation', async () => {
+      const { service } = createService();
+      await expect(service.removeObservation('missing')).resolves.toBeUndefined();
     });
   });
 });

@@ -17,6 +17,7 @@ export type MockSurveyService = jest.Mocked<
         | 'getBoundaryImage'
         | 'joinSurvey'
         | 'addSurveyor'
+        | 'ensureLeadSurveyor'
         | 'removeSurveyor'
         | 'removeLocation'
         | 'updateSurveyor'
@@ -89,6 +90,7 @@ export const createMockService = (
     getBoundaryImage: jest.fn().mockResolvedValue({ status: 'none' }),
     joinSurvey: jest.fn().mockResolvedValue(buildContext()),
     addSurveyor: jest.fn().mockResolvedValue(buildSurveyor()),
+    ensureLeadSurveyor: jest.fn().mockResolvedValue(buildSurveyor({ isLead: true })),
     removeSurveyor: jest.fn().mockResolvedValue(undefined),
     removeLocation: jest.fn().mockResolvedValue(undefined),
     updateSurveyor: jest.fn().mockResolvedValue(buildSurveyor()),
