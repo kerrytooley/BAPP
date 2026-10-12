@@ -57,9 +57,12 @@ const initialPaths = [
     { surface: 'boundary', points: [{ x: 0, y: 0 }, { x: 1, y: 1 }] } as unknown as FlightPath,
 ];
 
+const copyOf = (id: string, pathKey: string, label: string) =>
+    ({ id, surface: 'boundary', points: [], pathKey, label }) as FlightPath;
+
 const options = [
-    { letter: 'A', sourceObservationId: 'obs-a', paths: [{ id: 'fp-a', surface: 'boundary', points: [] } as FlightPath] },
-    { letter: 'B', sourceObservationId: 'obs-b', paths: [{ id: 'fp-b', surface: 'boundary', points: [] } as FlightPath] },
+    { letter: 'A', key: 'key-a', paths: [copyOf('fp-a', 'key-a', 'A')] },
+    { letter: 'B', key: 'key-b', paths: [copyOf('fp-b', 'key-b', 'B')] },
 ];
 
 const setup = (props: Partial<React.ComponentProps<typeof AddFlightPathBottomSheet>> = {}) => {
@@ -129,9 +132,7 @@ describe('AddFlightPathBottomSheet', () => {
         const { onCommit } = setup();
         fireEvent.press(screen.getByLabelText('canvas-commit'));
         fireEvent.press(screen.getByLabelText('Save Flight Path'));
-        expect(onCommit).toHaveBeenCalledWith({
-            paths: [{ surface: 'boundary', points: [{ x: 1, y: 1 }] }],
-        });
+        expect(onCommit).toHaveBeenCalledWith([{ surface: 'boundary', points: [{ x: 1, y: 1 }] }]);
     });
 
     it('hides the existing path options when there are none', () => {
@@ -150,13 +151,11 @@ describe('AddFlightPathBottomSheet', () => {
         expect(screen.getByLabelText('Save Flight Path').props.accessibilityState.disabled).toBe(false);
     });
 
-    it('links the observation to the chosen path on save', () => {
+    it('commits a copy of the chosen path on save', () => {
         const { onCommit } = setup({ options });
         fireEvent.press(screen.getByLabelText('Flight path A'));
         fireEvent.press(screen.getByLabelText('Save Flight Path'));
-        expect(onCommit).toHaveBeenCalledWith({
-            link: { surface: 'boundary', observationId: 'obs-a' },
-        });
+        expect(onCommit).toHaveBeenCalledWith([copyOf('fp-a', 'key-a', 'A')]);
     });
 
     it('restores the drawn paths when the selection is cancelled', () => {
@@ -167,13 +166,11 @@ describe('AddFlightPathBottomSheet', () => {
 
         expect(screen.getByText('canvas editable paths:?')).toBeOnTheScreen();
         fireEvent.press(screen.getByLabelText('Save Flight Path'));
-        expect(onCommit).toHaveBeenCalledWith({
-            paths: [{ surface: 'boundary', points: [{ x: 1, y: 1 }] }],
-        });
+        expect(onCommit).toHaveBeenCalledWith([{ surface: 'boundary', points: [{ x: 1, y: 1 }] }]);
     });
 
-    it('preselects the linked path when the sheet opens and clears it on dismiss', () => {
-        setup({ options, initialLinkId: 'obs-b' });
+    it('preselects the saved path when the sheet opens and clears it on dismiss', () => {
+        setup({ options, initialKey: 'key-b' });
         fireEvent.press(screen.getByLabelText('sheet-open'));
         expect(screen.getByLabelText('Flight path B').props.accessibilityState.selected).toBe(true);
 

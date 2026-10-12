@@ -1,19 +1,18 @@
-import type {
-    FlightPath,
-    FlightPathLink,
-    FlightPathSurface,
-    Observation,
-    UpdateObservationInput,
-} from './observation';
+import type { FlightPath, FlightPathSurface, Observation } from './observation';
 
 const SURFACES: FlightPathSurface[] = ['boundary', 'frontView'];
 
+/** One lettered flight path and every observation that recorded it. */
 export interface FlightPathGroup {
+    /** The path's `pathKey`, or a per-observation key for strokes drawn before reuse existed. */
+    key: string;
     letter: string;
     surveyorId: string;
     surface: FlightPathSurface;
+    /** The earliest observation holding the path; its strokes are the group's `paths`. */
     sourceObservationId: string;
     paths: FlightPath[];
+    /** Every observation holding a copy of the path, earliest first. */
     memberObservationIds: string[];
 }
 
@@ -28,149 +27,124 @@ export function letterFor(index: number): string {
     return letters;
 }
 
-export function ownedFlightPaths(observation: Observation, surface: FlightPathSurface): FlightPath[] {
+/** Inverse of `letterFor`: A → 0, AA → 26; -1 for anything that isn't a letter label. */
+export function letterIndex(letter: string): number {
+    if (!/^[A-Z]+$/.test(letter)) return -1;
+    let n = 0;
+    for (const ch of letter) n = n * 26 + (ch.charCodeAt(0) - 64);
+    return n - 1;
+}
+
+export function flightPathsOn(observation: Observation, surface: FlightPathSurface): FlightPath[] {
     return observation.flightPaths.filter((path) => path.surface === surface);
 }
 
-export function flightPathLinkFor(
-    observation: Observation,
-    surface: FlightPathSurface,
-): FlightPathLink | undefined {
-    return observation.flightPathLinks.find((link) => link.surface === surface);
+/** Identity of the path `observation` holds on `surface`, if it has one. */
+export function flightPathKey(observation: Observation, surface: FlightPathSurface): string | undefined {
+    const [first] = flightPathsOn(observation, surface);
+    if (!first) return undefined;
+    return first.pathKey ?? `legacy:${observation.id}:${surface}`;
 }
 
-/** Letters follow the order paths were drawn, so a redrawn path never takes an older path's letter. */
+/**
+ * A surveyor's lettered paths on `surface`, in the order they were first drawn.
+ * Observations holding the same `pathKey` share one group. Paths keep the letter
+ * stored with them; older, unlabelled paths take the remaining letters in draw
+ * order (which, for a survey recorded before letters were stored, is exactly how
+ * they were always lettered).
+ */
 export function buildFlightPathGroups(
     observations: Observation[],
     surveyorId: string,
     surface: FlightPathSurface,
 ): FlightPathGroup[] {
-    const mine = observations.filter((o) => o.surveyorId === surveyorId).sort(compareByCreation);
-    const drawnAt = (o: Observation) =>
-        Math.min(...ownedFlightPaths(o, surface).map((p) => p.createdAt ?? o.createdAt.getTime()));
-    return mine
-        .filter((o) => ownedFlightPaths(o, surface).length > 0)
-        .sort((a, b) => drawnAt(a) - drawnAt(b) || compareByCreation(a, b))
-        .map((source, index) => ({
-            letter: letterFor(index),
-            surveyorId,
-            surface,
-            sourceObservationId: source.id,
-            paths: ownedFlightPaths(source, surface),
-            memberObservationIds: [
-                source.id,
-                ...mine
-                    .filter((o) => o.id !== source.id && flightPathLinkFor(o, surface)?.observationId === source.id)
-                    .map((o) => o.id),
-            ],
-        }));
+    const holdersByKey = new Map<string, Observation[]>();
+    for (const observation of observations.filter((o) => o.surveyorId === surveyorId).sort(compareByCreation)) {
+        const key = flightPathKey(observation, surface);
+        if (key) holdersByKey.set(key, [...(holdersByKey.get(key) ?? []), observation]);
+    }
+
+    const drafts = [...holdersByKey].map(([key, holders]) => {
+        const source = holders[0];
+        const paths = flightPathsOn(source, surface);
+        return {
+            key,
+            source,
+            holders,
+            paths,
+            label: holders.flatMap((o) => flightPathsOn(o, surface)).find((p) => p.label)?.label,
+            drawnAt: Math.min(...paths.map((p) => p.createdAt ?? source.createdAt.getTime())),
+        };
+    }).sort((a, b) => a.drawnAt - b.drawnAt || compareByCreation(a.source, b.source));
+
+    const used = new Set(drafts.flatMap((d) => (d.label ? [d.label] : [])));
+    let next = 0;
+    const nextFreeLetter = () => {
+        while (used.has(letterFor(next))) next += 1;
+        used.add(letterFor(next));
+        return letterFor(next);
+    };
+
+    return drafts.map((draft) => ({
+        key: draft.key,
+        letter: draft.label ?? nextFreeLetter(),
+        surveyorId,
+        surface,
+        sourceObservationId: draft.source.id,
+        paths: draft.paths,
+        memberObservationIds: draft.holders.map((o) => o.id),
+    }));
 }
 
-/** The letter of the path `observation` drew or links to on `surface`, if any. */
+/** The letter of the path `observation` holds on `surface`, if any. */
 export function flightPathLetter(
     observation: Observation,
     observations: Observation[],
     surface: FlightPathSurface,
 ): string | undefined {
+    const key = flightPathKey(observation, surface);
+    if (!key) return undefined;
     return buildFlightPathGroups(observations, observation.surveyorId, surface)
-        .find((group) => group.memberObservationIds.includes(observation.id))?.letter;
+        .find((group) => group.key === key)?.letter;
 }
 
-/** The points an observation shows on `surface`: its own strokes, else those of the path it links to. */
-export function resolveFlightPaths(
-    observation: Observation,
+/** The letter a newly drawn path gets: one past the surveyor's highest letter on `surface`. */
+export function nextFlightPathLabel(
     observations: Observation[],
+    surveyorId: string,
+    surface: FlightPathSurface,
+): string {
+    const letters = buildFlightPathGroups(observations, surveyorId, surface).map((g) => letterIndex(g.letter));
+    return letterFor(Math.max(-1, ...letters) + 1);
+}
+
+/** Freshly drawn strokes, stamped as a new path with its own key and the next letter. */
+export function newFlightPath(
+    strokes: FlightPath[],
+    observations: Observation[],
+    surveyorId: string,
     surface: FlightPathSurface,
 ): FlightPath[] {
-    const own = ownedFlightPaths(observation, surface);
-    if (own.length > 0) return own;
-    const link = flightPathLinkFor(observation, surface);
-    if (!link) return [];
-    const source = observations.find((o) => o.id === link.observationId);
-    return source ? ownedFlightPaths(source, surface) : [];
+    if (strokes.length === 0) return [];
+    const pathKey = strokes[0].id;
+    const label = nextFlightPathLabel(observations, surveyorId, surface);
+    return strokes.map((stroke) => ({ ...stroke, pathKey, label }));
 }
 
-/** Returns an error message, or `null` when every link is valid. */
-export function validateFlightPathLinks(
-    observation: Observation,
-    observations: Observation[],
-): string | null {
-    const seen = new Set<FlightPathSurface>();
-    for (const link of observation.flightPathLinks) {
-        if (seen.has(link.surface)) return 'Only one flight path can be linked per image';
-        seen.add(link.surface);
-        if (link.observationId === observation.id) return 'An observation cannot link to its own flight path';
-        if (ownedFlightPaths(observation, link.surface).length > 0) {
-            return 'Cannot both draw and link a flight path on the same image';
-        }
-        const target = observations.find((o) => o.id === link.observationId);
-        if (!target) return 'Linked flight path not found';
-        if (target.surveyId !== observation.surveyId || target.surveyorId !== observation.surveyorId) {
-            return 'Can only link to your own flight paths';
-        }
-        if (link.surface === 'frontView' && target.locationId !== observation.locationId) {
-            return 'Front-view flight paths can only be linked within the same location';
-        }
-        if (ownedFlightPaths(target, link.surface).length === 0) {
-            return 'Linked observation has no flight path on that image';
-        }
+/** The strokes to store when an observation reuses `group`: a copy carrying the path's key and letter. */
+export function copyFlightPath(group: FlightPathGroup): FlightPath[] {
+    return group.paths.map((stroke) => ({ ...stroke, pathKey: group.key, label: group.letter }));
+}
+
+/** An error message, or `null` when the observation holds at most one path per surface. */
+export function validateFlightPaths(observation: Observation): string | null {
+    for (const surface of SURFACES) {
+        const strokes = flightPathsOn(observation, surface);
+        const keys = new Set(strokes.map((s) => s.pathKey ?? ''));
+        const labels = new Set(strokes.map((s) => s.label ?? ''));
+        if (keys.size > 1 || labels.size > 1) return 'Only one flight path can be recorded per image';
     }
     return null;
-}
-
-export interface FlightPathTransfer {
-    observationId: string;
-    input: Required<Pick<UpdateObservationInput, 'flightPaths' | 'flightPathLinks'>>;
-}
-
-/**
- * When `before` stops owning a path that others link to (deleted, unlinked or
- * redrawn), hand the old strokes to the earliest-created dependent and re-point
- * the remaining dependents at it, so linked observations keep their path.
- */
-export function planFlightPathTransfer(
-    before: Observation,
-    after: Observation | null,
-    observations: Observation[],
-): FlightPathTransfer[] {
-    const patched = new Map<string, Observation>();
-    const current = (o: Observation) => patched.get(o.id) ?? o;
-
-    for (const surface of SURFACES) {
-        const owned = ownedFlightPaths(before, surface);
-        if (owned.length === 0) continue;
-        if (after && sameFlightPathIds(owned, ownedFlightPaths(after, surface))) continue;
-
-        const [heir, ...rest] = observations
-            .filter((o) => o.id !== before.id && flightPathLinkFor(o, surface)?.observationId === before.id)
-            .sort(compareByCreation);
-        if (!heir) continue;
-
-        const h = current(heir);
-        patched.set(heir.id, {
-            ...h,
-            flightPaths: [...h.flightPaths, ...owned],
-            flightPathLinks: h.flightPathLinks.filter((l) => l.surface !== surface),
-        });
-        for (const dependent of rest) {
-            const d = current(dependent);
-            patched.set(dependent.id, {
-                ...d,
-                flightPathLinks: d.flightPathLinks.map((l) =>
-                    l.surface === surface ? { surface, observationId: heir.id } : l,
-                ),
-            });
-        }
-    }
-
-    return [...patched.values()].map((o) => ({
-        observationId: o.id,
-        input: { flightPaths: o.flightPaths, flightPathLinks: o.flightPathLinks },
-    }));
-}
-
-export function sameFlightPathIds(a: FlightPath[], b: FlightPath[]): boolean {
-    return a.length === b.length && a.every((path, i) => path.id === b[i].id);
 }
 
 function compareByCreation(a: Observation, b: Observation): number {

@@ -50,7 +50,6 @@ export function fromObservationDoc(snap: FirebaseFirestoreTypes.DocumentSnapshot
     notes: d.notes ?? null,
     emergence: d.emergence ?? false,
     flightPaths: d.flightPaths ?? [],
-    flightPathLinks: d.flightPathLinks ?? [],
     data: d.data ?? {},
     createdAt: toDateRequired(d.createdAt),
     updatedAt: toDateRequired(d.updatedAt),

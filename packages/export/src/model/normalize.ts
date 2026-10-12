@@ -236,7 +236,7 @@ function labelGroups(
   return surveyorIds.flatMap((surveyorId) =>
     buildFlightPathGroups(observations, surveyorId, surface).map((group) => ({
       group,
-      groupId: `${surface}:${group.sourceObservationId}`,
+      groupId: `${surface}:${group.key}`,
       label: `${surveyorNumber.get(surveyorId) ?? '?'}${group.letter}`,
     })),
   );

@@ -19,10 +19,10 @@ jest.mock('@components/BottomSheets/AddFlightPathBottomSheet', () => {
         (
             props: {
                 surface: string;
-                options: { letter: string; sourceObservationId: string }[];
-                initialLinkId: string | null;
+                options: { letter: string; key: string; paths: unknown[] }[];
+                initialKey: string | null;
                 initialPaths: unknown[];
-                onCommit: (commit: unknown) => void;
+                onCommit: (paths: unknown[]) => void;
             },
             ref: React.Ref<unknown>,
         ) => {
@@ -34,21 +34,19 @@ jest.mock('@components/BottomSheets/AddFlightPathBottomSheet', () => {
                 <>
                     <TouchableOpacity
                         accessibilityLabel={`commit-${props.surface}`}
-                        onPress={() => props.onCommit({ paths: [{ surface: props.surface, points: [] }] })}
+                        onPress={() => props.onCommit([{ id: `new-${props.surface}`, surface: props.surface, points: [] }])}
                     >
                         <Text>flight-path-sheet</Text>
                     </TouchableOpacity>
                     {props.options.map((option) => (
                         <TouchableOpacity
                             key={option.letter}
-                            accessibilityLabel={`link-${props.surface}-${option.letter}`}
-                            onPress={() => props.onCommit({
-                                link: { surface: props.surface, observationId: option.sourceObservationId },
-                            })}
+                            accessibilityLabel={`reuse-${props.surface}-${option.letter}`}
+                            onPress={() => props.onCommit(option.paths)}
                         />
                     ))}
                     <Text>{`options:${props.options.map((o) => o.letter).join(',')}`}</Text>
-                    <Text>{`linked:${props.initialLinkId ?? 'none'}`}</Text>
+                    <Text>{`selected:${props.initialKey ?? 'none'}`}</Text>
                     <Text>{`drawn:${props.initialPaths.length}`}</Text>
                 </>
             );
@@ -332,46 +330,73 @@ describe('AddObservationScreen', () => {
             ),
             updateObservation,
         });
+        const openOverhead = async (letter = 'A') => {
+            await waitFor(() => expect(screen.getByText(`Edit overhead flight path ${letter}`)).toBeOnTheScreen());
+            fireEvent.press(screen.getByText(`Edit overhead flight path ${letter}`));
+            await waitFor(() => expect(screen.getByText('flight-path-sheet')).toBeOnTheScreen());
+        };
+        const savedFlightPaths = async (updateObservation: jest.Mock) => {
+            fireEvent.press(screen.getByText('Save Observation'));
+            await waitFor(() => expect(updateObservation).toHaveBeenCalled());
+            return updateObservation.mock.calls[0][1].flightPaths;
+        };
 
         it('lists every path this surveyor drew and preselects its own saved path without reopening it for drawing', async () => {
             renderWithActiveSurvey(<AddObservationScreen />, serviceWith());
-            await waitFor(() => expect(screen.getByText('Edit overhead flight path A')).toBeOnTheScreen());
-            fireEvent.press(screen.getByText('Edit overhead flight path A'));
-            await waitFor(() => expect(screen.getByText('options:A,B')).toBeOnTheScreen());
-            expect(screen.getByText('linked:obs-1')).toBeOnTheScreen();
+            await openOverhead();
+            expect(screen.getByText('options:A,B')).toBeOnTheScreen();
+            expect(screen.getByText('selected:legacy:obs-1:boundary')).toBeOnTheScreen();
             expect(screen.getByText('drawn:0')).toBeOnTheScreen();
         });
 
-        it('keeps its own strokes when its own path stays selected', async () => {
+        it('keeps its own path, now carrying its key and letter, when it stays selected', async () => {
             const updateObservation = jest.fn().mockResolvedValue(observation);
             renderWithActiveSurvey(<AddObservationScreen />, serviceWith(observation, updateObservation));
-            await waitFor(() => expect(screen.getByText('Edit overhead flight path A')).toBeOnTheScreen());
-            fireEvent.press(screen.getByText('Edit overhead flight path A'));
-            await waitFor(() => expect(screen.getByLabelText('link-boundary-A')).toBeOnTheScreen());
-            fireEvent.press(screen.getByLabelText('link-boundary-A'));
+            await openOverhead();
+            fireEvent.press(screen.getByLabelText('reuse-boundary-A'));
 
-            fireEvent.press(screen.getByText('Save Observation'));
-            await waitFor(() =>
-                expect(updateObservation).toHaveBeenCalledWith(
-                    'obs-1',
-                    expect.objectContaining({
-                        flightPaths: observation.flightPaths,
-                        flightPathLinks: [],
-                    }),
-                ),
-            );
+            expect(await savedFlightPaths(updateObservation)).toEqual([
+                { ...observation.flightPaths[0], pathKey: 'legacy:obs-1:boundary', label: 'A' },
+            ]);
         });
 
-        it('replaces its saved path with a newly drawn one', async () => {
-            renderWithActiveSurvey(<AddObservationScreen />, serviceWith());
-            await waitFor(() => expect(screen.getByText('Edit overhead flight path A')).toBeOnTheScreen());
-            fireEvent.press(screen.getByText('Edit overhead flight path A'));
-            await waitFor(() => expect(screen.getByLabelText('commit-boundary')).toBeOnTheScreen());
+        it('saves its own copy of another path, leaving that observation alone', async () => {
+            const updateObservation = jest.fn().mockResolvedValue(observation);
+            renderWithActiveSurvey(<AddObservationScreen />, serviceWith(observation, updateObservation));
+            await openOverhead();
+            fireEvent.press(screen.getByLabelText('reuse-boundary-B'));
+
+            expect(screen.getByText('Edit overhead flight path B')).toBeOnTheScreen();
+            expect(await savedFlightPaths(updateObservation)).toEqual([
+                { ...boundaryPath('fp-2'), pathKey: 'legacy:obs-2:boundary', label: 'B' },
+            ]);
+            expect(updateObservation).toHaveBeenCalledTimes(1);
+            expect(updateObservation.mock.calls[0][0]).toBe('obs-1');
+        });
+
+        it('stamps a newly drawn path with its own key and the next letter', async () => {
+            const updateObservation = jest.fn().mockResolvedValue(observation);
+            renderWithActiveSurvey(<AddObservationScreen />, serviceWith(observation, updateObservation));
+            await openOverhead();
             fireEvent.press(screen.getByLabelText('commit-boundary'));
 
-            expect(screen.getByText('Edit overhead flight path')).toBeOnTheScreen();
-            expect(screen.getByText('linked:none')).toBeOnTheScreen();
+            expect(screen.getByText('Edit overhead flight path C')).toBeOnTheScreen();
+            expect(screen.getByText('selected:none')).toBeOnTheScreen();
             expect(screen.getByText('drawn:1')).toBeOnTheScreen();
+            expect(await savedFlightPaths(updateObservation)).toEqual([
+                { id: 'new-boundary', surface: 'boundary', points: [], pathKey: 'new-boundary', label: 'C' },
+            ]);
+        });
+
+        it('shows the stored letter of a path it holds a copy of', async () => {
+            const copy = buildObservation({
+                id: 'obs-1',
+                flightPaths: [{ ...boundaryPath('fp-2'), pathKey: 'legacy:obs-2:boundary', label: 'B' }],
+            });
+            renderWithActiveSurvey(<AddObservationScreen />, serviceWith(copy));
+            await openOverhead('B');
+            expect(screen.getByText('options:B')).toBeOnTheScreen();
+            expect(screen.getByText('selected:legacy:obs-2:boundary')).toBeOnTheScreen();
         });
 
         it('offers only front-view paths from this location', async () => {
@@ -379,52 +404,6 @@ describe('AddObservationScreen', () => {
             await waitFor(() => expect(screen.getByText('Add front-view flight path')).toBeOnTheScreen());
             fireEvent.press(screen.getByText('Add front-view flight path'));
             await waitFor(() => expect(screen.getByText('options:A')).toBeOnTheScreen());
-        });
-
-        it('saves a link in place of its own strokes', async () => {
-            const updateObservation = jest.fn().mockResolvedValue(observation);
-            renderWithActiveSurvey(<AddObservationScreen />, serviceWith(observation, updateObservation));
-            await waitFor(() => expect(screen.getByText('Edit overhead flight path A')).toBeOnTheScreen());
-            fireEvent.press(screen.getByText('Edit overhead flight path A'));
-            await waitFor(() => expect(screen.getByLabelText('link-boundary-B')).toBeOnTheScreen());
-            fireEvent.press(screen.getByLabelText('link-boundary-B'));
-
-            expect(screen.getByText('Edit overhead flight path B')).toBeOnTheScreen();
-            fireEvent.press(screen.getByText('Save Observation'));
-            await waitFor(() =>
-                expect(updateObservation).toHaveBeenCalledWith(
-                    'obs-1',
-                    expect.objectContaining({
-                        flightPaths: [],
-                        flightPathLinks: [{ surface: 'boundary', observationId: 'obs-2' }],
-                    }),
-                ),
-            );
-        });
-
-        it('drops the link when a new path is drawn', async () => {
-            const linked = buildObservation({
-                id: 'obs-1',
-                flightPathLinks: [{ surface: 'boundary', observationId: 'obs-2' }],
-            });
-            const updateObservation = jest.fn().mockResolvedValue(linked);
-            renderWithActiveSurvey(<AddObservationScreen />, serviceWith(linked, updateObservation));
-            await waitFor(() => expect(screen.getByText('Edit overhead flight path A')).toBeOnTheScreen());
-            fireEvent.press(screen.getByText('Edit overhead flight path A'));
-            await waitFor(() => expect(screen.getByText('linked:obs-2')).toBeOnTheScreen());
-            fireEvent.press(screen.getByLabelText('commit-boundary'));
-
-            expect(screen.getByText('Edit overhead flight path')).toBeOnTheScreen();
-            fireEvent.press(screen.getByText('Save Observation'));
-            await waitFor(() =>
-                expect(updateObservation).toHaveBeenCalledWith(
-                    'obs-1',
-                    expect.objectContaining({
-                        flightPaths: [{ surface: 'boundary', points: [] }],
-                        flightPathLinks: [],
-                    }),
-                ),
-            );
         });
     });
 

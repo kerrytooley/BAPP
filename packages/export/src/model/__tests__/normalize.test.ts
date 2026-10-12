@@ -108,7 +108,6 @@ function observation(
     notes: null,
     emergence: false,
     flightPaths: [],
-    flightPathLinks: [],
     data: {},
     createdAt: EPOCH,
     updatedAt: EPOCH,
@@ -438,6 +437,7 @@ describe('normalizeReport', () => {
 
   describe('lettered flight paths', () => {
     const at = (minutes: number) => new Date(EPOCH.getTime() + minutes * 60_000);
+    const reusable: FlightPath = { ...flightPath('boundary', 'fp_a1'), pathKey: 'pk_a1', label: 'A' };
 
     function sharedContext(): SurveyContext {
       return context({
@@ -453,12 +453,14 @@ describe('normalizeReport', () => {
         observations: [
           observation('a1', {
             createdAt: at(1), firstSeenAt: at(1), species: 'Noctule',
-            flightPaths: [flightPath('boundary', 'fp_a1'), flightPath('frontView', 'fp_a1f')],
+            flightPaths: [reusable, flightPath('frontView', 'fp_a1f')],
           }),
+          // Reuses a1's overhead path: holds its own copy under the same key.
           observation('a2', {
             createdAt: at(2), firstSeenAt: at(5), species: 'Serotine',
-            flightPathLinks: [{ surface: 'boundary', observationId: 'a1' }],
+            flightPaths: [{ ...reusable }],
           }),
+          // Drawn before paths carried a key or letter.
           observation('a3', {
             createdAt: at(3), firstSeenAt: at(3),
             flightPaths: [flightPath('boundary', 'fp_a3')],
@@ -480,10 +482,14 @@ describe('normalizeReport', () => {
       expect(byId.get('b1')).toMatchObject({ overheadPath: '2A', frontViewPath: '2A' });
     });
 
-    it('draws a linked path once and lists every linked observation under it', () => {
+    it('draws a reused path once and lists every observation that recorded it', () => {
       const boundary = normalizeReport(sharedContext()).figures.find((f) => f.kind === 'boundary')!;
       expect(boundary.pathGroups.map((g) => g.label)).toEqual(['1A', '1B', '2A']);
-      expect(boundary.paths.map((p) => p.groupId)).toEqual(['boundary:a1', 'boundary:a3', 'boundary:b1']);
+      expect(boundary.paths.map((p) => p.groupId)).toEqual([
+        'boundary:pk_a1',
+        'boundary:legacy:a3:boundary',
+        'boundary:legacy:b1:boundary',
+      ]);
       expect(boundary.showSurveyorNames).toBe(true);
       expect(boundary.pathGroups[0].members).toEqual([
         { observationId: 'a1', surveyorName: 'Ada', time: '00:01', species: 'Noctule' },

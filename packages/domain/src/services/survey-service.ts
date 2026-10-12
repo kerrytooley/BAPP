@@ -12,11 +12,6 @@ import type { MediaRepository } from '../repositories/media-repository';
 import type { SurveyValidator, SurveyChange } from '../validation';
 import { ValidationError } from '../validation-error';
 import { generateSurveyCode, normalizeSurveyCode } from '../codes';
-import {
-  planFlightPathTransfer,
-  validateFlightPathLinks,
-  type FlightPathTransfer,
-} from '../models/flight-path-groups';
 
 /**
  * Status-bearing result of resolving an image. Lets the UI show the
@@ -408,41 +403,18 @@ export class SurveyService {
 
   async updateObservation(observationId: string, input: UpdateObservationInput): Promise<Observation> {
     const surveyId = await this.findSurveyId(this.observationRepository, observationId);
-    let transfers: FlightPathTransfer[] = [];
     await this.withContext(surveyId, { type: 'observation', observationId, fields: Object.keys(input) }, (ctx) => {
       const idx = ctx.observations.findIndex(o => o.id === observationId);
-      const before = ctx.observations[idx];
-      const after = { ...before, ...input };
-      ctx.observations[idx] = after;
-      const linkError = validateFlightPathLinks(after, ctx.observations);
-      if (linkError) throw new ValidationError(linkError);
-      transfers = planFlightPathTransfer(before, after, ctx.observations);
+      ctx.observations[idx] = { ...ctx.observations[idx], ...input };
     });
-    const updated = await this.observationRepository.update(observationId, input);
-    await this.applyFlightPathTransfers(transfers);
-    return updated;
+    return this.observationRepository.update(observationId, input);
   }
 
   async removeObservation(observationId: string): Promise<void> {
-    const existing = await this.observationRepository.findById(observationId);
-    const transfers = existing
-      ? planFlightPathTransfer(
-        existing,
-        null,
-        await this.observationRepository.findBySurveyId(existing.surveyId),
-      )
-      : [];
     await this.observationRepository.delete(observationId);
-    await this.applyFlightPathTransfers(transfers);
   }
 
   // --- Helpers ---
-
-  private async applyFlightPathTransfers(transfers: FlightPathTransfer[]): Promise<void> {
-    for (const { observationId, input } of transfers) {
-      await this.observationRepository.update(observationId, input);
-    }
-  }
 
   private async withContext(
     surveyId: string,

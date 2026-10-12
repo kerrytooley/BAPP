@@ -124,7 +124,7 @@ describe('FieldValidator scoping', () => {
         startWeather: { ...weather, temperature: 'hot' },
         endWeather: null,
     } as unknown as Survey;
-    const badObservation = { id: 'o1', frequency: 'loud', seenCount: 0, heardCount: 0 } as unknown as Observation;
+    const badObservation = { id: 'o1', frequency: 'loud', seenCount: 0, heardCount: 0, flightPaths: [] } as unknown as Observation;
     const context = {
         survey: badSurvey,
         locations: [],

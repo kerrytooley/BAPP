@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { SurveyService } from '../survey-service';
 import { NoOpValidator } from '../../validation';
+import { FieldValidator } from '../../field-validator';
 import { ValidationError } from '../../validation-error';
 import type { SurveyContext } from '../../survey-context';
 import type { SurveyChange, SurveyValidator } from '../../validation';
@@ -672,57 +673,38 @@ describe('SurveyService', () => {
       expect(change).toEqual({ type: 'observation', observationId: obs.id, fields: ['seenCount'] });
     });
 
-    it('links to an existing flight path without copying points', async () => {
-      const { service, observationRepo } = createService();
+    it('reuses a flight path by copying it, leaving the original observation untouched', async () => {
+      const { service, observationRepo } = createService(new FieldValidator());
       const { source, other } = await twoObservationsWithSourcePath(service);
-      const updated = await service.updateObservation(other.id, {
-        flightPathLinks: [{ surface: 'boundary', observationId: source.id }],
-      });
-      expect(updated.flightPaths).toEqual([]);
-      expect((await observationRepo.findById(other.id))!.flightPathLinks)
-        .toEqual([{ surface: 'boundary', observationId: source.id }]);
+      const copy = { ...source.flightPaths[0] };
+      await service.updateObservation(other.id, { flightPaths: [copy] });
+
+      expect((await observationRepo.findById(other.id))!.flightPaths).toEqual([copy]);
+      expect((await observationRepo.findById(source.id))!.flightPaths).toEqual(source.flightPaths);
     });
 
-    it('rejects an invalid link', async () => {
-      const { service } = createService();
+    it('rejects two different flight paths on the same image', async () => {
+      const { service } = createService(new FieldValidator());
       const { other } = await twoObservationsWithSourcePath(service);
       await expect(service.updateObservation(other.id, {
-        flightPathLinks: [{ surface: 'boundary', observationId: other.id }],
+        flightPaths: [
+          { id: 's1', surface: 'boundary', points: [], pathKey: 'k1', label: 'A' },
+          { id: 's2', surface: 'boundary', points: [], pathKey: 'k2', label: 'B' },
+        ],
       })).rejects.toThrow(ValidationError);
     });
 
-    it('hands linked strokes to a dependent when the source switches to a link', async () => {
-      const { service, observationRepo } = createService();
-      const { survey, loc, surveyor, source, other } = await twoObservationsWithSourcePath(service);
-      await service.updateObservation(other.id, {
-        flightPathLinks: [{ surface: 'boundary', observationId: source.id }],
+    it('does not re-check flight paths on unrelated updates', async () => {
+      const { service, observationRepo } = createService(new FieldValidator());
+      const { other } = await twoObservationsWithSourcePath(service);
+      // Pre-existing inconsistent strokes must not block e.g. a count increment.
+      await observationRepo.update(other.id, {
+        flightPaths: [
+          { id: 's1', surface: 'boundary', points: [], pathKey: 'k1' },
+          { id: 's2', surface: 'boundary', points: [], pathKey: 'k2' },
+        ],
       });
-      const third = await service.addObservation({
-        surveyId: survey.id, locationId: loc.id, surveyorId: surveyor.id,
-        flightPaths: [{ id: 'fp-3', surface: 'boundary', points: [{ x: 0, y: 0 }] }],
-      });
-      await service.updateObservation(source.id, {
-        flightPaths: [],
-        flightPathLinks: [{ surface: 'boundary', observationId: third.id }],
-      });
-      const heir = (await observationRepo.findById(other.id))!;
-      expect(heir.flightPaths.map((p) => p.id)).toEqual(['fp-1']);
-      expect(heir.flightPathLinks).toEqual([]);
-    });
-
-    it('leaves linked observations on the old path when the source redraws', async () => {
-      const { service, observationRepo } = createService();
-      const { source, other } = await twoObservationsWithSourcePath(service);
-      await service.updateObservation(other.id, {
-        flightPathLinks: [{ surface: 'boundary', observationId: source.id }],
-      });
-      await service.updateObservation(source.id, {
-        flightPaths: [{ id: 'fp-new', surface: 'boundary', points: [{ x: 1, y: 1 }] }],
-      });
-      expect((await observationRepo.findById(source.id))!.flightPaths.map((p) => p.id)).toEqual(['fp-new']);
-      const heir = (await observationRepo.findById(other.id))!;
-      expect(heir.flightPaths.map((p) => p.id)).toEqual(['fp-1']);
-      expect(heir.flightPathLinks).toEqual([]);
+      await expect(service.updateObservation(other.id, { heardCount: 1 })).resolves.toMatchObject({ heardCount: 1 });
     });
   });
 
@@ -732,7 +714,7 @@ describe('SurveyService', () => {
     const surveyor = await service.addSurveyor(survey.id, {});
     const source = await service.addObservation({
       surveyId: survey.id, locationId: loc.id, surveyorId: surveyor.id,
-      flightPaths: [{ id: 'fp-1', surface: 'boundary', points: [{ x: 0, y: 0 }] }],
+      flightPaths: [{ id: 'fp-1', surface: 'boundary', points: [{ x: 0, y: 0 }], pathKey: 'fp-1', label: 'A' }],
     });
     const other = await service.addObservation({
       surveyId: survey.id, locationId: loc.id, surveyorId: surveyor.id,
@@ -753,16 +735,16 @@ describe('SurveyService', () => {
       expect(await observationRepo.findById(obs.id)).toBeNull();
     });
 
-    it('hands a linked flight path to the dependent observation', async () => {
+    it('leaves copies of a reused flight path intact when the first holder is deleted', async () => {
       const { service, observationRepo } = createService();
       const { source, other } = await twoObservationsWithSourcePath(service);
-      await service.updateObservation(other.id, {
-        flightPathLinks: [{ surface: 'boundary', observationId: source.id }],
-      });
+      await service.updateObservation(other.id, { flightPaths: [{ ...source.flightPaths[0] }] });
+      const update = vi.spyOn(observationRepo, 'update');
+
       await service.removeObservation(source.id);
-      const heir = (await observationRepo.findById(other.id))!;
-      expect(heir.flightPaths.map((p) => p.id)).toEqual(['fp-1']);
-      expect(heir.flightPathLinks).toEqual([]);
+
+      expect(update).not.toHaveBeenCalled();
+      expect((await observationRepo.findById(other.id))!.flightPaths).toEqual(source.flightPaths);
     });
 
     it('ignores an unknown observation', async () => {

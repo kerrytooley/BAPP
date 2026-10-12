@@ -80,9 +80,9 @@ export interface ReportObservation {
   emergence: boolean;
   color: string;
   label: string;
-  /** Label (e.g. `1A`) of the overhead flight path this observation drew or links to. */
+  /** Label (e.g. `1A`) of the overhead flight path this observation recorded. */
   overheadPath: string | null;
-  /** Label (e.g. `1A`) of the front-view flight path this observation drew or links to. */
+  /** Label (e.g. `1A`) of the front-view flight path this observation recorded. */
   frontViewPath: string | null;
 }
 

@@ -128,7 +128,6 @@ describe('applyObservationDefaults', () => {
       direction: null,
       emergence: false,
       flightPaths: [],
-      flightPathLinks: [],
       data: {},
     });
   });

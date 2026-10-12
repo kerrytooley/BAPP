@@ -44,7 +44,6 @@ const observation: Observation = {
         points: [],
         data: {}
     }],
-    flightPathLinks: [],
     data: {},
     createdAt: new Date,
     updatedAt: new Date

@@ -4,7 +4,7 @@ import { forwardRef, useMemo, useState } from "react"
 import { BottomSheetBackdrop, BottomSheetBackdropProps, BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet"
 import { colours } from "@theme/colours"
 import { textStyles } from "@theme/fonts"
-import { FlightPath, FlightPathLink, FlightPathSurface } from "@bapp/domain"
+import { FlightPath, FlightPathSurface } from "@bapp/domain"
 import { Button } from "../Common/Button";
 import { FlightPathCanvas } from "../Interactive/FlightPathCanvas"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -14,28 +14,28 @@ import { ScrollView } from "react-native-gesture-handler"
 /** An earlier flight path the surveyor can reuse instead of drawing. */
 export interface FlightPathOption {
     letter: string
-    sourceObservationId: string
+    key: string
+    /** The copy to store if this path is chosen. */
     paths: FlightPath[]
 }
-
-export type FlightPathCommit = { paths: FlightPath[] } | { link: FlightPathLink }
 
 export interface AddFlightPathProps {
     imageUri: string
     surface: FlightPathSurface
     isEditing?: boolean
     initialPaths?: FlightPath[]
-    /** Source observation id of the path this observation already links to. */
-    initialLinkId?: string | null
+    /** Key of the saved path this observation already holds, preselected among the options. */
+    initialKey?: string | null
     options?: FlightPathOption[]
-    onCommit: (commit: FlightPathCommit) => void
+    /** Either a chosen option's copy, or freshly drawn strokes (no `pathKey` yet). */
+    onCommit: (paths: FlightPath[]) => void
 }
 
 export const AddFlightPathBottomSheet = forwardRef<BottomSheetModal, AddFlightPathProps>(
-    ({ imageUri, surface, isEditing = false, initialPaths = [], initialLinkId = null, options = [], onCommit }, ref) => {
+    ({ imageUri, surface, isEditing = false, initialPaths = [], initialKey = null, options = [], onCommit }, ref) => {
 
         const [paths, setPaths] = useState<FlightPath[]>([]);
-        const [selectedId, setSelectedId] = useState<string | null>(null);
+        const [selectedKey, setSelectedKey] = useState<string | null>(null);
         const insets = useSafeAreaInsets();
         const { height: windowHeight } = useWindowDimensions();
         const snapPoints = useMemo(() => ["100%"], []);
@@ -52,16 +52,10 @@ export const AddFlightPathBottomSheet = forwardRef<BottomSheetModal, AddFlightPa
             />
         )
 
-        const selected = options.find((option) => option.sourceObservationId === selectedId);
+        const selected = options.find((option) => option.key === selectedKey);
         const canSave = selected ? true : paths.length > 0;
 
-        const save = () => {
-            if (selected) {
-                onCommit({ link: { surface, observationId: selected.sourceObservationId } });
-            } else {
-                onCommit({ paths });
-            }
-        };
+        const save = () => onCommit(selected ? selected.paths : paths);
 
         const renderChip = (label: string, isSelected: boolean, onPress: () => void) => (
             <TouchableOpacity
@@ -82,12 +76,12 @@ export const AddFlightPathBottomSheet = forwardRef<BottomSheetModal, AddFlightPa
                 onChange={(index) => {
                     if (index >= 0) {
                         setPaths(initialPaths)
-                        setSelectedId(initialLinkId)
+                        setSelectedKey(initialKey)
                     }
                 }}
                 onDismiss={() => {
                     setPaths([])
-                    setSelectedId(null)
+                    setSelectedKey(null)
                 }}
                 snapPoints={snapPoints}
                 topInset={insets.top}
@@ -123,9 +117,9 @@ export const AddFlightPathBottomSheet = forwardRef<BottomSheetModal, AddFlightPa
                             contentContainerStyle={styles.chipRow}
                             accessibilityRole="radiogroup"
                         >
-                            {renderChip("Draw new", !selected, () => setSelectedId(null))}
+                            {renderChip("Draw new", !selected, () => setSelectedKey(null))}
                             {options.map((option) =>
-                                renderChip(option.letter, option === selected, () => setSelectedId(option.sourceObservationId))
+                                renderChip(option.letter, option === selected, () => setSelectedKey(option.key))
                             )}
                         </ScrollView>
                     }

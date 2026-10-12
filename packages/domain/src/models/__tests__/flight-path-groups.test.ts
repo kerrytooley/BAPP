@@ -1,13 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildFlightPathGroups,
+  copyFlightPath,
+  flightPathKey,
   flightPathLetter,
   letterFor,
-  planFlightPathTransfer,
-  resolveFlightPaths,
-  validateFlightPathLinks,
+  letterIndex,
+  newFlightPath,
+  nextFlightPathLabel,
+  validateFlightPaths,
 } from '../flight-path-groups';
-import type { FlightPath, FlightPathLink, FlightPathSurface, Observation } from '../observation';
+import type { FlightPath, FlightPathSurface, Observation } from '../observation';
 
 let tick = 0;
 
@@ -28,7 +31,6 @@ function obs(id: string, overrides: Partial<Observation> = {}): Observation {
     notes: null,
     emergence: false,
     flightPaths: [],
-    flightPathLinks: [],
     data: {},
     createdAt: new Date(2026, 0, 1, 0, 0, tick),
     updatedAt: new Date(2026, 0, 1, 0, 0, tick),
@@ -36,29 +38,33 @@ function obs(id: string, overrides: Partial<Observation> = {}): Observation {
   };
 }
 
-function path(id: string, surface: FlightPathSurface): FlightPath {
+/** A stroke as drawn before paths carried a key or letter. */
+function legacy(id: string, surface: FlightPathSurface): FlightPath {
   return { id, surface, points: [{ x: 0, y: 0 }, { x: 1, y: 1 }] };
 }
 
-function link(observationId: string, surface: FlightPathSurface): FlightPathLink {
-  return { observationId, surface };
+function keyed(id: string, surface: FlightPathSurface, pathKey: string, label: string): FlightPath {
+  return { ...legacy(id, surface), pathKey, label };
 }
 
-describe('letterFor', () => {
-  it('runs A..Z then AA, AB', () => {
-    expect(letterFor(0)).toBe('A');
-    expect(letterFor(25)).toBe('Z');
-    expect(letterFor(26)).toBe('AA');
-    expect(letterFor(27)).toBe('AB');
-    expect(letterFor(52)).toBe('BA');
+describe('letterFor / letterIndex', () => {
+  it('runs A..Z then AA, AB, and round-trips', () => {
+    expect([0, 25, 26, 27, 52].map(letterFor)).toEqual(['A', 'Z', 'AA', 'AB', 'BA']);
+    for (const n of [0, 25, 26, 27, 52, 701]) expect(letterIndex(letterFor(n))).toBe(n);
+  });
+
+  it('rejects anything that is not a letter label', () => {
+    expect(letterIndex('')).toBe(-1);
+    expect(letterIndex('a')).toBe(-1);
+    expect(letterIndex('1A')).toBe(-1);
   });
 });
 
 describe('buildFlightPathGroups', () => {
-  it('letters each surveyor separately per surface, in creation order', () => {
-    const a = obs('a', { flightPaths: [path('p1', 'boundary'), path('p2', 'frontView')] });
-    const b = obs('b', { flightPaths: [path('p3', 'boundary')] });
-    const other = obs('c', { surveyorId: 'sv2', flightPaths: [path('p4', 'boundary')] });
+  it('letters older surveys exactly as before: one path per observation, in draw order', () => {
+    const a = obs('a', { flightPaths: [legacy('p1', 'boundary'), legacy('p2', 'frontView')] });
+    const b = obs('b', { flightPaths: [legacy('p3', 'boundary')] });
+    const other = obs('c', { surveyorId: 'sv2', flightPaths: [legacy('p4', 'boundary')] });
     const all = [other, b, a];
 
     expect(buildFlightPathGroups(all, 'sv1', 'boundary').map((g) => [g.letter, g.sourceObservationId]))
@@ -69,145 +75,110 @@ describe('buildFlightPathGroups', () => {
       .toEqual([['A', 'c']]);
   });
 
-  it('lists the source then linked observations as members', () => {
-    const a = obs('a', { flightPaths: [path('p1', 'boundary')] });
-    const b = obs('b', { flightPathLinks: [link('a', 'boundary')] });
-    const c = obs('c', { flightPathLinks: [link('a', 'frontView')] });
+  it('groups copies of a path by key, earliest holder first', () => {
+    const a = obs('a', { flightPaths: [keyed('p1', 'boundary', 'k1', 'A')] });
+    const b = obs('b', { flightPaths: [keyed('p1', 'boundary', 'k1', 'A')] });
+    const c = obs('c', { flightPaths: [keyed('p1', 'frontView', 'k9', 'A')] });
 
-    const [group] = buildFlightPathGroups([c, b, a], 'sv1', 'boundary');
-    expect(group.memberObservationIds).toEqual(['a', 'b']);
-    expect(group.paths).toEqual([path('p1', 'boundary')]);
+    const [group, ...rest] = buildFlightPathGroups([c, b, a], 'sv1', 'boundary');
+    expect(rest).toEqual([]);
+    expect(group).toMatchObject({ key: 'k1', letter: 'A', sourceObservationId: 'a', memberObservationIds: ['a', 'b'] });
+    expect(group.paths).toEqual([keyed('p1', 'boundary', 'k1', 'A')]);
   });
 
-  it('does not letter observations that only link', () => {
-    const a = obs('a', { flightPaths: [path('p1', 'boundary')] });
-    const b = obs('b', { flightPathLinks: [link('a', 'boundary')] });
-    expect(buildFlightPathGroups([a, b], 'sv1', 'boundary')).toHaveLength(1);
+  it('keeps stored letters when earlier paths disappear', () => {
+    const b = obs('b', { flightPaths: [keyed('p2', 'boundary', 'k2', 'B')] });
+    const c = obs('c', { flightPaths: [keyed('p3', 'boundary', 'k3', 'C')] });
+    expect(buildFlightPathGroups([b, c], 'sv1', 'boundary').map((g) => g.letter)).toEqual(['B', 'C']);
+  });
+
+  it('gives older unlabelled paths the letters stored paths have not taken', () => {
+    const old = obs('old', { flightPaths: [legacy('p1', 'boundary')] });
+    const reused = obs('reused', { flightPaths: [keyed('p2', 'boundary', 'k2', 'A')] });
+    expect(buildFlightPathGroups([old, reused], 'sv1', 'boundary').map((g) => [g.letter, g.key]))
+      .toEqual([['B', 'legacy:old:boundary'], ['A', 'k2']]);
+  });
+
+  it('pins an older path\'s letter once a copy of it has been stored', () => {
+    const a = obs('a', { flightPaths: [legacy('p1', 'boundary')] });
+    const b = obs('b', { flightPaths: [legacy('p2', 'boundary')] });
+    const [, groupB] = buildFlightPathGroups([a, b], 'sv1', 'boundary');
+    const copy = obs('copy', { flightPaths: copyFlightPath(groupB) });
+
+    // Deleting `a` would have shifted b to A; the stored copy keeps it B.
+    expect(buildFlightPathGroups([b, copy], 'sv1', 'boundary').map((g) => [g.letter, g.memberObservationIds]))
+      .toEqual([['B', ['b', 'copy']]]);
   });
 
   it('letters by when each path was drawn, so a redrawn path follows older ones', () => {
     const a = obs('a');
-    const b = obs('b');
-    const redrawn = { ...a, flightPaths: [{ ...path('p9', 'boundary'), createdAt: b.createdAt.getTime() + 1000 }] };
-    const inherited = { ...b, flightPaths: [path('p1', 'boundary')] };
+    const b = obs('b', { flightPaths: [legacy('p1', 'boundary')] });
+    const redrawn = { ...a, flightPaths: [{ ...legacy('p9', 'boundary'), createdAt: b.createdAt.getTime() + 1000 }] };
 
-    expect(buildFlightPathGroups([redrawn, inherited], 'sv1', 'boundary').map((g) => [g.letter, g.sourceObservationId]))
+    expect(buildFlightPathGroups([redrawn, b], 'sv1', 'boundary').map((g) => [g.letter, g.sourceObservationId]))
       .toEqual([['A', 'b'], ['B', 'a']]);
   });
 });
 
-describe('flightPathLetter', () => {
-  it('returns the letter an observation drew or links to on a surface', () => {
-    const a = obs('a', { flightPaths: [path('p1', 'boundary')] });
-    const b = obs('b', { flightPaths: [path('p2', 'boundary'), path('p3', 'frontView')] });
-    const c = obs('c', { flightPathLinks: [link('b', 'boundary')] });
+describe('flightPathKey / flightPathLetter', () => {
+  it('identifies the path an observation holds on a surface', () => {
+    const a = obs('a', { flightPaths: [legacy('p1', 'boundary')] });
+    const b = obs('b', { flightPaths: [keyed('p2', 'boundary', 'k2', 'B'), legacy('p3', 'frontView')] });
+    const c = obs('c', { flightPaths: [keyed('p2', 'boundary', 'k2', 'B')] });
     const all = [a, b, c];
 
+    expect(flightPathKey(a, 'boundary')).toBe('legacy:a:boundary');
+    expect(flightPathKey(c, 'boundary')).toBe('k2');
+    expect(flightPathKey(c, 'frontView')).toBeUndefined();
     expect(flightPathLetter(c, all, 'boundary')).toBe('B');
     expect(flightPathLetter(b, all, 'frontView')).toBe('A');
     expect(flightPathLetter(c, all, 'frontView')).toBeUndefined();
   });
 });
 
-describe('resolveFlightPaths', () => {
-  const a = obs('a', { flightPaths: [path('p1', 'boundary')] });
-  const b = obs('b', { flightPathLinks: [link('a', 'boundary')] });
-  const dangling = obs('d', { flightPathLinks: [link('missing', 'boundary')] });
-
-  it('returns own strokes', () => {
-    expect(resolveFlightPaths(a, [a, b], 'boundary')).toEqual([path('p1', 'boundary')]);
+describe('nextFlightPathLabel / newFlightPath', () => {
+  it('takes the letter after the surveyor\'s highest on that surface', () => {
+    const a = obs('a', { flightPaths: [legacy('p1', 'boundary')] });
+    const c = obs('c', { flightPaths: [keyed('p3', 'boundary', 'k3', 'C')] });
+    expect(nextFlightPathLabel([], 'sv1', 'boundary')).toBe('A');
+    expect(nextFlightPathLabel([a, c], 'sv1', 'boundary')).toBe('D');
+    expect(nextFlightPathLabel([a, c], 'sv1', 'frontView')).toBe('A');
+    expect(nextFlightPathLabel([a, c], 'sv2', 'boundary')).toBe('A');
   });
 
-  it('follows a link', () => {
-    expect(resolveFlightPaths(b, [a, b], 'boundary')).toEqual([path('p1', 'boundary')]);
-  });
-
-  it('returns nothing without paths or for a dangling link', () => {
-    expect(resolveFlightPaths(b, [a, b], 'frontView')).toEqual([]);
-    expect(resolveFlightPaths(dangling, [a, dangling], 'boundary')).toEqual([]);
+  it('stamps freshly drawn strokes with a shared key and the next letter', () => {
+    const a = obs('a', { flightPaths: [legacy('p1', 'boundary')] });
+    const strokes = [legacy('s1', 'boundary'), legacy('s2', 'boundary')];
+    expect(newFlightPath(strokes, [a], 'sv1', 'boundary')).toEqual([
+      keyed('s1', 'boundary', 's1', 'B'),
+      keyed('s2', 'boundary', 's1', 'B'),
+    ]);
+    expect(newFlightPath([], [a], 'sv1', 'boundary')).toEqual([]);
   });
 });
 
-describe('validateFlightPathLinks', () => {
-  const source = obs('src', { flightPaths: [path('p1', 'boundary'), path('p2', 'frontView')] });
+describe('copyFlightPath', () => {
+  it('copies an older path under its derived key and letter', () => {
+    const a = obs('a', { flightPaths: [legacy('p1', 'boundary')] });
+    const [group] = buildFlightPathGroups([a], 'sv1', 'boundary');
+    expect(copyFlightPath(group)).toEqual([keyed('p1', 'boundary', 'legacy:a:boundary', 'A')]);
+  });
+});
 
-  it('accepts a valid link', () => {
-    const o = obs('o', { flightPathLinks: [link('src', 'boundary'), link('src', 'frontView')] });
-    expect(validateFlightPathLinks(o, [source, o])).toBeNull();
+describe('validateFlightPaths', () => {
+  it('accepts one path per surface, old or new', () => {
+    expect(validateFlightPaths(obs('o'))).toBeNull();
+    expect(validateFlightPaths(obs('o', { flightPaths: [legacy('p1', 'boundary'), legacy('p2', 'boundary')] }))).toBeNull();
+    expect(validateFlightPaths(obs('o', {
+      flightPaths: [keyed('p1', 'boundary', 'k1', 'A'), keyed('p2', 'boundary', 'k1', 'A'), keyed('p3', 'frontView', 'k2', 'A')],
+    }))).toBeNull();
   });
 
   it.each([
-    ['two links on one surface', obs('o', { flightPathLinks: [link('src', 'boundary'), link('src', 'boundary')] }), 'Only one'],
-    ['linking to itself', obs('o', { flightPathLinks: [link('o', 'boundary')] }), 'its own'],
-    ['drawing and linking', obs('o', { flightPaths: [path('x', 'boundary')], flightPathLinks: [link('src', 'boundary')] }), 'both draw'],
-    ['a missing target', obs('o', { flightPathLinks: [link('nope', 'boundary')] }), 'not found'],
-    ['another surveyor', obs('o', { surveyorId: 'sv2', flightPathLinks: [link('src', 'boundary')] }), 'your own'],
-    ['another survey', obs('o', { surveyId: 's2', flightPathLinks: [link('src', 'boundary')] }), 'your own'],
-    ['another location front view', obs('o', { locationId: 'loc2', flightPathLinks: [link('src', 'frontView')] }), 'same location'],
-  ])('rejects %s', (_, o, message) => {
-    expect(validateFlightPathLinks(o, [source, o])).toContain(message);
-  });
-
-  it('rejects a chain (target only links)', () => {
-    const middle = obs('m', { flightPathLinks: [link('src', 'boundary')] });
-    const o = obs('o', { flightPathLinks: [link('m', 'boundary')] });
-    expect(validateFlightPathLinks(o, [source, middle, o])).toContain('no flight path');
-  });
-
-  it('allows overhead links across locations', () => {
-    const o = obs('o', { locationId: 'loc2', flightPathLinks: [link('src', 'boundary')] });
-    expect(validateFlightPathLinks(o, [source, o])).toBeNull();
-  });
-});
-
-describe('planFlightPathTransfer', () => {
-  it('hands strokes to the earliest dependent and re-points the rest', () => {
-    const src = obs('src', { flightPaths: [path('p1', 'boundary')] });
-    const first = obs('first', { flightPathLinks: [link('src', 'boundary')] });
-    const second = obs('second', { flightPathLinks: [link('src', 'boundary')] });
-
-    const transfers = planFlightPathTransfer(src, null, [second, src, first]);
-
-    expect(transfers).toEqual([
-      { observationId: 'first', input: { flightPaths: [path('p1', 'boundary')], flightPathLinks: [] } },
-      { observationId: 'second', input: { flightPaths: [], flightPathLinks: [link('first', 'boundary')] } },
-    ]);
-  });
-
-  it('transfers per surface independently', () => {
-    const src = obs('src', { flightPaths: [path('p1', 'boundary'), path('p2', 'frontView')] });
-    const dep = obs('dep', { flightPathLinks: [link('src', 'boundary'), link('src', 'frontView')] });
-
-    const [transfer] = planFlightPathTransfer(src, null, [src, dep]);
-    expect(transfer.input.flightPaths).toEqual([path('p1', 'boundary'), path('p2', 'frontView')]);
-    expect(transfer.input.flightPathLinks).toEqual([]);
-  });
-
-  it('does nothing when the source keeps the same strokes', () => {
-    const src = obs('src', { flightPaths: [path('p1', 'boundary')] });
-    const unchanged = { ...src, seenCount: 3 };
-    const dep = obs('dep', { flightPathLinks: [link('src', 'boundary')] });
-    expect(planFlightPathTransfer(src, unchanged, [unchanged, dep])).toEqual([]);
-  });
-
-  it('keeps the old strokes for dependents when the source redraws', () => {
-    const src = obs('src', { flightPaths: [path('p1', 'boundary')] });
-    const redrawn = { ...src, flightPaths: [path('p9', 'boundary')] };
-    const dep = obs('dep', { flightPathLinks: [link('src', 'boundary')] });
-    expect(planFlightPathTransfer(src, redrawn, [redrawn, dep])).toEqual([
-      { observationId: 'dep', input: { flightPaths: [path('p1', 'boundary')], flightPathLinks: [] } },
-    ]);
-  });
-
-  it('transfers when an update drops the strokes', () => {
-    const src = obs('src', { flightPaths: [path('p1', 'boundary')] });
-    const cleared = { ...src, flightPaths: [] };
-    const dep = obs('dep', { flightPathLinks: [link('src', 'boundary')] });
-    expect(planFlightPathTransfer(src, cleared, [cleared, dep])).toHaveLength(1);
-  });
-
-  it('does nothing without dependents', () => {
-    const src = obs('src', { flightPaths: [path('p1', 'boundary')] });
-    expect(planFlightPathTransfer(src, null, [src])).toEqual([]);
+    ['two keys on one surface', [keyed('p1', 'boundary', 'k1', 'A'), keyed('p2', 'boundary', 'k2', 'A')]],
+    ['two letters on one surface', [keyed('p1', 'boundary', 'k1', 'A'), keyed('p2', 'boundary', 'k1', 'B')]],
+    ['old and new strokes mixed', [legacy('p1', 'boundary'), keyed('p2', 'boundary', 'k1', 'A')]],
+  ])('rejects %s', (_, flightPaths) => {
+    expect(validateFlightPaths(obs('o', { flightPaths }))).toContain('Only one flight path');
   });
 });

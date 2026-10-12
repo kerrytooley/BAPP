@@ -11,19 +11,27 @@ export interface FlightPathPoint {
  */
 export type FlightPathSurface = 'boundary' | 'frontView';
 
+/**
+ * One stroke of a flight path. An observation's strokes on a surface together
+ * form its (single) flight path on that surface.
+ *
+ * Reusing a path copies its strokes into the reusing observation, so every
+ * observation stays self-contained; `pathKey` is what marks the copies as the
+ * same path. Strokes drawn before reuse existed have no `pathKey` or `label`:
+ * each observation's strokes on a surface then form a path of their own, and
+ * its letter is derived from draw order (see flight-path-groups.ts).
+ */
 export interface FlightPath {
   id: string;
   surface: FlightPathSurface;
   points: FlightPathPoint[];
   /** Epoch ms when drawn; orders lettered paths. Older paths fall back to the observation's createdAt. */
   createdAt?: number;
+  /** Identity of the path, shared by every copy of it. */
+  pathKey?: string;
+  /** Letter assigned when the path was first drawn (A, B, … per surveyor per surface); copied with it. */
+  label?: string;
   data?: Record<string, unknown>;
-}
-
-/** Reuse of another observation's flight path on `surface` instead of drawing a new one. */
-export interface FlightPathLink {
-  surface: FlightPathSurface;
-  observationId: string;
 }
 
 export interface Observation {
@@ -41,7 +49,6 @@ export interface Observation {
   notes: string | null;
   emergence: boolean;
   flightPaths: FlightPath[];
-  flightPathLinks: FlightPathLink[];
   data: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
@@ -61,7 +68,6 @@ export type CreateObservationInput = {
   notes?: string | null;
   emergence?: boolean;
   flightPaths?: FlightPath[];
-  flightPathLinks?: FlightPathLink[];
   data?: Record<string, unknown>;
 };
 
@@ -76,7 +82,6 @@ export type UpdateObservationInput = Partial<{
   notes: string | null;
   emergence: boolean;
   flightPaths: FlightPath[];
-  flightPathLinks: FlightPathLink[];
   data: Record<string, unknown>;
 }>;
 
@@ -102,7 +107,6 @@ export function applyObservationDefaults(input: CreateObservationInput): NewObse
     direction: input.direction ?? null,
     emergence: input.emergence ?? false,
     flightPaths: input.flightPaths ?? [],
-    flightPathLinks: input.flightPathLinks ?? [],
     data: input.data ?? {},
   };
 }
