@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
-import type { SurveyExport } from '@bapp/domain';
 import type { MediaResolver, ResolvedMedia } from '@bapp/export';
 import {
   EXPORTS_SUBCOLLECTION,
@@ -94,12 +93,14 @@ export function adminDeps(logError: GenerateDeps['logError']): GenerateDeps {
         const snap = await latestRef(surveyId).get();
         return snap.exists ? surveyExportFromData(snap.data()) : null;
       },
-      async writeLatest(surveyId, value: SurveyExport) {
+      async updateLatest(surveyId, update) {
         const ref = latestRef(surveyId);
         return getFirestore().runTransaction(async (tx) => {
           const snap = await tx.get(ref);
-          tx.set(ref, value);
-          return snap.exists ? ((snap.get('storagePath') as string | undefined) ?? null) : null;
+          const current = snap.exists ? surveyExportFromData(snap.data()) : null;
+          const next = update(current);
+          if (next) tx.set(ref, next);
+          return current;
         });
       },
     },

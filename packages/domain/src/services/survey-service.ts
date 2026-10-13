@@ -13,6 +13,7 @@ import type { SurveyExportRepository } from '../repositories/survey-export-repos
 import { isReadySurveyExport, type ReadySurveyExport } from '../models/survey-export';
 import type { SurveyValidator, SurveyChange } from '../validation';
 import { ValidationError } from '../validation-error';
+import { SurveyNotFoundError } from '../survey-not-found-error';
 import { generateSurveyCode, normalizeSurveyCode } from '../codes';
 
 /**
@@ -25,6 +26,19 @@ export type ImageResult =
   | { status: 'processing' }
   | { status: 'failed'; error: string | null }
   | { status: 'ready'; url: string };
+
+/** Minimal `AbortSignal` shape (the domain compiles without DOM/Node types). */
+export interface ExportAbortSignal {
+  readonly aborted: boolean;
+  addEventListener(type: 'abort', listener: () => void): void;
+  removeEventListener(type: 'abort', listener: () => void): void;
+}
+
+export interface ServerExportOptions {
+  /** How long to wait for the backend's answer. */
+  timeoutMs?: number;
+  signal?: ExportAbortSignal;
+}
 
 export class SurveyService {
   private readonly leadCreations = new Map<string, Promise<Surveyor | null>>();
@@ -60,14 +74,14 @@ export class SurveyService {
   async resumeSurvey(adminCode: string): Promise<SurveyContext> {
     // Codes are matched case-insensitively; generated codes are always lowercase.
     const survey = await this.surveyRepository.findByAdminCode(normalizeSurveyCode(adminCode));
-    if (!survey) throw new Error('Survey not found for admin code');
+    if (!survey) throw new SurveyNotFoundError('Survey not found for admin code');
     return this.surveyRepository.getSurveyContext(survey.id);
   }
 
   async joinSurvey(surveyorCode: string): Promise<SurveyContext> {
     // Codes are matched case-insensitively; generated codes are always lowercase.
     const survey = await this.surveyRepository.findBySurveyorCode(normalizeSurveyCode(surveyorCode));
-    if (!survey) throw new Error('Survey not found for surveyor code');
+    if (!survey) throw new SurveyNotFoundError('Survey not found for surveyor code');
     return this.surveyRepository.getSurveyContext(survey.id);
   }
 
@@ -310,16 +324,24 @@ export class SurveyService {
    * The backend-built export for the survey's current data. Always asks the
    * backend, which reuses its latest archive when that still matches the
    * server's data (local reads are cache-first, so the client can't judge
-   * freshness). Rejects unless the answer is complete, so callers can fall back.
+   * freshness). Rejects unless the answer is complete, so callers can fall back;
+   * aborting `signal` rejects at once and stops listening for the answer.
    */
-  async getServerExport(surveyId: string, timeoutMs = 120_000): Promise<ReadySurveyExport> {
+  async getServerExport(
+    surveyId: string,
+    { timeoutMs = 120_000, signal }: ServerExportOptions = {},
+  ): Promise<ReadySurveyExport> {
     const repo = this.exportRepository;
     if (!repo) throw new Error('Server export is not available for this backend');
+    const throwIfAborted = () => {
+      if (signal?.aborted) throw new Error('Server export cancelled');
+    };
+    throwIfAborted();
 
     // Server read as a reachability probe: offline fails here instead of waiting out the timeout.
     await repo.getLatest(surveyId);
+    throwIfAborted();
 
-    const requestId = await repo.requestExport(surveyId);
     // The domain compiles against plain ES2020 (no DOM/Node types), so reach timers via globalThis.
     const timers = globalThis as unknown as {
       setTimeout(callback: () => void, ms: number): unknown;
@@ -332,28 +354,38 @@ export class SurveyService {
         if (settled) return;
         settled = true;
         timers.clearTimeout(timer);
+        signal?.removeEventListener('abort', onAbort);
         unsubscribe?.();
         settle();
       };
+      const onAbort = () => finish(() => reject(new Error('Server export cancelled')));
       const timer = timers.setTimeout(
         () => finish(() => reject(new Error('Timed out waiting for the server export'))),
         timeoutMs,
       );
-      unsubscribe = repo.subscribeLatest(surveyId, (value) => {
-        if (!value || value.lastRequestId !== requestId) return;
-        if (value.status === 'failed') {
-          finish(() => reject(new Error(value.error ?? 'Server export failed')));
-        } else if (isReadySurveyExport(value) && value.missingMedia.length === 0) {
-          finish(() => resolve(value));
-        } else if (isReadySurveyExport(value)) {
-          finish(() => reject(new Error('Server export is missing media')));
-        }
-      });
-      // The subscription may have answered synchronously, before `unsubscribe` was assigned.
-      if (settled) unsubscribe();
+      signal?.addEventListener('abort', onAbort);
+
+      repo.requestExport(surveyId).then(
+        (requestId) => {
+          if (settled) return;
+          const stop = repo.subscribeLatest(surveyId, (value) => {
+            if (!value || value.lastRequestId !== requestId) return;
+            if (value.status === 'failed') {
+              finish(() => reject(new Error(value.error ?? 'Server export failed')));
+            } else if (isReadySurveyExport(value) && value.missingMedia.length === 0) {
+              finish(() => resolve(value));
+            } else if (isReadySurveyExport(value)) {
+              finish(() => reject(new Error('Server export is missing media')));
+            }
+          });
+          // The subscription may have answered synchronously, before `unsubscribe` was assigned.
+          if (settled) stop();
+          else unsubscribe = stop;
+        },
+        (error) => finish(() => reject(error)),
+      );
     });
   }
-
 
   // --- Locations ---
 

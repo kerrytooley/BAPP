@@ -107,16 +107,26 @@ The app always sends a request (its own reads are cache-first, so it can't
 judge freshness); the function reuses the latest archive when its
 `surveyContextFingerprint` (every record's id + `updatedAt`) still matches.
 
-Archives live at `surveys/{id}/reports/{runId}/{fileName}.zip`. A replaced
+Archives live at `surveys/{id}/reports/{runId}/{fileName}.zip`; `storage.rules`
+makes them read-only to clients (only the functions write them). A replaced
 archive is tagged `retiredAt` and deleted by a later build once it has been
 retired for an hour, so a client handed its path just before a concurrent
 rebuild can still download it. If the backend can't answer (offline, timeout,
-failure) or its archive is missing media, the app falls back to building
-on-device.
+failure) or its archive is missing media (including media still processing),
+the app falls back to building on-device.
 
-Builds are capped at `maxInstances: 5` because the v1 rules let any signed-in
-caller create export requests (rules only check the request's shape and that
-the survey exists). Restrict requests to survey admins with the v2 rules.
+Runs can overlap, so before publishing a build rechecks the survey's
+fingerprint (rebuilding, up to 3 times, if it changed) and publishes in a
+transaction that never replaces a ready record built from data read later
+(`generatedAt` is when the data was read); a superseded run answers its request
+with that newer record instead.
+
+The v1 rules let any signed-in caller request exports, so they are bounded:
+each request must be written in the same batch as the caller's
+`exportThrottles/{uid}` doc, whose server-time stamp may only advance every 30
+seconds (one request per caller per 30s), and concurrent builds are capped at
+`maxInstances: 5`. Also enforce App Check for Firestore in the console. Restrict
+requests to survey admins with the v2 rules.
 
 ```bash
 pnpm install                              # repo root first: the bundle compiles @bapp/* sources,

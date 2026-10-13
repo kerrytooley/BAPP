@@ -3,7 +3,7 @@ jest.mock('@utils/image', () => ({
 }));
 
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-native';
-import { Image, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { StaticPinLayer } from '@components/Location/StaticPinLayer';
 import { getAspectRatio } from '@utils/image';
 
@@ -36,6 +36,24 @@ describe('StaticPinLayer', () => {
         render(<StaticPinLayer imageUri="file://boundary.png" values={[{ x: 0.95, y: 0.5, label: 'Ada, Ben' }, { x: 0.2, y: 0.2 }]} />);
         measure(300, 300);
         expect(screen.getByText('Ada, Ben')).toBeOnTheScreen();
+    });
+
+    it('places a label above a pin at the bottom edge so it is not clipped', () => {
+        render(<StaticPinLayer imageUri="file://boundary.png" values={[{ x: 0.5, y: 0.95, label: 'Ada' }]} />);
+        measure(300, 300);
+        const labelBox = () => screen.getByText('Ada').parent!.parent!;
+        // Unmeasured, it sits below the pin; once measured it would overflow the 300px layer.
+        expect(StyleSheet.flatten(labelBox().props.style).top).toBe(285 + 6);
+        fireEvent(labelBox(), 'layout', { nativeEvent: { layout: { width: 140, height: 30 } } });
+        expect(StyleSheet.flatten(labelBox().props.style).top).toBe(285 - 24 - 6 - 30);
+    });
+
+    it('keeps a label below a pin when it fits', () => {
+        render(<StaticPinLayer imageUri="file://boundary.png" values={[{ x: 0.5, y: 0.5, label: 'Ada' }]} />);
+        measure(300, 300);
+        const labelBox = () => screen.getByText('Ada').parent!.parent!;
+        fireEvent(labelBox(), 'layout', { nativeEvent: { layout: { width: 140, height: 30 } } });
+        expect(StyleSheet.flatten(labelBox().props.style).top).toBe(150 + 6);
     });
 
     it('logs an error when the aspect ratio cannot be resolved', async () => {

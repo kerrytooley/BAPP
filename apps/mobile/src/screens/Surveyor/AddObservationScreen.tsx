@@ -9,7 +9,7 @@ import { Title } from "@components/Common/Titles";
 import { TimeOfObservation } from "@components/DateTime/TimeOfObservation";
 import { HeardAndSeenCount } from "@components/Observation/HeardAndSeenCount";
 import React, { useEffect, useRef, useState } from "react";
-import { buildFlightPathGroups, copyFlightPath, FlightPath, flightPathKey, FlightPathSurface, newFlightPath, UpdateObservationInput, validateFrequencyKhz, validateLastSeen } from "@bapp/domain";
+import { buildFlightPathGroups, copyFlightPath, FlightPath, flightPathKey, FlightPathSurface, lastSeenAfter, newFlightPath, UpdateObservationInput, validateFrequencyKhz, validateLastSeen } from "@bapp/domain";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { InputField } from "@components/Common/InputField";
@@ -165,7 +165,9 @@ export function AddObservationScreen(): React.JSX.Element {
     const frequencyError = validateFrequencyKhz(frequency);
     // Only shown after a save attempt so it doesn't flash while the times are being picked.
     const [timesChecked, setTimesChecked] = useState(false);
-    const lastSeenError = validateLastSeen(observationTime, lastSeenTime);
+    // The pickers only set a time of day, so a last-seen time just after midnight is the next day.
+    const lastSeenAt = lastSeenAfter(observationTime, lastSeenTime);
+    const lastSeenError = validateLastSeen(observationTime, lastSeenAt);
     const scrollRef = useRef<ScrollView>(null);
     const optionalText = (value: string | undefined) => value?.trim() || null;
 
@@ -182,7 +184,7 @@ export function AddObservationScreen(): React.JSX.Element {
                 seenCount: seenCount,
                 heardCount: heardCount,
                 firstSeenAt: observationTime,
-                lastSeenAt: lastSeenTime,
+                lastSeenAt,
                 frequency: optionalText(frequency),
                 direction: optionalText(direction),
                 notes: optionalText(notes),

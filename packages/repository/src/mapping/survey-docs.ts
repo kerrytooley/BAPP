@@ -16,6 +16,8 @@ export const EXPORTS_SUBCOLLECTION = 'exports';
 export const LATEST_EXPORT_DOC = 'latest';
 /** Clients create docs here to ask the backend to (re)build the export. */
 export const EXPORT_REQUESTS_SUBCOLLECTION = 'exportRequests';
+/** `exportThrottles/{uid}` rate-limits each caller's export requests (see firestore.rules). */
+export const EXPORT_THROTTLES_COLLECTION = 'exportThrottles';
 
 export function reportsStoragePrefix(surveyId: string): string {
   return `surveys/${surveyId}/reports/`;

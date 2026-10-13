@@ -16,6 +16,7 @@ export * from './codes';
 // Validation
 export * from './validation';
 export * from './validation-error';
+export * from './survey-not-found-error';
 export * from './field-rules';
 export * from './field-validator';
 

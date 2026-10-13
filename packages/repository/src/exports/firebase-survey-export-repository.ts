@@ -4,13 +4,15 @@ import {
   doc,
   getDocFromServer,
   onSnapshot,
-  setDoc,
+  serverTimestamp,
+  writeBatch,
 } from '@react-native-firebase/firestore';
-import { getDb } from '../config/firebase-app';
-import { nowTimestamp, queueWrite } from '../config/firestore-mapping';
+import { getDb, getFirebaseAuth } from '../config/firebase-app';
+import { nowTimestamp } from '../config/firestore-mapping';
 import {
   EXPORTS_SUBCOLLECTION,
   EXPORT_REQUESTS_SUBCOLLECTION,
+  EXPORT_THROTTLES_COLLECTION,
   LATEST_EXPORT_DOC,
   surveyExportFromData,
 } from '../mapping/survey-docs';
@@ -28,9 +30,20 @@ export class FirebaseSurveyExportRepository implements SurveyExportRepository {
     );
   }
 
+  /**
+   * Awaits the server (unlike other writes): callers have just reached it, and a
+   * request refused by the per-caller rate limit (firestore.rules) must fail now
+   * rather than leave the caller waiting for an answer that never comes.
+   */
   async requestExport(surveyId: string): Promise<string> {
-    const ref = doc(collection(getDb(), 'surveys', surveyId, EXPORT_REQUESTS_SUBCOLLECTION));
-    queueWrite(setDoc(ref, { requestedAt: nowTimestamp() }), `export.request ${surveyId}/${ref.id}`);
+    const uid = getFirebaseAuth().currentUser?.uid;
+    if (!uid) throw new Error('Not signed in');
+    const db = getDb();
+    const ref = doc(collection(db, 'surveys', surveyId, EXPORT_REQUESTS_SUBCOLLECTION));
+    const batch = writeBatch(db);
+    batch.set(ref, { requestedAt: nowTimestamp() });
+    batch.set(doc(db, EXPORT_THROTTLES_COLLECTION, uid), { lastRequestAt: serverTimestamp() });
+    await batch.commit();
     return ref.id;
   }
 }

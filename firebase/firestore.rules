@@ -13,13 +13,29 @@ service cloud.firestore {
       }
       match /exportRequests/{requestId} {
         // Each request starts a Cloud Function, so only accept the exact shape the
-        // app writes, for a survey that exists. Concurrent builds are capped by
-        // `maxInstances` (functions/src/index.ts). v2: restrict to survey admins.
+        // app writes, for a survey that exists, and only in the same batch as an
+        // update to the caller's throttle doc (below), which rate-limits each
+        // caller. Concurrent builds are capped by `maxInstances`
+        // (functions/src/index.ts). v2: restrict to survey admins.
         allow create: if request.auth != null
           && request.resource.data.keys().hasOnly(['requestedAt'])
           && request.resource.data.requestedAt is timestamp
-          && exists(/databases/$(database)/documents/surveys/$(surveyId));
+          && exists(/databases/$(database)/documents/surveys/$(surveyId))
+          && getAfter(/databases/$(database)/documents/exportThrottles/$(request.auth.uid)).data.lastRequestAt == request.time;
       }
+    }
+
+    // One export request per caller per 30 seconds: each request batch must stamp
+    // `lastRequestAt` with the server time, which may only move forward by 30s+.
+    match /exportThrottles/{uid} {
+      function isOwnStamp() {
+        return request.auth != null && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['lastRequestAt'])
+          && request.resource.data.lastRequestAt == request.time;
+      }
+      allow create: if isOwnStamp();
+      allow update: if isOwnStamp()
+        && request.time >= resource.data.lastRequestAt + duration.value(30, 's');
     }
 
     // Collection-group reads. The repository interface is flat-id

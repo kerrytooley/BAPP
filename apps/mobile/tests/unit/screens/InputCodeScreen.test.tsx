@@ -3,6 +3,7 @@ jest.mock('@react-navigation/native', () =>
 );
 
 import { screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { SurveyNotFoundError } from '@bapp/domain';
 import { InputCodeScreen } from '@screens/Surveyor/InputCodeScreen';
 import { loadRecentSurveys } from '@services/recentSurveys';
 import { buildContext, buildSurvey } from '../../helpers/factories';
@@ -43,7 +44,7 @@ describe('InputCodeScreen', () => {
     it('does not navigate when joining fails', async () => {
         const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
         const service = createMockService({
-            joinSurvey: jest.fn().mockRejectedValue(new Error('bad code')),
+            joinSurvey: jest.fn().mockRejectedValue(new SurveyNotFoundError('bad code')),
         });
         renderWithService(<InputCodeScreen />, service);
         fireEvent.changeText(screen.getByPlaceholderText('XXXXXX'), 'zzz999');
@@ -56,6 +57,21 @@ describe('InputCodeScreen', () => {
 
         fireEvent.changeText(screen.getByPlaceholderText('XXXXXX'), 'zzz998');
         expect(screen.queryByText("Oops! Looks like there's no survey matching that code")).toBeNull();
+    });
+
+    it('asks to retry, not to change the code, when the survey cannot be loaded', async () => {
+        jest.spyOn(console, 'error').mockImplementation(() => { });
+        const service = createMockService({
+            joinSurvey: jest.fn().mockRejectedValue(new Error('unavailable')),
+        });
+        renderWithService(<InputCodeScreen />, service);
+        fireEvent.changeText(screen.getByPlaceholderText('XXXXXX'), 'BAT123');
+        fireEvent.press(screen.getByText('Continue'));
+        expect(
+            await screen.findByText("Couldn't load the survey. Check your connection and try again"),
+        ).toBeOnTheScreen();
+        expect(screen.queryByText("Oops! Looks like there's no survey matching that code")).toBeNull();
+        expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it('disables continue until a valid code is entered', () => {

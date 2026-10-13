@@ -25,7 +25,7 @@ export async function exportSurvey(
     surveyId: string,
     signal?: AbortSignal,
 ): Promise<ExportSurveyResult> {
-    const prebuilt = await downloadServerExport(service, surveyId);
+    const prebuilt = await downloadServerExport(service, surveyId, signal);
     throwIfAborted(signal);
     if (prebuilt) {
         return { fileName: prebuilt.fileName, shared: await shareExportFile(prebuilt.fileUri) };
@@ -59,12 +59,15 @@ function throwIfAborted(signal?: AbortSignal) {
 async function downloadServerExport(
     service: ExportSurveyService,
     surveyId: string,
+    signal?: AbortSignal,
 ): Promise<{ fileName: string; fileUri: string } | null> {
     if (!service.supportsServerExport()) return null;
     try {
-        const ready = await service.getServerExport(surveyId);
+        const ready = await service.getServerExport(surveyId, { signal });
+        throwIfAborted(signal);
         return { fileName: ready.fileName, fileUri: await service.getMediaUrl(ready.storagePath) };
     } catch (error) {
+        if (signal?.aborted) return null;
         console.warn("[export] server export unavailable, building on device:", error);
         return null;
     }

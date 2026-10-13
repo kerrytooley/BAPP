@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     isBlank,
+    lastSeenAfter,
     validateCount,
     validateFrequencyKhz,
     validateLastSeen,
@@ -133,6 +134,26 @@ describe('validateLastSeen', () => {
     it('ignores missing times', () => {
         expect(validateLastSeen(null, at(20))).toBeNull();
         expect(validateLastSeen(at(20), null)).toBeNull();
+    });
+});
+
+describe('lastSeenAfter', () => {
+    const at = (day: number, h: number, m = 0) => new Date(2026, 9, day, h, m);
+
+    it('reads a picked time as the same day as the first sighting', () => {
+        expect(lastSeenAfter(at(11, 20, 30), at(3, 21, 15))).toEqual(at(11, 21, 15));
+    });
+
+    it('reads an earlier time of day just after midnight as the next day', () => {
+        const lastSeen = lastSeenAfter(at(11, 23, 55), at(11, 0, 5));
+        expect(lastSeen).toEqual(at(12, 0, 5));
+        expect(validateLastSeen(at(11, 23, 55), lastSeen)).toBeNull();
+    });
+
+    it('keeps a slightly earlier time on the same day so it is rejected', () => {
+        const lastSeen = lastSeenAfter(at(11, 20, 30), at(12, 20, 29));
+        expect(lastSeen).toEqual(at(11, 20, 29));
+        expect(validateLastSeen(at(11, 20, 30), lastSeen)).not.toBeNull();
     });
 });
 

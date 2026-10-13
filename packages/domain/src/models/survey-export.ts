@@ -12,6 +12,7 @@ export interface SurveyExport {
   fingerprint: string | null;
   /** Image refs that could not be fetched when building (e.g. still uploading). */
   missingMedia: string[];
+  /** When the survey data the archive was built from was read. */
   generatedAt: Date | null;
   /** Id of the last export request this record answers. */
   lastRequestId: string | null;

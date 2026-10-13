@@ -121,6 +121,21 @@ const minutesAfter = (from: Date, time: Date) =>
 
 const withinSurvey = (offset: number) => offset > 0 && offset <= MAX_SURVEY_HOURS * 60;
 
+/**
+ * Place a picked last-seen time (only its time of day is meaningful) relative to
+ * the first sighting: on the same date, or the next day when it is earlier in the
+ * day but within {@link MAX_SURVEY_HOURS} after it — e.g. 00:05 after 23:55.
+ * Otherwise it stays earlier, for {@link validateLastSeen} to reject.
+ */
+export function lastSeenAfter(firstSeenAt: Date, lastSeenTime: Date): Date {
+    const lastSeen = new Date(firstSeenAt);
+    lastSeen.setHours(lastSeenTime.getHours(), lastSeenTime.getMinutes(), lastSeenTime.getSeconds(), lastSeenTime.getMilliseconds());
+    if (lastSeen < firstSeenAt && withinSurvey(minutesAfter(firstSeenAt, lastSeenTime))) {
+        lastSeen.setDate(lastSeen.getDate() + 1);
+    }
+    return lastSeen;
+}
+
 const SUNSET_AFTER_START = `Sunrise/sunset time must be within ${MAX_SURVEY_HOURS} hours after the start time`;
 const END_AFTER_START = `End time must be within ${MAX_SURVEY_HOURS} hours after the start time`;
 const END_AFTER_SUNSET = 'End time must be after the sunrise/sunset time';

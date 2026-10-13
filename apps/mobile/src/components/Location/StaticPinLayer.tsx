@@ -23,6 +23,7 @@ const LABEL_GAP = 6;
 export const StaticPinLayer = ({ imageUri, values, style }: StaticPinLayerProps) => {
     const [layout, setLayout] = useState({ width: 0, height: 0 });
     const [aspectRatio, setAspectRatio] = useState<number>(0.5);
+    const [labelHeights, setLabelHeights] = useState<Record<number, number>>({});
 
     useEffect(() => {
         if (!imageUri) return
@@ -40,6 +41,19 @@ export const StaticPinLayer = ({ imageUri, values, style }: StaticPinLayerProps)
     const onLayout = (event: LayoutChangeEvent) => {
         const { width, height } = event.nativeEvent.layout
         setLayout({ width, height })
+    }
+
+    const onLabelLayout = (index: number) => (event: LayoutChangeEvent) => {
+        const { height } = event.nativeEvent.layout
+        setLabelHeights((current) => current[index] === height ? current : { ...current, [index]: height })
+    }
+
+    // Below the pin, unless that would clip it at the bottom edge: then above the pin.
+    const labelTop = (value: PinValue, index: number) => {
+        const below = value.y * layout.height + LABEL_GAP
+        const height = labelHeights[index] ?? 0
+        if (below + height <= layout.height) return below
+        return Math.max(value.y * layout.height - PIN_HEIGHT - LABEL_GAP - height, 0)
     }
 
     return (
@@ -62,12 +76,13 @@ export const StaticPinLayer = ({ imageUri, values, style }: StaticPinLayerProps)
                         </View>
                         {!!value.label &&
                             <View
+                                onLayout={onLabelLayout(index)}
                                 style={[
                                     styles.labelBox,
                                     {
                                         // Keep the label on the image near the left/right edges.
                                         left: Math.min(Math.max(value.x * layout.width - LABEL_WIDTH / 2, 0), layout.width - LABEL_WIDTH),
-                                        top: value.y * layout.height + LABEL_GAP
+                                        top: labelTop(value, index)
                                     }
                                 ]}
                             >

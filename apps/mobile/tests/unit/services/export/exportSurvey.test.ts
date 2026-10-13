@@ -86,6 +86,23 @@ describe('exportSurvey', () => {
         expect(result).toEqual({ fileName: 'dusk-count-results.zip', shared: true });
     });
 
+    it('passes the signal to the server export and skips the download when cancelled', async () => {
+        const controller = new AbortController();
+        const service = makeService('Dusk count');
+        (service.supportsServerExport as jest.Mock).mockReturnValue(true);
+        (service.getServerExport as jest.Mock).mockImplementation(async () => {
+            controller.abort();
+            return { status: 'ready', storagePath: 'surveys/s/reports/r/x.zip', fileName: 'x.zip' };
+        });
+
+        await expect(exportSurvey(service, 'survey-1', controller.signal))
+            .rejects.toBeInstanceOf(ExportCancelledError);
+        expect(service.getServerExport).toHaveBeenCalledWith('survey-1', { signal: controller.signal });
+        expect(service.getMediaUrl).not.toHaveBeenCalled();
+        expect(shareFileMock).not.toHaveBeenCalled();
+        expect(assembleMock).not.toHaveBeenCalled();
+    });
+
     it('falls back to the on-device build when the server export fails', async () => {
         const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
         const service = makeService('Dusk count');

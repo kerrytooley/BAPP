@@ -129,10 +129,37 @@ describe('SurveyService server export', () => {
     expect(exportRepo.unsubscribed).toBe(1);
   });
 
+  it('rejects at once when the request is refused (e.g. rate-limited)', async () => {
+    const { service, exportRepo, surveyId } = await setup();
+    exportRepo.requestExport = async () => {
+      throw new Error('permission-denied');
+    };
+    await expect(service.getServerExport(surveyId)).rejects.toThrow('permission-denied');
+    expect(exportRepo.listeners).toHaveLength(0);
+  });
+
+  it('stops waiting and unsubscribes when aborted', async () => {
+    const { service, exportRepo, surveyId } = await setup();
+    const controller = new AbortController();
+    const result = service.getServerExport(surveyId, { signal: controller.signal });
+    await vi.waitFor(() => expect(exportRepo.listeners).toHaveLength(1));
+    controller.abort();
+    await expect(result).rejects.toThrow('cancelled');
+    expect(exportRepo.unsubscribed).toBe(1);
+  });
+
+  it('does not request an export when already aborted', async () => {
+    const { service, exportRepo, surveyId } = await setup();
+    const controller = new AbortController();
+    controller.abort();
+    await expect(service.getServerExport(surveyId, { signal: controller.signal })).rejects.toThrow('cancelled');
+    expect(exportRepo.requests).toBe(0);
+  });
+
   it('times out when the request is never answered', async () => {
     const { service, exportRepo, surveyId } = await setup();
     vi.useFakeTimers();
-    const result = service.getServerExport(surveyId, 1000);
+    const result = service.getServerExport(surveyId, { timeoutMs: 1000 });
     const assertion = expect(result).rejects.toThrow('Timed out');
     await vi.waitFor(() => expect(exportRepo.listeners).toHaveLength(1));
     await vi.advanceTimersByTimeAsync(1000);

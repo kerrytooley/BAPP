@@ -10,12 +10,13 @@ import { useNavigation } from "@react-navigation/native";
 import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from "react-native";
 import { useSurveyService } from "../../services/surveyServiceContext";
 import PadlockIllustration from "@assets/illustrations/padlock.svg"
-import { isBlank, validateSurveyCode } from "@bapp/domain";
+import { isBlank, SurveyNotFoundError, validateSurveyCode } from "@bapp/domain";
 import { recordRecentSurvey } from "@services/recentSurveys";
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
 export const NO_SURVEY_MESSAGE = "Oops! Looks like there's no survey matching that code";
+export const JOIN_FAILED_MESSAGE = "Couldn't load the survey. Check your connection and try again";
 
 export function InputCodeScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
@@ -62,7 +63,7 @@ export function InputCodeScreen(): React.JSX.Element {
                                 navigation.navigate('CodeConfirmationScreen', { surveyId: surveyContext.survey.id });
                             } catch (e) {
                                 console.error(`Error joining survey for surveyor code ${code}:`, e);
-                                setJoinError(NO_SURVEY_MESSAGE);
+                                setJoinError(e instanceof SurveyNotFoundError ? NO_SURVEY_MESSAGE : JOIN_FAILED_MESSAGE);
                             }
                         }
                         }
