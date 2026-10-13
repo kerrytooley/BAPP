@@ -6,7 +6,7 @@ import {
   type SurveyExport,
 } from '@bapp/domain';
 import type { ResolvedMedia } from '@bapp/export';
-import { generateSurveyExport, type GenerateDeps } from '../generate';
+import { ARCHIVE_RETENTION_MS, generateSurveyExport, type GenerateDeps } from '../generate';
 
 const EPOCH = new Date('2026-10-01T20:00:00.000Z');
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]);
@@ -39,7 +39,8 @@ function makeDeps(overrides: { latest?: SurveyExport | null; media?: Record<stri
     uploadZip: vi.fn(async (path: string, zip: Uint8Array) => {
       uploads.set(path, zip);
     }),
-    deleteZip: vi.fn(async () => {}),
+    retireZip: vi.fn(async () => {}),
+    pruneRetiredZips: vi.fn(async () => {}),
     store: {
       readLatest: async () => overrides.latest ?? null,
       writeLatest: vi.fn(async (_id: string, value: SurveyExport) => {
@@ -81,10 +82,27 @@ describe('generateSurveyExport', () => {
     expect(Array.from(mediaBytes)).toEqual(Array.from(PNG));
   });
 
-  it('deletes the archive it replaced', async () => {
+  it('retires the archive it replaced and prunes only those retired past the retention window', async () => {
     const { deps } = makeDeps({ latest: ready({ fingerprint: 'stale' }) });
     expect(await generateSurveyExport('svy', deps)).toBe('built');
-    expect(deps.deleteZip).toHaveBeenCalledWith('surveys/svy/reports/old/x.zip');
+    // Not deleted outright: a client may already hold its path.
+    expect(deps.retireZip).toHaveBeenCalledWith('surveys/svy/reports/old/x.zip', EPOCH);
+    expect(deps.pruneRetiredZips).toHaveBeenCalledWith(
+      'svy',
+      new Date(EPOCH.getTime() - ARCHIVE_RETENTION_MS),
+    );
+  });
+
+  it('still reports a build when archive cleanup fails', async () => {
+    const { deps } = makeDeps({ latest: ready({ fingerprint: 'stale' }) });
+    deps.retireZip = vi.fn(async () => {
+      throw new Error('retire');
+    });
+    deps.pruneRetiredZips = vi.fn(async () => {
+      throw new Error('prune');
+    });
+    expect(await generateSurveyExport('svy', deps)).toBe('built');
+    expect(deps.logError).toHaveBeenCalledTimes(2);
   });
 
   it('reuses a current archive, only stamping the request id', async () => {
@@ -92,6 +110,7 @@ describe('generateSurveyExport', () => {
     const { deps, writes } = makeDeps({ latest });
     expect(await generateSurveyExport('svy', deps, 'req2')).toBe('reused');
     expect(deps.uploadZip).not.toHaveBeenCalled();
+    expect(deps.retireZip).not.toHaveBeenCalled();
     expect(writes).toEqual([{ ...latest, lastRequestId: 'req2' }]);
   });
 

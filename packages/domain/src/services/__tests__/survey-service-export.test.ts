@@ -3,6 +3,7 @@ import { SurveyService } from '../survey-service';
 import { NoOpValidator } from '../../validation';
 import type { SurveyExportRepository } from '../../repositories/survey-export-repository';
 import { surveyContextFingerprint, type SurveyExport } from '../../models/survey-export';
+import type { SurveyContext } from '../../survey-context';
 import {
   InMemorySurveyRepository,
   InMemoryLocationRepository,
@@ -78,22 +79,13 @@ describe('SurveyService server export', () => {
     await expect(service.getServerExport(surveyId)).rejects.toThrow('not available');
   });
 
-  it('reuses the latest export when it matches the current data', async () => {
+  it('always asks the backend (it decides reuse), ignoring answers to other requests', async () => {
     const { service, exportRepo, surveyId, fingerprint } = await setup();
+    // Even a seemingly current record is not trusted: local reads are cache-first.
     exportRepo.latest = exportRecord({ fingerprint });
-    await expect(service.getServerExport(surveyId)).resolves.toBe(exportRepo.latest);
-    expect(exportRepo.requests).toBe(0);
-  });
-
-  it.each([
-    ['is stale', { fingerprint: 'old' }],
-    ['is missing media', { missingMedia: ['a.png'] }],
-    ['is not ready', { status: 'generating' as const }],
-  ])('requests a rebuild when the latest export %s, ignoring answers to other requests', async (_label, overrides) => {
-    const { service, exportRepo, surveyId, fingerprint } = await setup();
-    exportRepo.latest = exportRecord({ fingerprint, ...overrides });
     const result = service.getServerExport(surveyId);
     await vi.waitFor(() => expect(exportRepo.listeners).toHaveLength(1));
+    expect(exportRepo.requests).toBe(1);
 
     exportRepo.emit(exportRecord({ lastRequestId: 'someone_else' }));
     exportRepo.emit(exportRecord({ lastRequestId: 'req_1', status: 'generating' }));
@@ -101,6 +93,24 @@ describe('SurveyService server export', () => {
     exportRepo.emit(answer);
 
     await expect(result).resolves.toBe(answer);
+    expect(exportRepo.unsubscribed).toBe(1);
+  });
+
+  it('fails fast without requesting when the backend is unreachable', async () => {
+    const { service, exportRepo, surveyId } = await setup();
+    exportRepo.getLatest = async () => {
+      throw new Error('offline');
+    };
+    await expect(service.getServerExport(surveyId)).rejects.toThrow('offline');
+    expect(exportRepo.requests).toBe(0);
+  });
+
+  it('rejects an answer that is missing media so the caller can build on device', async () => {
+    const { service, exportRepo, surveyId } = await setup();
+    const result = service.getServerExport(surveyId);
+    await vi.waitFor(() => expect(exportRepo.listeners).toHaveLength(1));
+    exportRepo.emit(exportRecord({ lastRequestId: 'req_1', missingMedia: ['a.png'] }));
+    await expect(result).rejects.toThrow('missing media');
     expect(exportRepo.unsubscribed).toBe(1);
   });
 
@@ -137,5 +147,29 @@ describe('surveyContextFingerprint', () => {
     await service.addLocation(surveyId, { name: 'Barn' });
     const afterAdd = surveyContextFingerprint(await service.getSurveyContext(surveyId));
     expect(afterAdd).not.toBe(fingerprint);
+  });
+
+  it('detects an edit stamped earlier than the latest record (device clock behind)', async () => {
+    const { service, surveyId } = await setup();
+    const context = await service.getSurveyContext(surveyId);
+    const at = (ms: number) => new Date(Date.UTC(2026, 9, 1) + ms);
+    const withLocations = (stamps: number[]) => ({
+      ...context,
+      locations: stamps.map((ms, i) => ({ ...({} as SurveyContext['locations'][number]), id: `loc${i}`, updatedAt: at(ms) })),
+    });
+    // loc0 is edited on a device whose clock is behind loc1's timestamp: count and max are unchanged.
+    expect(surveyContextFingerprint(withLocations([100, 1000]))).not.toBe(
+      surveyContextFingerprint(withLocations([500, 1000])),
+    );
+  });
+
+  it('does not depend on record order', async () => {
+    const { service, surveyId } = await setup();
+    await service.addLocation(surveyId, { name: 'Barn' });
+    await service.addLocation(surveyId, { name: 'Shed' });
+    const context = await service.getSurveyContext(surveyId);
+    expect(surveyContextFingerprint({ ...context, locations: [...context.locations].reverse() })).toBe(
+      surveyContextFingerprint(context),
+    );
   });
 });

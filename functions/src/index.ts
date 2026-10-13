@@ -7,7 +7,9 @@ import { adminDeps, deleteSurveyExports } from './admin';
 import { generateSurveyExport } from './generate';
 
 initializeApp();
-setGlobalOptions({ memory: '1GiB', timeoutSeconds: 300 });
+// maxInstances caps concurrent 1 GiB builds: v1 rules let any signed-in caller
+// create export requests, so this bounds the compute they can trigger.
+setGlobalOptions({ memory: '1GiB', timeoutSeconds: 300, maxInstances: 5 });
 
 const logError = (message: string, error: unknown) => logger.error(message, error);
 

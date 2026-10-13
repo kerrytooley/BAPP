@@ -12,7 +12,13 @@ service cloud.firestore {
         allow write: if request.auth != null && !(subcollection in ['exports', 'exportRequests']);
       }
       match /exportRequests/{requestId} {
-        allow create: if request.auth != null;
+        // Each request starts a Cloud Function, so only accept the exact shape the
+        // app writes, for a survey that exists. Concurrent builds are capped by
+        // `maxInstances` (functions/src/index.ts). v2: restrict to survey admins.
+        allow create: if request.auth != null
+          && request.resource.data.keys().hasOnly(['requestedAt'])
+          && request.resource.data.requestedAt is timestamp
+          && exists(/databases/$(database)/documents/surveys/$(surveyId));
       }
     }
 

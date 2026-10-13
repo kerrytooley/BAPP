@@ -1,7 +1,10 @@
 # Firebase config
 
-Version-controlled config for the emulator suite **and** for a real cloud
-project.
+Version-controlled rules and indexes for the emulator suite **and** for a real
+cloud project. The Firebase project config is the repo-root `firebase.json`
+(it must sit at a common ancestor of `firebase/` and `functions/`: the CLI
+rejects a functions `source` outside the project directory), so run every
+`firebase` command from the **repo root**.
 
 > ### ⚠️ The committed native config targets a REAL cloud project
 > The committed `apps/mobile/google-services.json` and
@@ -23,7 +26,7 @@ for the design.
 ## Start the emulators
 
 > **Note:** `.firebaserc` is gitignored (repo `.gitignore`), so it is **not**
-> committed. Create `firebase/.firebaserc` locally first. A `demo-` project id
+> committed. Create `.firebaserc` at the repo root locally first. A `demo-` project id
 > keeps the emulator fully offline with no real credentials/billing:
 > ```json
 > { "projects": { "default": "demo-bapp" } }
@@ -34,11 +37,10 @@ for the design.
 
 ```bash
 npm i -g firebase-tools      # or: npx firebase-tools
-cd firebase
-firebase emulators:start     # Firestore :8080, Auth :9099, Storage :9199, UI on
+firebase emulators:start     # from the repo root: Firestore :8080, Auth :9099, Storage :9199, Functions :5001, UI on
 ```
 
-Ports are in `firebase.json` and mirrored by `DEFAULT_EMULATOR_CONFIG` in
+Ports are in the root `firebase.json` and mirrored by `DEFAULT_EMULATOR_CONFIG` in
 `packages/repository/src/config/firebase-app.ts`.
 
 ## ⚠️ What cannot run in Node / CI (device-only)
@@ -101,12 +103,26 @@ just downloads it — no on-device assembly:
   as `lastRequestId` on `surveys/{id}/exports/latest`.
 - `deleteExportsOnSurveyDelete` — removes export docs + `surveys/{id}/reports/**`.
 
-Archives live at `surveys/{id}/reports/{runId}/{fileName}.zip`. If the backend
-can't answer (offline, timeout, failure) the app falls back to building on-device.
+The app always sends a request (its own reads are cache-first, so it can't
+judge freshness); the function reuses the latest archive when its
+`surveyContextFingerprint` (every record's id + `updatedAt`) still matches.
+
+Archives live at `surveys/{id}/reports/{runId}/{fileName}.zip`. A replaced
+archive is tagged `retiredAt` and deleted by a later build once it has been
+retired for an hour, so a client handed its path just before a concurrent
+rebuild can still download it. If the backend can't answer (offline, timeout,
+failure) or its archive is missing media, the app falls back to building
+on-device.
+
+Builds are capped at `maxInstances: 5` because the v1 rules let any signed-in
+caller create export requests (rules only check the request's shape and that
+the survey exists). Restrict requests to survey admins with the v2 rules.
 
 ```bash
+pnpm install                              # repo root first: the bundle compiles @bapp/* sources,
+                                          # whose deps (jszip, xlsx, …) resolve from the root node_modules
 cd functions && npm install && npm test   # standalone npm package, not a pnpm workspace member
-cd firebase && firebase deploy --only functions,firestore:rules   # requires the Blaze plan
+cd .. && firebase deploy --only functions,firestore:rules   # from the repo root; requires the Blaze plan
 ```
 
 The functions use the default region (`us-central1`); if the Firestore database

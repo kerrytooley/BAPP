@@ -10,11 +10,7 @@ import type { SurveyorRepository } from '../repositories/surveyor-repository';
 import type { ObservationRepository } from '../repositories/observation-repository';
 import type { MediaRepository } from '../repositories/media-repository';
 import type { SurveyExportRepository } from '../repositories/survey-export-repository';
-import {
-  isReadySurveyExport,
-  surveyContextFingerprint,
-  type ReadySurveyExport,
-} from '../models/survey-export';
+import { isReadySurveyExport, type ReadySurveyExport } from '../models/survey-export';
 import type { SurveyValidator, SurveyChange } from '../validation';
 import { ValidationError } from '../validation-error';
 import { generateSurveyCode, normalizeSurveyCode } from '../codes';
@@ -311,25 +307,17 @@ export class SurveyService {
   }
 
   /**
-   * The backend-built export for the survey's current data. Reuses the latest
-   * archive when it matches the local data and has every image; otherwise asks
-   * the backend to rebuild and waits for that request to be answered.
+   * The backend-built export for the survey's current data. Always asks the
+   * backend, which reuses its latest archive when that still matches the
+   * server's data (local reads are cache-first, so the client can't judge
+   * freshness). Rejects unless the answer is complete, so callers can fall back.
    */
   async getServerExport(surveyId: string, timeoutMs = 120_000): Promise<ReadySurveyExport> {
     const repo = this.exportRepository;
     if (!repo) throw new Error('Server export is not available for this backend');
 
-    const [context, latest] = await Promise.all([
-      this.getSurveyContext(surveyId),
-      repo.getLatest(surveyId),
-    ]);
-    if (
-      isReadySurveyExport(latest) &&
-      latest.missingMedia.length === 0 &&
-      latest.fingerprint === surveyContextFingerprint(context)
-    ) {
-      return latest;
-    }
+    // Server read as a reachability probe: offline fails here instead of waiting out the timeout.
+    await repo.getLatest(surveyId);
 
     const requestId = await repo.requestExport(surveyId);
     // The domain compiles against plain ES2020 (no DOM/Node types), so reach timers via globalThis.
@@ -355,8 +343,10 @@ export class SurveyService {
         if (!value || value.lastRequestId !== requestId) return;
         if (value.status === 'failed') {
           finish(() => reject(new Error(value.error ?? 'Server export failed')));
-        } else if (isReadySurveyExport(value)) {
+        } else if (isReadySurveyExport(value) && value.missingMedia.length === 0) {
           finish(() => resolve(value));
+        } else if (isReadySurveyExport(value)) {
+          finish(() => reject(new Error('Server export is missing media')));
         }
       });
       // The subscription may have answered synchronously, before `unsubscribe` was assigned.

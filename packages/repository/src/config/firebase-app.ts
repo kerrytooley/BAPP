@@ -38,7 +38,7 @@ import {
   type FirebaseAuthTypes,
 } from '@react-native-firebase/auth';
 
-/** Where the local Firebase Emulator Suite is listening. Matches firebase/firebase.json. */
+/** Where the local Firebase Emulator Suite is listening. Matches the repo-root firebase.json. */
 export interface EmulatorConfig {
   host: string;
   firestorePort: number;
@@ -46,7 +46,7 @@ export interface EmulatorConfig {
   storagePort: number;
 }
 
-/** Default emulator ports (see firebase/firebase.json). iOS simulators reach the
+/** Default emulator ports (see the repo-root firebase.json). iOS simulators reach the
  *  host directly; Android emulators reach it via `10.0.2.2`. */
 export const DEFAULT_EMULATOR_CONFIG: EmulatorConfig = {
   // Not `localhost`: it can resolve to IPv6 ::1, but the emulators listen on IPv4 only.

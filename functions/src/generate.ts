@@ -17,7 +17,10 @@ export interface GenerateDeps {
   loadContext(surveyId: string): Promise<SurveyContext>;
   mediaResolver: MediaResolver;
   uploadZip(path: string, zip: Uint8Array, fileName: string): Promise<void>;
-  deleteZip(path: string): Promise<void>;
+  /** Mark an archive as no longer latest (it stays downloadable until pruned). */
+  retireZip(path: string, retiredAt: Date): Promise<void>;
+  /** Delete the survey's archives that were retired before `cutoff`. */
+  pruneRetiredZips(surveyId: string, cutoff: Date): Promise<void>;
   store: ExportStore;
   newRunId(): string;
   now(): Date;
@@ -25,6 +28,12 @@ export interface GenerateDeps {
 }
 
 export type GenerateOutcome = 'built' | 'reused' | 'failed';
+
+/**
+ * How long a replaced archive stays downloadable. A client may have been handed
+ * its path just before a concurrent build replaced it, so it isn't deleted at once.
+ */
+export const ARCHIVE_RETENTION_MS = 60 * 60 * 1000;
 
 const EMPTY: SurveyExport = {
   status: 'failed',
@@ -88,9 +97,13 @@ export async function generateSurveyExport(
       lastRequestId,
       error: null,
     });
+    const now = deps.now();
     if (replaced && replaced !== storagePath) {
-      await deps.deleteZip(replaced).catch((error) => deps.logError(`Failed to delete ${replaced}`, error));
+      await deps.retireZip(replaced, now).catch((error) => deps.logError(`Failed to retire ${replaced}`, error));
     }
+    await deps
+      .pruneRetiredZips(surveyId, new Date(now.getTime() - ARCHIVE_RETENTION_MS))
+      .catch((error) => deps.logError(`Failed to prune archives for survey ${surveyId}`, error));
     return 'built';
   } catch (error) {
     deps.logError(`Export for survey ${surveyId} failed`, error);

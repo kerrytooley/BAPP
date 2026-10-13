@@ -383,12 +383,13 @@ The simplest IaC approach. Config files are version-controlled in the repo:
 
 ```
 BAPP/
+├── firebase.json                # project config, emulator settings (root: functions/ must be inside the project dir)
+├── .firebaserc                  # project aliases (dev, prod)
 ├── firebase/
-│   ├── firebase.json            # project config, emulator settings
 │   ├── firestore.rules          # Firestore security rules
 │   ├── firestore.indexes.json   # composite indexes
-│   ├── storage.rules            # Storage security rules
-│   └── .firebaserc              # project aliases (dev, prod)
+│   └── storage.rules            # Storage security rules
+└── functions/                   # Cloud Functions source
 ```
 
 Two Firebase projects — one for dev, one for prod:

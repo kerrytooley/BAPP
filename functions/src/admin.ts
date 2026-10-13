@@ -21,6 +21,9 @@ const MIME_BY_EXTENSION: Record<string, string> = {
   heic: 'image/heic',
 };
 
+/** Custom Storage metadata key set on an archive once a newer one replaces it. */
+const RETIRED_AT = 'retiredAt';
+
 const surveyRef = (surveyId: string) => getFirestore().collection('surveys').doc(surveyId);
 const latestRef = (surveyId: string) =>
   surveyRef(surveyId).collection(EXPORTS_SUBCOLLECTION).doc(LATEST_EXPORT_DOC);
@@ -71,8 +74,20 @@ export function adminDeps(logError: GenerateDeps['logError']): GenerateDeps {
         metadata: { contentDisposition: `attachment; filename="${fileName}"` },
       });
     },
-    async deleteZip(path) {
-      await bucket.file(path).delete({ ignoreNotFound: true });
+    async retireZip(path, retiredAt) {
+      try {
+        await bucket.file(path).setMetadata({ metadata: { [RETIRED_AT]: retiredAt.toISOString() } });
+      } catch (error) {
+        if ((error as { code?: number }).code !== 404) throw error;
+      }
+    },
+    async pruneRetiredZips(surveyId, cutoff) {
+      const [files] = await bucket.getFiles({ prefix: reportsStoragePrefix(surveyId) });
+      const expired = files.filter((file) => {
+        const retiredAt = file.metadata.metadata?.[RETIRED_AT];
+        return typeof retiredAt === 'string' && Date.parse(retiredAt) < cutoff.getTime();
+      });
+      await Promise.all(expired.map((file) => file.delete({ ignoreNotFound: true })));
     },
     store: {
       async readLatest(surveyId) {
