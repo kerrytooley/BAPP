@@ -18,6 +18,7 @@ export interface StaticPinLayerProps {
 const PIN_WIDTH = 24;
 const PIN_HEIGHT = 24;
 const LABEL_WIDTH = 140;
+const LABEL_GAP = 6;
 
 export const StaticPinLayer = ({ imageUri, values, style }: StaticPinLayerProps) => {
     const [layout, setLayout] = useState({ width: 0, height: 0 });
@@ -66,7 +67,7 @@ export const StaticPinLayer = ({ imageUri, values, style }: StaticPinLayerProps)
                                     {
                                         // Keep the label on the image near the left/right edges.
                                         left: Math.min(Math.max(value.x * layout.width - LABEL_WIDTH / 2, 0), layout.width - LABEL_WIDTH),
-                                        top: value.y * layout.height + 2
+                                        top: value.y * layout.height + LABEL_GAP
                                     }
                                 ]}
                             >

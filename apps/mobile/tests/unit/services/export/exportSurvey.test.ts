@@ -16,7 +16,7 @@ jest.mock('@services/export/shareExport', () => ({
 import { assembleSurveyExport, JsZipPackager } from '@bapp/export';
 import { ExpoMediaResolver } from '@services/export/expoMediaResolver';
 import { shareExportFile, shareSurveyExport } from '@services/export/shareExport';
-import { exportSurvey, type ExportSurveyService } from '@services/export/exportSurvey';
+import { ExportCancelledError, exportSurvey, type ExportSurveyService } from '@services/export/exportSurvey';
 import { buildContext, buildSurvey } from '../../../helpers/factories';
 
 const assembleMock = assembleSurveyExport as jest.Mock;
@@ -54,6 +54,18 @@ describe('exportSurvey', () => {
         expect(PackagerMock).toHaveBeenCalledWith({ compression: 'STORE' });
         expect(shareMock).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]), 'dusk-count-results.zip');
         expect(result).toEqual({ fileName: 'dusk-count-results.zip', shared: true });
+    });
+
+    it('does not share when the export is cancelled mid-build', async () => {
+        const controller = new AbortController();
+        assembleMock.mockImplementation(async () => {
+            controller.abort();
+            return { zip: new Uint8Array([1]), files: [] };
+        });
+
+        await expect(exportSurvey(makeService('Dusk count'), 'survey-1', controller.signal))
+            .rejects.toBeInstanceOf(ExportCancelledError);
+        expect(shareMock).not.toHaveBeenCalled();
     });
 
     it('downloads and shares the server-built export when available', async () => {

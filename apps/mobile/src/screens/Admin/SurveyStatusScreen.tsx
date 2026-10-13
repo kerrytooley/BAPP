@@ -9,7 +9,7 @@ import { CompositeNavigationProp, RouteProp, useNavigation, useRoute } from "@re
 import { screen } from "@theme/screen";
 import { colours } from "@theme/colours";
 import { textStyles } from "@theme/fonts";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
@@ -64,19 +64,34 @@ export function SurveyStatusScreen(): React.JSX.Element {
     const [exporting, setExporting] = useState(false);
     const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
 
+    const exportController = useRef<AbortController | null>(null);
+
     const handleExport = async () => {
+        const controller = new AbortController();
+        exportController.current = controller;
         setExporting(true);
         await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
         try {
-            const { shared } = await exportSurvey(service, surveyId);
+            const { shared } = await exportSurvey(service, surveyId, controller.signal);
+            if (controller.signal.aborted) return;
             if (!shared) {
                 setNotice({ title: "Export ready", message: "Sharing isn't available on this device." });
             }
         } catch {
+            if (controller.signal.aborted) return;
             setNotice({ title: "Export failed", message: "Could not build the survey export. Please try again." });
         } finally {
-            setExporting(false);
+            if (exportController.current === controller) {
+                exportController.current = null;
+                setExporting(false);
+            }
         }
+    };
+
+    const cancelExport = () => {
+        exportController.current?.abort();
+        exportController.current = null;
+        setExporting(false);
     };
 
     const doneCount = (surveyors ?? []).filter((s) => s.status === "done").length;
@@ -214,6 +229,7 @@ export function SurveyStatusScreen(): React.JSX.Element {
                 message={exporting ? "This can take a moment for large surveys." : notice?.message}
                 confirmLabel="OK"
                 onConfirm={() => setNotice(null)}
+                onCancel={exporting ? cancelExport : undefined}
             />
         </View>
     );

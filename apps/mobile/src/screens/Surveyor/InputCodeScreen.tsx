@@ -15,12 +15,20 @@ import { recordRecentSurvey } from "@services/recentSurveys";
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
+export const NO_SURVEY_MESSAGE = "Oops! Looks like there's no survey matching that code";
+
 export function InputCodeScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const [code, setCode] = useState('');
+    const [joinError, setJoinError] = useState<string | null>(null);
     const service = useSurveyService();
     const codeError = validateSurveyCode(code);
     const showCodeError = !!codeError && (code.trim().length >= 6 || /[^a-z0-9]/i.test(code.trim()));
+
+    const handleChangeCode = (value: string) => {
+        setCode(value);
+        setJoinError(null);
+    };
 
     return (
         <View style={screen.justifyScreen} >
@@ -39,7 +47,7 @@ export function InputCodeScreen(): React.JSX.Element {
                         <PadlockIllustration width={180} height={180} style={styles.illustration} />
                         <Title title="Input Survey Code" subtitle="Join survey by entering code shared by lead surveyor" />
 
-                        <CodeInput testID="survey-code-input" placeholder="XXXXXX" value={code} onChangeText={setCode} error={showCodeError ? codeError : null} />
+                        <CodeInput testID="survey-code-input" placeholder="XXXXXX" value={code} onChangeText={handleChangeCode} error={showCodeError ? codeError : joinError} />
                     </View>
                     <Button
                         variant="light"
@@ -54,6 +62,7 @@ export function InputCodeScreen(): React.JSX.Element {
                                 navigation.navigate('CodeConfirmationScreen', { surveyId: surveyContext.survey.id });
                             } catch (e) {
                                 console.error(`Error joining survey for surveyor code ${code}:`, e);
+                                setJoinError(NO_SURVEY_MESSAGE);
                             }
                         }
                         }

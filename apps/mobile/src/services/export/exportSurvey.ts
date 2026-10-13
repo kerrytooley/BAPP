@@ -23,21 +23,37 @@ export interface ExportSurveyResult {
 export async function exportSurvey(
     service: ExportSurveyService,
     surveyId: string,
+    signal?: AbortSignal,
 ): Promise<ExportSurveyResult> {
     const prebuilt = await downloadServerExport(service, surveyId);
+    throwIfAborted(signal);
     if (prebuilt) {
         return { fileName: prebuilt.fileName, shared: await shareExportFile(prebuilt.fileUri) };
     }
 
     const context = await service.getSurveyContext(surveyId);
+    throwIfAborted(signal);
     const { zip } = await assembleSurveyExport(context, {
         mediaResolver: new ExpoMediaResolver((ref) => service.getMediaUrl(ref)),
         packager: new JsZipPackager({ compression: "STORE" }),
     });
 
+    throwIfAborted(signal);
+
     const fileName = exportFileName(context.survey);
     const shared = await shareSurveyExport(zip, fileName);
     return { fileName, shared };
+}
+
+export class ExportCancelledError extends Error {
+    constructor() {
+        super("Export cancelled");
+        this.name = "ExportCancelledError";
+    }
+}
+
+function throwIfAborted(signal?: AbortSignal) {
+    if (signal?.aborted) throw new ExportCancelledError();
 }
 
 async function downloadServerExport(

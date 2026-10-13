@@ -134,7 +134,7 @@ describe('SurveyStatusScreen', () => {
 
         fireEvent.press(await screen.findByText(/^Export & Share/));
 
-        await waitFor(() => expect(exportMock).toHaveBeenCalledWith(service, 'survey-1'));
+        await waitFor(() => expect(exportMock).toHaveBeenCalledWith(service, 'survey-1', expect.any(AbortSignal)));
         await waitFor(() => expect(screen.queryByText('Generating export…')).toBeNull());
         expect(screen.queryByText('Export ready')).toBeNull();
         expect(screen.queryByText('Export failed')).toBeNull();
@@ -182,6 +182,28 @@ describe('SurveyStatusScreen', () => {
         await waitFor(() =>
             expect(screen.queryByText('Generating export…')).toBeNull(),
         );
+    });
+
+    it('cancels an in-progress export', async () => {
+        let rejectExport: (error: Error) => void = () => { };
+        exportMock.mockImplementation(
+            (_service, _surveyId, signal: AbortSignal) => new Promise((_resolve, reject) => {
+                rejectExport = reject;
+                signal.addEventListener('abort', () => reject(new Error('Export cancelled')));
+            }),
+        );
+        renderWithActiveSurvey(<SurveyStatusScreen />, service);
+
+        fireEvent.press(await screen.findByText(/^Export & Share/));
+        expect(await screen.findByText('Generating export…')).toBeOnTheScreen();
+
+        fireEvent.press(screen.getByText('Cancel'));
+
+        await waitFor(() => expect(screen.queryByText('Generating export…')).toBeNull());
+        expect(exportMock.mock.calls[0][2].aborted).toBe(true);
+        await act(async () => rejectExport(new Error('late failure')));
+        expect(screen.queryByText('Export failed')).toBeNull();
+        expect(screen.getByText(/^Export & Share/)).toBeOnTheScreen();
     });
 
     describe('date and times', () => {

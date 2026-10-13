@@ -50,6 +50,12 @@ describe('InputCodeScreen', () => {
         fireEvent.press(screen.getByText('Continue'));
         await waitFor(() => expect(errorSpy).toHaveBeenCalled());
         expect(mockNavigate).not.toHaveBeenCalled();
+        expect(
+            await screen.findByText("Oops! Looks like there's no survey matching that code"),
+        ).toBeOnTheScreen();
+
+        fireEvent.changeText(screen.getByPlaceholderText('XXXXXX'), 'zzz998');
+        expect(screen.queryByText("Oops! Looks like there's no survey matching that code")).toBeNull();
     });
 
     it('disables continue until a valid code is entered', () => {
