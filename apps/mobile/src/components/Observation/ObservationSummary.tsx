@@ -6,10 +6,13 @@ import { textStyles } from "@theme/fonts";
 
 
 type ObservationSummaryProps = Observation & {
-    flightPathLetters: string[]
+    /** Letters of the overhead and front-view paths this observation uses. */
+    flightPathLetters: { overhead?: string; frontView?: string }
 };
 
 export const ObservationSummary = ({ flightPathLetters, ...observation }: ObservationSummaryProps) => {
+    const { overhead, frontView } = flightPathLetters;
+    const flightPaths = overhead || frontView ? `${overhead ?? 'None'}, ${frontView ?? 'None'}` : 'None';
     return (
         <View style={styles.card}>
             <View style={styles.row}>
@@ -26,7 +29,7 @@ export const ObservationSummary = ({ flightPathLetters, ...observation }: Observ
                     <View style={styles.cell}><Text style={styles.text}>Last seen: </Text><Text style={styles.text}>{formatTime(observation.lastSeenAt)}</Text></View>
                     <View style={styles.cell}><Text style={styles.text}>Frequency: </Text><Text style={styles.text}>{observation.frequency ?? 'N/A'}</Text></View>
                     <View style={styles.cell}><Text style={styles.text}>Heard count: </Text><Text style={styles.text}>{observation.heardCount}</Text></View>
-                    <View style={styles.cell}><Text style={styles.text}>Flight paths: </Text><Text style={styles.text}>{flightPathLetters.length > 0 ? flightPathLetters.join(', ') : 'None'}</Text></View>
+                    <View style={styles.cell}><Text style={styles.text}>Flight paths: </Text><Text style={styles.text}>{flightPaths}</Text></View>
                 </View>
             </View>
 

@@ -46,3 +46,11 @@ export function applySurveyorDefaults(input: CreateSurveyorInput): NewSurveyorFi
     data: input.data ?? {},
   };
 }
+
+/** Lead first, then in the order surveyors were added. */
+export function compareSurveyors(a: Surveyor, b: Surveyor): number {
+  if (a.isLead !== b.isLead) return a.isLead ? -1 : 1;
+  const byCreation = a.createdAt.getTime() - b.createdAt.getTime();
+  if (byCreation !== 0) return byCreation;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}

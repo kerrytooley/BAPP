@@ -11,6 +11,7 @@ import type { ObservationRepository } from '../repositories/observation-reposito
 import type { MediaRepository } from '../repositories/media-repository';
 import type { SurveyValidator, SurveyChange } from '../validation';
 import { ValidationError } from '../validation-error';
+import { SurveyNotFoundError } from '../survey-not-found-error';
 import { generateSurveyCode, normalizeSurveyCode } from '../codes';
 
 /**
@@ -57,14 +58,14 @@ export class SurveyService {
   async resumeSurvey(adminCode: string): Promise<SurveyContext> {
     // Codes are matched case-insensitively; generated codes are always lowercase.
     const survey = await this.surveyRepository.findByAdminCode(normalizeSurveyCode(adminCode));
-    if (!survey) throw new Error('Survey not found for admin code');
+    if (!survey) throw new SurveyNotFoundError('Survey not found for admin code');
     return this.surveyRepository.getSurveyContext(survey.id);
   }
 
   async joinSurvey(surveyorCode: string): Promise<SurveyContext> {
     // Codes are matched case-insensitively; generated codes are always lowercase.
     const survey = await this.surveyRepository.findBySurveyorCode(normalizeSurveyCode(surveyorCode));
-    if (!survey) throw new Error('Survey not found for surveyor code');
+    if (!survey) throw new SurveyNotFoundError('Survey not found for surveyor code');
     return this.surveyRepository.getSurveyContext(survey.id);
   }
 

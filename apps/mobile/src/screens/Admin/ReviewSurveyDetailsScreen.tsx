@@ -13,6 +13,7 @@ import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { DocumentPreview } from "@components/Display/DocumentPreview";
 import { textStyles } from "@theme/fonts";
 import { displayValue } from "@utils/displayValue";
+import { boundaryPinsWithNames } from "@utils/boundaryPins";
 
 type Nav = NativeStackNavigationProp<AdminStackParamList>;
 
@@ -25,7 +26,7 @@ export function ReviewSurveyDetailsScreen(): React.JSX.Element {
 
     const survey = context?.survey;
     const surveyors = context?.surveyors;
-    const positions = context?.locations.flatMap((location) => location.boundaryPosition ?? []) ?? [];
+    const positions = boundaryPinsWithNames(context);
     const [boundaryImage, setBoundaryImage] = useState<string | null>();
 
     useEffect(() => {

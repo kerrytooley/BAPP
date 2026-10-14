@@ -31,19 +31,21 @@ export function CreateSurvey(): React.JSX.Element {
     const [endTime, setEndTime] = useState<Date | undefined>(undefined);
     const [sunsetTime, setSunsetTime] = useState<Date | undefined>(undefined);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [nameTouched, setNameTouched] = useState(false);
-    const [postcodeTouched, setPostcodeTouched] = useState(false);
+    // Errors stay hidden until the first Continue/Save, then update live.
+    const [submitted, setSubmitted] = useState(false);
     const [originalTiming, setOriginalTiming] = useState<{ date?: number; start?: number }>({});
-    const nameError = validateRequiredText(name, "Survey name");
-    const postcodeError = validatePostcode(postcode);
     const timingChanged = !editing
         || date?.getTime() !== originalTiming.date
         || startTime?.getTime() !== originalTiming.start;
-    const { start: startError, sunset: sunsetError, end: endError } = validateSurveyTiming(
-        { date, startTime, sunsetTime, endTime },
-        { checkStart: timingChanged },
-    );
-    const hasErrors = !!(nameError || postcodeError || startError || sunsetError || endError);
+    // A function so pressing Continue re-checks "not in the past" against the current time.
+    const validate = () => ({
+        name: validateRequiredText(name, "Survey name"),
+        postcode: validatePostcode(postcode),
+        ...validateSurveyTiming({ date, startTime, sunsetTime, endTime }, { checkStart: timingChanged }),
+    });
+    type Errors = ReturnType<typeof validate>;
+    const errors = validate();
+    const shown = (key: keyof Errors) => (submitted ? errors[key] : null);
 
     const scrollRef = useRef<ScrollView>(null);
     const fieldY = useRef<Record<string, number>>({});
@@ -75,8 +77,22 @@ export function CreateSurvey(): React.JSX.Element {
         }, 100);
     };
 
+    const scrollToFirstError = (current: Errors) => {
+        if (current.name || current.postcode) {
+            scrollRef.current?.scrollTo({ y: 0, animated: true });
+            return;
+        }
+        scrollToField(current.start ? (startTime ? "start" : "date") : current.sunset ? "sunset" : "end");
+    };
+
     const saveSurvey = async () => {
-        if (isSubmitting || hasErrors) return;
+        if (isSubmitting) return;
+        const current = validate();
+        if (Object.values(current).some(Boolean)) {
+            setSubmitted(true);
+            scrollToFirstError(current);
+            return;
+        }
         setIsSubmitting(true);
         try {
             const surveyId = createdSurveyId.current ?? (await service.createSurvey()).id;
@@ -105,19 +121,19 @@ export function CreateSurvey(): React.JSX.Element {
             </View>
             <ScrollView ref={scrollRef} style={{ width: "100%" }} contentContainerStyle={screen.content} keyboardShouldPersistTaps="handled">
                 <Title title={editing ? "Edit Survey Details" : "Create Survey"} />
-                <InputField testID="survey-name-input" fieldLabel="Survey Name" placeholderText="Input survey name" value={name} onChangeText={setName} onEndEditing={() => setNameTouched(true)} error={nameTouched ? nameError : null} />
-                <InputField testID="survey-postcode-input" fieldLabel="Survey Postcode" placeholderText="Input survey postcode" value={postcode} onChangeText={setPostcode} autoCapitalize="characters" onEndEditing={() => setPostcodeTouched(true)} error={postcodeTouched ? postcodeError : null} />
+                <InputField testID="survey-name-input" fieldLabel="Survey Name" placeholderText="Input survey name" value={name} onChangeText={setName} error={shown("name")} />
+                <InputField testID="survey-postcode-input" fieldLabel="Survey Postcode" placeholderText="Input survey postcode" value={postcode} onChangeText={setPostcode} autoCapitalize="characters" error={shown("postcode")} />
                 <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.date = e.nativeEvent.layout.y; }}>
-                    <DatePickerInput fieldLabel="Survey Date" value={date} onChange={setDate} onOpen={() => scrollToField("date")} minimumDate={editing ? undefined : new Date()} error={startTime ? null : startError} />
+                    <DatePickerInput fieldLabel="Survey Date" value={date} onChange={setDate} onOpen={() => scrollToField("date")} minimumDate={editing ? undefined : new Date()} error={startTime ? null : shown("start")} />
                 </View>
                 <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.start = e.nativeEvent.layout.y; }}>
-                    <TimePickerInput fieldLabel="Start Time" value={startTime} onChange={setStartTime} onOpen={() => scrollToField("start")} error={startTime ? startError : null} />
+                    <TimePickerInput fieldLabel="Start Time" value={startTime} onChange={setStartTime} onOpen={() => scrollToField("start")} error={startTime ? shown("start") : null} />
                 </View>
                 <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.sunset = e.nativeEvent.layout.y; }}>
-                    <TimePickerInput fieldLabel="Sunrise/Sunset Time" value={sunsetTime} onChange={setSunsetTime} onOpen={() => scrollToField("sunset")} error={sunsetError} />
+                    <TimePickerInput fieldLabel="Sunrise/Sunset Time" value={sunsetTime} onChange={setSunsetTime} onOpen={() => scrollToField("sunset")} error={shown("sunset")} />
                 </View>
                 <View style={{ width: "100%" }} onLayout={(e) => { fieldY.current.end = e.nativeEvent.layout.y; }}>
-                    <TimePickerInput fieldLabel="End Time" value={endTime} onChange={setEndTime} onOpen={() => scrollToField("end")} error={endError} />
+                    <TimePickerInput fieldLabel="End Time" value={endTime} onChange={setEndTime} onOpen={() => scrollToField("end")} error={shown("end")} />
                 </View>
 
             </ScrollView>
@@ -125,13 +141,13 @@ export function CreateSurvey(): React.JSX.Element {
                 ? <ButtonGroup
                     variant="mixed"
                     labels={["Save", "Cancel"]}
-                    disabled={[isSubmitting || hasErrors, false]}
+                    disabled={[isSubmitting, false]}
                     onPress={[saveSurvey, returnToStatus]}
                 />
                 : <Button
                     variant="light"
                     label="Continue"
-                    disabled={isSubmitting || hasErrors}
+                    disabled={isSubmitting}
                     onPress={saveSurvey}
                 />
             }

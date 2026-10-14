@@ -142,52 +142,53 @@ describe('CreateSurvey', () => {
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('requires a survey name before continuing', () => {
+    it('requires a survey name, but only says so once Continue is pressed', () => {
         const service = createMockService();
         renderWithService(<CreateSurvey />, service);
-        expect(screen.getByLabelText('Continue')).toBeDisabled();
-
         const nameInput = screen.getByPlaceholderText('Input survey name');
         fireEvent.changeText(nameInput, '   ');
-        fireEvent(nameInput, 'endEditing');
-        expect(screen.getByText('Survey name is required')).toBeOnTheScreen();
+        expect(screen.queryByText('Survey name is required')).toBeNull();
+
         fireEvent.press(screen.getByText('Continue'));
+        expect(screen.getByText('Survey name is required')).toBeOnTheScreen();
         expect(service.createSurvey).not.toHaveBeenCalled();
 
         fireEvent.changeText(nameInput, 'Dusk count');
-        expect(screen.getByLabelText('Continue')).toBeEnabled();
         expect(screen.queryByText('Survey name is required')).toBeNull();
     });
 
-    it('rejects a postcode with special characters', () => {
-        renderWithService(<CreateSurvey />, createMockService());
+    it('rejects a postcode with special characters on Continue', () => {
+        const service = createMockService();
+        renderWithService(<CreateSurvey />, service);
         fireEvent.changeText(screen.getByPlaceholderText('Input survey name'), 'Dusk count');
         const postcodeInput = screen.getByPlaceholderText('Input survey postcode');
         fireEvent.changeText(postcodeInput, 'SW1A-1AA!');
-        fireEvent(postcodeInput, 'endEditing');
+        expect(screen.queryByText('Enter a valid UK postcode, e.g. SW1A 1AA')).toBeNull();
 
+        fireEvent.press(screen.getByText('Continue'));
         expect(screen.getByText('Enter a valid UK postcode, e.g. SW1A 1AA')).toBeOnTheScreen();
-        expect(screen.getByLabelText('Continue')).toBeDisabled();
+        expect(service.createSurvey).not.toHaveBeenCalled();
 
         fireEvent.changeText(postcodeInput, 'SW1A 1AA');
-        expect(screen.getByLabelText('Continue')).toBeEnabled();
+        expect(screen.queryByText('Enter a valid UK postcode, e.g. SW1A 1AA')).toBeNull();
     });
 
     it('allows the survey to start now but not in the past', () => {
         jest.useFakeTimers({ now: new Date(2026, 9, 11, 18, 0, 30) });
         try {
-            renderWithService(<CreateSurvey />, createMockService());
+            const service = createMockService();
+            renderWithService(<CreateSurvey />, service);
             fireEvent.changeText(screen.getByPlaceholderText('Input survey name'), 'Dusk count');
             fireEvent.press(screen.getByText('DD/MM/YYYY'));
 
             // Opening an empty time picker seeds it with the current time, which is allowed.
             fireEvent.press(screen.getAllByText('HH:MM')[0]);
+            jest.setSystemTime(new Date(2026, 9, 11, 18, 2));
             expect(screen.queryByText("Survey start can't be in the past")).toBeNull();
 
-            jest.setSystemTime(new Date(2026, 9, 11, 18, 2));
-            fireEvent.changeText(screen.getByPlaceholderText('Input survey name'), 'Dusk count 2');
+            fireEvent.press(screen.getByText('Continue'));
             expect(screen.getByText("Survey start can't be in the past")).toBeOnTheScreen();
-            expect(screen.getByLabelText('Continue')).toBeDisabled();
+            expect(service.createSurvey).not.toHaveBeenCalled();
         } finally {
             jest.useRealTimers();
         }
@@ -199,9 +200,10 @@ describe('CreateSurvey', () => {
         const [start, sunset] = screen.getAllByText('HH:MM');
         fireEvent.press(start);
         fireEvent.press(sunset);
+        expect(screen.queryByText('Sunrise/sunset time must be within 12 hours after the start time')).toBeNull();
 
+        fireEvent.press(screen.getByText('Continue'));
         expect(screen.getByText('Sunrise/sunset time must be within 12 hours after the start time')).toBeOnTheScreen();
-        expect(screen.getByLabelText('Continue')).toBeDisabled();
     });
 
     it('requires the end time to be after the start time', () => {
@@ -210,9 +212,10 @@ describe('CreateSurvey', () => {
         const [start, , end] = screen.getAllByText('HH:MM');
         fireEvent.press(start);
         fireEvent.press(end);
+        expect(screen.queryByText('End time must be within 12 hours after the start time')).toBeNull();
 
+        fireEvent.press(screen.getByText('Continue'));
         expect(screen.getByText('End time must be within 12 hours after the start time')).toBeOnTheScreen();
-        expect(screen.getByLabelText('Continue')).toBeDisabled();
     });
 
     it('saves an empty postcode as null', async () => {
