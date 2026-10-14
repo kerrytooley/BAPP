@@ -97,6 +97,11 @@ export function validateCount(value: number | null | undefined): FieldError {
     return Number.isInteger(value) && value >= 0 ? null : 'Counts must be a whole number of 0 or more';
 }
 
+export function validateLastSeen(firstSeenAt: Date | null | undefined, lastSeenAt: Date | null | undefined): FieldError {
+    if (!firstSeenAt || !lastSeenAt) return null;
+    return lastSeenAt.getTime() < firstSeenAt.getTime() ? "Last seen time can't be before the first seen time" : null;
+}
+
 const UK_POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i;
 
 export function validatePostcode(value: string | null | undefined): FieldError {
@@ -115,6 +120,21 @@ const minutesAfter = (from: Date, time: Date) =>
     (minutesOfDay(time) - minutesOfDay(from) + DAY_MINUTES) % DAY_MINUTES;
 
 const withinSurvey = (offset: number) => offset > 0 && offset <= MAX_SURVEY_HOURS * 60;
+
+/**
+ * Place a picked last-seen time (only its time of day is meaningful) relative to
+ * the first sighting: on the same date, or the next day when it is earlier in the
+ * day but within {@link MAX_SURVEY_HOURS} after it — e.g. 00:05 after 23:55.
+ * Otherwise it stays earlier, for {@link validateLastSeen} to reject.
+ */
+export function lastSeenAfter(firstSeenAt: Date, lastSeenTime: Date): Date {
+    const lastSeen = new Date(firstSeenAt);
+    lastSeen.setHours(lastSeenTime.getHours(), lastSeenTime.getMinutes(), lastSeenTime.getSeconds(), lastSeenTime.getMilliseconds());
+    if (lastSeen < firstSeenAt && withinSurvey(minutesAfter(firstSeenAt, lastSeenTime))) {
+        lastSeen.setDate(lastSeen.getDate() + 1);
+    }
+    return lastSeen;
+}
 
 const SUNSET_AFTER_START = `Sunrise/sunset time must be within ${MAX_SURVEY_HOURS} hours after the start time`;
 const END_AFTER_START = `End time must be within ${MAX_SURVEY_HOURS} hours after the start time`;

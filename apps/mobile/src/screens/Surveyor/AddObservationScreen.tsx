@@ -9,7 +9,7 @@ import { Title } from "@components/Common/Titles";
 import { TimeOfObservation } from "@components/DateTime/TimeOfObservation";
 import { HeardAndSeenCount } from "@components/Observation/HeardAndSeenCount";
 import React, { useEffect, useRef, useState } from "react";
-import { buildFlightPathGroups, copyFlightPath, FlightPath, flightPathKey, FlightPathSurface, newFlightPath, UpdateObservationInput, validateFrequencyKhz } from "@bapp/domain";
+import { buildFlightPathGroups, copyFlightPath, FlightPath, flightPathKey, FlightPathSurface, lastSeenAfter, newFlightPath, UpdateObservationInput, validateFrequencyKhz, validateLastSeen } from "@bapp/domain";
 import { useSurveyService } from "@services/surveyServiceContext";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
 import { InputField } from "@components/Common/InputField";
@@ -163,17 +163,28 @@ export function AddObservationScreen(): React.JSX.Element {
     const isSubmitting = useRef(false);
     const [frequencyTouched, setFrequencyTouched] = useState(false);
     const frequencyError = validateFrequencyKhz(frequency);
+    // Only shown after a save attempt so it doesn't flash while the times are being picked.
+    const [timesChecked, setTimesChecked] = useState(false);
+    // The pickers only set a time of day, so a last-seen time just after midnight is the next day.
+    const lastSeenAt = lastSeenAfter(observationTime, lastSeenTime);
+    const lastSeenError = validateLastSeen(observationTime, lastSeenAt);
+    const scrollRef = useRef<ScrollView>(null);
     const optionalText = (value: string | undefined) => value?.trim() || null;
 
     const updateObservation = async () => {
         if (isSubmitting.current || frequencyError) return;
+        if (lastSeenError) {
+            setTimesChecked(true);
+            scrollRef.current?.scrollTo({ y: 0, animated: true });
+            return;
+        }
         isSubmitting.current = true;
         try {
             const observationInput = {
                 seenCount: seenCount,
                 heardCount: heardCount,
                 firstSeenAt: observationTime,
-                lastSeenAt: lastSeenTime,
+                lastSeenAt,
                 frequency: optionalText(frequency),
                 direction: optionalText(direction),
                 notes: optionalText(notes),
@@ -210,7 +221,7 @@ export function AddObservationScreen(): React.JSX.Element {
                 <ScreenHeader navigation={navigation} />
                 <Title title={observation?.species || "Unknown Species"} />
             </View>
-            <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+            <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
                 <View style={screen.content} >
                     <TimeOfObservation
                         label="First seen time"
@@ -219,7 +230,8 @@ export function AddObservationScreen(): React.JSX.Element {
                     <TimeOfObservation
                         label="Last seen time"
                         observationTime={lastSeenTime}
-                        onChange={setLastSeenTime} />
+                        onChange={setLastSeenTime}
+                        error={timesChecked ? lastSeenError : null} />
                     <HeardAndSeenCount
                         heardCount={heardCount}
                         seenCount={seenCount}

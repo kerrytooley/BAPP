@@ -14,6 +14,7 @@ import { displayValue } from "@utils/displayValue";
 import { DocumentPreview } from "@components/Display/DocumentPreview";
 import { textStyles } from "@theme/fonts";
 import { goToLocationStep } from "@services/locationStep";
+import { boundaryPinsWithNames } from "@utils/boundaryPins";
 
 type Nav = NativeStackNavigationProp<SurveyorStackParamList>;
 
@@ -26,11 +27,9 @@ export function ConfirmSurveyorDetailsScreen(): React.JSX.Element {
 
     const survey = context?.survey;
     const surveyor = context?.surveyors.find((surveyor) => surveyor?.id == surveyorId);
-    const positions = surveyor?.isLead
-        ? (context?.locations.flatMap((location) => location.boundaryPosition ?? []) ?? [])
-        : (context?.locations
-            .filter((location) => location.id === surveyor?.locationId)
-            .flatMap((location) => location.boundaryPosition ?? []) ?? []);
+    const visibleLocations = (context?.locations ?? [])
+        .filter((location) => surveyor?.isLead || location.id === surveyor?.locationId);
+    const positions = boundaryPinsWithNames(context, visibleLocations);
     const type = "start";
     const locationId = surveyor?.locationId || "";
 

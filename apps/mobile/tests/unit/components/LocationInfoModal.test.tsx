@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
+import { Keyboard } from 'react-native';
 import { LocationInfoModal } from '@components/Modals/AddLocationInfoModal';
 
 describe('LocationInfoModal', () => {
@@ -20,5 +21,17 @@ describe('LocationInfoModal', () => {
 
         expect(saveNote).toHaveBeenCalledWith({ text: 'Lights on', time: expect.any(Date) });
         expect(setIsFullScreen).toHaveBeenCalledWith(false);
+    });
+
+    it('dismisses the keyboard when the card is tapped outside the input', () => {
+        const dismiss = jest.spyOn(Keyboard, 'dismiss');
+        const setIsFullScreen = jest.fn();
+        render(<LocationInfoModal isFullScreen setIsFullScreen={setIsFullScreen} saveNote={jest.fn()} />);
+
+        fireEvent.press(screen.getByText('Add Survey Note'));
+
+        expect(dismiss).toHaveBeenCalled();
+        expect(setIsFullScreen).not.toHaveBeenCalled();
+        dismiss.mockRestore();
     });
 });

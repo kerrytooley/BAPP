@@ -31,6 +31,22 @@ const context = () =>
     });
 
 describe('SelectSurveyorScreen', () => {
+    it('always lists the lead first, then surveyors in the order they were added', async () => {
+        const service = createMockService({
+            subscribeSurveyContext: mockSubscribeContext(buildContext({
+                surveyors: [
+                    buildSurveyor({ id: 's-3', name: 'Cal', isLead: false, createdAt: new Date(2026, 0, 1, 12, 3) }),
+                    buildSurveyor({ id: 's-2', name: 'Ben', isLead: false, createdAt: new Date(2026, 0, 1, 12, 2) }),
+                    buildSurveyor({ id: 'lead-1', name: 'Ada', isLead: true, createdAt: new Date(2026, 0, 1, 12, 5) }),
+                ],
+            })),
+        });
+        renderWithActiveSurvey(<SelectSurveyorScreen />, service);
+        await waitFor(() => expect(screen.getByText('Lead Surveyor: Ada')).toBeOnTheScreen());
+
+        const labels = screen.getAllByText(/^(Lead Surveyor: Ada|Ben|Cal)$/).map((node) => node.props.children);
+        expect(labels).toEqual(['Lead Surveyor: Ada', 'Ben', 'Cal']);
+    });
     it('lists the lead and names, with a fallback for missing names', async () => {
         const service = createMockService({
             subscribeSurveyContext: mockSubscribeContext(context()),

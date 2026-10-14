@@ -50,5 +50,5 @@ const observation: Observation = {
 }
 
 export const Default: Story = {
-    args: { ...observation, flightPathLetters: ['A', 'C'] }
+    args: { ...observation, flightPathLetters: { overhead: 'A' } }
 }

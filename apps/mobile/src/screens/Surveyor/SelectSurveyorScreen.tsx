@@ -7,7 +7,7 @@ import { ScreenHeader } from "@components/Common/ScreenHeader";
 import { ButtonGroup } from "@components/Common/Button";
 import { Title } from "@components/Common/Titles";
 import { useActiveSurvey } from "@services/ActiveSurveyProvider";
-import { Surveyor } from "@bapp/domain";
+import { compareSurveyors, Surveyor } from "@bapp/domain";
 import { routeForSurveyor } from "@utils/surveyorRoute";
 import { recordRecentSurvey } from "@services/recentSurveys";
 import SurveyorIllustration from "@assets/illustrations/surveyors.svg"
@@ -18,7 +18,7 @@ export function SelectSurveyorScreen(): React.JSX.Element {
     const navigation = useNavigation<Nav>();
     const { surveyId } = useRoute<RouteProp<SurveyorStackParamList, 'SelectSurveyorScreen'>>().params;
     const { context } = useActiveSurvey();
-    const surveyors = context?.surveyors;
+    const surveyors = context && [...context.surveyors].sort(compareSurveyors);
 
     const handleNavigate = (surveyor: Surveyor) => {
         if (!context) {

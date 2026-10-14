@@ -94,6 +94,18 @@ describe('FieldValidator via SurveyService', () => {
         })).resolves.toBeDefined();
     });
 
+    it('rejects a last seen time before the first seen time', async () => {
+        const { service, observation } = await setup();
+        await expect(service.updateObservation(observation.id, {
+            firstSeenAt: new Date(2026, 0, 1, 20, 30),
+            lastSeenAt: new Date(2026, 0, 1, 20, 0),
+        })).rejects.toThrow("Last seen time can't be before the first seen time");
+        await expect(service.updateObservation(observation.id, {
+            firstSeenAt: new Date(2026, 0, 1, 20, 0),
+            lastSeenAt: new Date(2026, 0, 1, 20, 30),
+        })).resolves.toBeDefined();
+    });
+
     it('rejects an invalid frequency and negative counts', async () => {
         const { service, observation } = await setup();
         await expect(service.updateObservation(observation.id, { frequency: 'loud' })).rejects.toThrow('Enter a number');

@@ -3,12 +3,11 @@ import { Image, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } fro
 import { colours } from "@theme/colours";
 import { textStyles } from "@theme/fonts";
 import { Expand } from "@components/Common/Icons";
-import { StaticPinLayer } from "../Location/StaticPinLayer";
-import { BoundaryPosition } from "@bapp/domain";
+import { StaticPinLayer, type PinValue } from "../Location/StaticPinLayer";
 
 export interface DocumentPreviewProps {
     imageUri: string | undefined | null,
-    values: BoundaryPosition[]
+    values: PinValue[]
     emptyMessage?: string
 }
 
